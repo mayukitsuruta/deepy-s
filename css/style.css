@@ -172,114 +172,234 @@
 }
 
 /* ===== 地底ホーム画面 ===== */
+body {
+  margin: 0;
+  font-family: "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+}
 
 .home-screen {
   display: flex;
-  background: #493124;
-  color: #fff3e4;
-  font-family: sans-serif;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: radial-gradient(circle at 45% 35%, #5c3d28 0%, #3b2518 70%, #2a1a10 100%);
+  color: #f9efe3;
 }
 
 /* 左サイドバー */
 .home-sidebar {
-  width: 250px;
+  width: 235px;
   flex-shrink: 0;
   min-height: 100vh;
-  background: #352218;
-  padding: 25px 18px;
+  background: rgba(38, 23, 14, 0.72);
+  border-right: 1px solid rgba(226, 193, 158, 0.18);
+  padding: 24px 16px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 35px;
+  gap: 20px;
 }
 
-.home-logo h1 {
-  font-size: 34px;
-  letter-spacing: 3px;
-  margin: 0;
+.sidebar-logo {
+  text-align: center;
+  margin-bottom: 8px;
 }
 
-.home-logo p {
+.logo-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.logo-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff6ea;
+}
+
+.logo-text {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #fff6ea;
+}
+
+.logo-sub {
+  margin: 4px 0 0;
   font-size: 13px;
+  color: #dec7b0;
 }
 
 .home-nav {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+  flex: 1;
 }
 
 .nav-item {
-  border: none;
-  border-radius: 30px;
-  padding: 15px;
-  text-align: left;
-  color: #fff3e4;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 18px;
+  border-radius: 999px;
+  border: 1.5px solid transparent;
   background: transparent;
+  color: #f5e8d7;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
   cursor: pointer;
-  font-size: 16px;
+  transition: all 0.2s ease;
 }
 
-.nav-item.active,
 .nav-item:hover {
-  background: #91613c;
+  background: rgba(255, 235, 210, 0.1);
 }
 
-.deepy-guide {
+.nav-item.active {
+  background: rgba(145, 104, 72, 0.85);
+  border-color: #d6b694;
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+}
+
+.nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-footer {
   text-align: center;
-  margin-top: auto;
+  padding: 12px 8px 4px;
+  color: #e5cdb4;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
-.deepy-placeholder {
-  width: 100px;
-  height: 100px;
-  border: 2px dashed #c69a75;
-  border-radius: 50%;
-  margin: 0 auto 15px;
-  display: grid;
-  place-items: center;
+.mascot-badge {
+  margin-bottom: 6px;
+}
+
+.sidebar-footer p {
+  margin: 0;
+  transform: rotate(-4deg);
 }
 
 .logout-button {
-  padding: 12px;
-  border-radius: 30px;
+  padding: 10px 14px;
+  border-radius: 999px;
   background: transparent;
-  border: 1px solid #c69a75;
-  color: #fff3e4;
+  border: 1px solid rgba(214, 182, 148, 0.45);
+  color: #e5cdb4;
+  font-size: 13px;
   cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.logout-button:hover {
+  background: rgba(255, 235, 210, 0.1);
 }
 
 /* メイン */
 .home-main {
   flex: 1;
   min-width: 0;
-  padding: 25px 30px 50px;
+  padding: 16px 24px 32px;
   box-sizing: border-box;
-
-  /* 後から背景画像を設定 */
-  background-color: #5c3d2b;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .home-header {
   display: flex;
-  justify-content: flex-end;
-  gap: 20px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 35px;
 }
 
-.user-status,
-.friendship-status {
-  background: #f6dfc3;
-  color: #513524;
-  border-radius: 30px;
-  padding: 12px 20px;
+.topbar-left {
+  font-size: 14px;
+  color: #f2dec8;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.user-status-pill {
+  display: flex;
+  align-items: center;
+  background: rgba(74, 52, 38, 0.9);
+  border: 1.5px solid #b59272;
+  border-radius: 999px;
+  padding: 5px 14px 5px 8px;
+  gap: 12px;
+  color: #fff6ec;
   font-size: 14px;
 }
 
-.user-status {
+.user-info-badge {
   display: flex;
-  gap: 20px;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.user-name {
+  font-weight: 700;
+}
+
+.user-count-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 12px;
+  border-left: 1px solid rgba(255, 240, 224, 0.28);
+  color: #f0dcc6;
+}
+
+.icon-inline {
+  display: inline-flex;
+  vertical-align: -2px;
+}
+
+.friendship-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f6eadb;
+  color: #4a3020;
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.star-icon {
+  color: #c94a4a;
+  display: inline-flex;
+  align-items: center;
 }
 
 .home-intro {
@@ -455,9 +575,15 @@
   border: 1px solid #c69a75;
   background: #fff0dc;
   color: #513524;
-  border-radius: 30px;
-  padding: 8px 15px;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 700;
   cursor: pointer;
+}
+
+#open-register[hidden] {
+  display: none !important;
 }
 
 /* ポップアップの背景 */
@@ -622,4 +748,458 @@
   border: 2px solid #b99576;
   border-radius: 10px;
   font-size: 16px;
+}
+
+/* =========================================
+   交流スペース画面（私の家・プロフィール・掲示板）
+   ========================================= */
+#home-view-content[hidden],
+#space-view-content[hidden] {
+  display: none !important;
+}
+
+.space-view {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 18px;
+  align-items: start;
+}
+
+.space-center-placeholder {
+  min-height: 620px;
+  border: 2px solid rgba(214, 182, 148, 0.45);
+  border-radius: 22px;
+  background: rgba(42, 26, 16, 0.45);
+  padding: 20px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+}
+
+.placeholder-layer-badge {
+  background: rgba(125, 92, 65, 0.85);
+  border: 1.5px solid #cbb094;
+  border-radius: 14px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: #fff6ea;
+}
+
+.space-right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.panel-card {
+  background: #fbf4e9;
+  color: #463020;
+  border-radius: 20px;
+  padding: 14px 16px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+  border: 2px solid #e4d2bd;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-title h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #463020;
+}
+
+.card-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #6f4e37;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn {
+  border: none;
+  background: transparent;
+  color: #6f4e37;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn:hover {
+  background: rgba(111, 78, 55, 0.12);
+}
+
+.inline-svg {
+  display: inline-flex;
+  vertical-align: -2px;
+}
+
+/* ① 私の家カード */
+.house-preview {
+  position: relative;
+  height: 105px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #7c5236, #4b2e1b);
+  color: #fff7ec;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.house-preview-art {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.interior-badge-btn {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  background: rgba(35, 22, 14, 0.82);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.house-location-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.location-label {
+  font-size: 11px;
+  color: #7d624c;
+  font-weight: 700;
+}
+
+.location-value {
+  margin: 2px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #3f2a1b;
+}
+
+.pill-outline-btn {
+  background: #f2e6d6;
+  border: 1.5px solid #cbb399;
+  color: #4a3222;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pill-outline-btn:hover {
+  background: #e6d4bd;
+}
+
+/* ② プロフィールカード */
+.profile-main {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.profile-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.profile-meta h4 {
+  margin: 0;
+  font-size: 16px;
+  color: #3b2618;
+}
+
+.online-status {
+  display: inline-block;
+  font-size: 11px;
+  color: #4f8a5b;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.online-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4f8a5b;
+  margin-right: 4px;
+  vertical-align: 1px;
+}
+
+.profile-bio {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #5a4230;
+}
+
+.profile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.tag {
+  background: #efe3d2;
+  color: #5b4230;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* インライン編集フォーム */
+.inline-edit-form {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #d5c1aa;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inline-edit-form[hidden] {
+  display: none !important;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #5c4330;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+  padding: 6px 8px;
+  border: 1.5px solid #cbb399;
+  border-radius: 8px;
+  font-size: 12px;
+  background: #fff;
+  color: #3b2618;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.save-btn {
+  flex: 1;
+  background: #7c5236;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cancel-btn {
+  background: #e6d8c7;
+  color: #4a3222;
+  border: none;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* ③ 掲示板カード */
+.text-link-btn {
+  background: transparent;
+  border: none;
+  color: #7c5c43;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.board-post-form {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.board-post-form input {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1.5px solid #d5c1aa;
+  border-radius: 999px;
+  font-size: 12px;
+  background: #fff;
+}
+
+.board-post-form button {
+  background: #ff9138;
+  color: #2b180a;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.board-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 230px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.board-list.expanded {
+  max-height: 400px;
+}
+
+.board-item {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ece0d0;
+}
+
+.board-item:last-child {
+  border-bottom: none;
+}
+
+.board-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.board-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.board-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.board-delete-btn {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: #a3876f;
+  padding: 2px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.board-delete-btn:hover {
+  color: #c94a4a;
+  background: rgba(201, 74, 74, 0.1);
+}
+
+.board-author {
+  font-size: 12px;
+  font-weight: 800;
+  color: #3f2a1b;
+}
+
+.board-time {
+  font-size: 10px;
+  color: #8c725c;
+}
+
+.board-text {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #533b29;
+  word-break: break-word;
+}
+
+.board-empty {
+  font-size: 12px;
+  color: #8c725c;
+  text-align: center;
+  margin: 12px 0;
+}
+
+.board-footer-banner {
+  margin-top: 10px;
+  background: #efe2cf;
+  border-radius: 12px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #543b28;
+}
+
+.board-footer-banner p {
+  margin: 0;
+  line-height: 1.4;
+}
+
+@media (max-width: 950px) {
+  .space-view {
+    grid-template-columns: 1fr;
+  }
+
+  .space-center-placeholder {
+    min-height: 220px;
+  }
 }

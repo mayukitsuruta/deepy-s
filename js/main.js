@@ -6,6 +6,13 @@ import {
   doc,
   getDoc,
   setDoc,
+  deleteDoc,
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  limit,
+  onSnapshot,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
@@ -122,9 +129,38 @@ nextButton.addEventListener("click", () => {
 // 初期表示
 showScreen(firstView);
 
-// 「ゲストとして遊ぶ」をクリック
-guestButton.addEventListener("click", () => {
-  showScreen(guestScreen);
+// 「ゲストとして遊ぶ」をクリック（1ブラウザ＝1ゲスト：既存データがあればそのまま復帰）
+guestButton.addEventListener("click", async () => {
+  guestButton.disabled = true;
+  try {
+    const userCredential = await signInAnonymously(auth);
+    const user = userCredential.user;
+    currentUserId = user.uid;
+
+    const userRef = doc(db, "users", user.uid);
+    const userSnapshot = await getDoc(userRef);
+
+    if (userSnapshot.exists() && userSnapshot.data().nickname) {
+      const existingData = userSnapshot.data();
+      await setDoc(
+        userRef,
+        {
+          isOnline: true,
+          lastActiveMs: Date.now(),
+        },
+        { merge: true },
+      );
+      openRegister.hidden = !user.isAnonymous;
+      enterHomeWithUser(user.uid, existingData);
+    } else {
+      showScreen(guestScreen);
+    }
+  } catch (error) {
+    console.error("ゲストログイン確認エラー:", error);
+    showScreen(guestScreen);
+  } finally {
+    guestButton.disabled = false;
+  }
 });
 
 // 「もどる」をクリック
@@ -155,19 +191,43 @@ guestForm.addEventListener("submit", async (event) => {
     const userRef = doc(db, "users", user.uid);
     const userSnapshot = await getDoc(userRef);
 
+    let userData;
     // 初めてのユーザーだけ登録
     if (!userSnapshot.exists()) {
-      await setDoc(userRef, {
+      userData = {
         nickname: nickname,
+        avatar: "pink",
         friendshipPoints: 0,
+        bio: "地底でのんびり暮らしてます。よろしくお願いします！",
+        tags: ["デザイン", "カフェ巡り", "音楽"],
+        houseLocation: "第3層・右下エリア",
+        isOnline: true,
+        lastActiveMs: Date.now(),
         createdAt: serverTimestamp(),
-      });
+      };
+      await setDoc(userRef, userData);
+    } else {
+      userData = {
+        ...userSnapshot.data(),
+        nickname: nickname,
+        isOnline: true,
+        lastActiveMs: Date.now(),
+      };
+      await setDoc(
+        userRef,
+        {
+          nickname: nickname,
+          isOnline: true,
+          lastActiveMs: Date.now(),
+        },
+        { merge: true },
+      );
     }
 
     alert("地底生活へようこそ、" + nickname + "！");
 
-    homeNickname.textContent = nickname;
-    showScreen(homeScreen);
+    openRegister.hidden = !user.isAnonymous;
+    enterHomeWithUser(user.uid, userData);
 
     // 次はここから地底のホーム画面へ進める予定
   } catch (error) {
@@ -187,8 +247,10 @@ logoutButton.addEventListener("click", async () => {
   if (!confirmed) return;
 
   try {
+    await sendPresenceHeartbeat(false);
     // Firebaseからログアウト
     await signOut(auth);
+    currentUserId = null;
 
     // 入力欄を空にする
     guestName.value = "";
@@ -307,7 +369,7 @@ registerForm.addEventListener("submit", async (event) => {
     registerForm.reset();
     registerMessage.textContent = "";
 
-    showScreen(homeScreen);
+    enterHomeWithUser(user.uid, userData);
 
     alert("地底住民登録が完了したよ！");
   } catch (error) {
@@ -384,7 +446,7 @@ signinForm.addEventListener("submit", async (event) => {
     signinMessage.textContent = "";
 
     // ホーム画面へ
-    showScreen(homeScreen);
+    enterHomeWithUser(user.uid, userData);
   } catch (error) {
     console.error("ログインエラー:", error);
     signinMessage.textContent =
@@ -392,4 +454,434 @@ signinForm.addEventListener("submit", async (event) => {
   } finally {
     submitButton.disabled = false;
   }
+});
+
+// =========================================
+// 交流スペース・オンライン人数・プロフィール・掲示板機能
+// =========================================
+const navItems = document.querySelectorAll(".home-nav .nav-item");
+const homeViewContent = document.getElementById("home-view-content");
+const spaceViewContent = document.getElementById("space-view-content");
+const topbarTitleArea = document.getElementById("topbar-title-area");
+const topbarAvatar = document.getElementById("topbar-avatar");
+const onlineCountEl = document.getElementById("online-count");
+const friendshipValueEl = document.getElementById("friendship-value");
+
+// ① 私の家
+const houseLocationText = document.getElementById("house-location-text");
+
+// ② プロフィール
+const profileAvatarDisplay = document.getElementById("profile-avatar-display");
+const profileNickname = document.getElementById("profile-nickname");
+const profileBio = document.getElementById("profile-bio");
+const profileTags = document.getElementById("profile-tags");
+const toggleProfileEditBtn = document.getElementById("toggle-profile-edit");
+const profileEditForm = document.getElementById("profile-edit-form");
+const profileAvatarInput = document.getElementById("profile-avatar-input");
+const profileNicknameInput = document.getElementById("profile-nickname-input");
+const profileBioInput = document.getElementById("profile-bio-input");
+const profileTagsInput = document.getElementById("profile-tags-input");
+const cancelProfileEditBtn = document.getElementById("cancel-profile-edit");
+
+// ③ 掲示板
+const boardPostForm = document.getElementById("board-post-form");
+const boardMessageInput = document.getElementById("board-message-input");
+const boardList = document.getElementById("board-list");
+const toggleBoardMoreBtn = document.getElementById("toggle-board-more");
+
+// アバターカラー定義（純色アイコン用）
+const AVATAR_PALETTE = {
+  pink: "#f2a6b8",
+  green: "#9ed18b",
+  cream: "#ecd9b5",
+  purple: "#b89fd9",
+  orange: "#f4ad7b",
+};
+
+function getAvatarSvg(avatarKey = "pink", size = 24) {
+  const color = AVATAR_PALETTE[avatarKey] || AVATAR_PALETTE.pink;
+  return `
+    <svg viewBox="0 0 36 36" width="${size}" height="${size}" aria-hidden="true">
+      <circle cx="18" cy="18" r="18" fill="${color}" />
+    </svg>
+  `;
+}
+
+let currentUserId = null;
+let currentUserData = {
+  nickname: "ゲスト",
+  avatar: "pink",
+  friendshipPoints: 0,
+  bio: "地底でのんびり暮らしてます。よろしくお願いします！",
+  tags: ["デザイン", "カフェ巡り", "音楽"],
+  houseLocation: "第3層・右下エリア",
+};
+let unsubscribeBoard = null;
+let unsubscribeOnlineUsers = null;
+let heartbeatTimer = null;
+let latestUsersDocs = [];
+
+const ONLINE_TIMEOUT_MS = 90 * 1000;
+
+// ホーム画面内のサブビュー切り替え（ホーム / 交流スペース）
+function switchUndergroundView(viewName) {
+  navItems.forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.view === viewName);
+  });
+
+  if (viewName === "space") {
+    homeViewContent.hidden = true;
+    spaceViewContent.hidden = false;
+    if (topbarTitleArea) {
+      topbarTitleArea.textContent =
+        "地底でくらす、それぞれの家を訪れてみよう。";
+    }
+  } else {
+    homeViewContent.hidden = false;
+    spaceViewContent.hidden = true;
+    if (topbarTitleArea) {
+      topbarTitleArea.textContent = "";
+    }
+  }
+}
+
+navItems.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const view = btn.dataset.view;
+    if (view === "home" || view === "space") {
+      switchUndergroundView(view);
+    } else {
+      alert("この画面は現在準備中です！");
+    }
+  });
+});
+
+// ユーザー情報を右上バー・私の家・プロフィールに反映
+function renderUserData(data) {
+  currentUserData = { ...currentUserData, ...data };
+
+  const avatarKey = AVATAR_PALETTE[currentUserData.avatar]
+    ? currentUserData.avatar
+    : "pink";
+
+  // 右上ステータスバー
+  if (topbarAvatar) {
+    topbarAvatar.innerHTML = getAvatarSvg(avatarKey, 28);
+  }
+  homeNickname.textContent = `${currentUserData.nickname || "ゲスト"}さん`;
+  if (friendshipValueEl) {
+    friendshipValueEl.textContent = currentUserData.friendshipPoints ?? 0;
+  }
+
+  // ① 私の家カード
+  if (houseLocationText) {
+    houseLocationText.textContent =
+      currentUserData.houseLocation || "第3層・右下エリア";
+  }
+
+  // ② プロフィールカード
+  if (profileAvatarDisplay) {
+    profileAvatarDisplay.innerHTML = getAvatarSvg(avatarKey, 52);
+  }
+  if (profileNickname) {
+    profileNickname.textContent = currentUserData.nickname || "ゲスト";
+  }
+  if (profileBio) {
+    profileBio.textContent =
+      currentUserData.bio ||
+      "地底でのんびり暮らしてます。よろしくお願いします！";
+  }
+
+  if (profileTags) {
+    profileTags.innerHTML = "";
+    const tagsArray = Array.isArray(currentUserData.tags)
+      ? currentUserData.tags
+      : ["デザイン", "カフェ巡り", "音楽"];
+    tagsArray.forEach((tagText) => {
+      const cleanTag = String(tagText).replace(/^#/, "").trim();
+      if (!cleanTag) return;
+      const span = document.createElement("span");
+      span.className = "tag";
+      span.textContent = `#${cleanTag}`;
+      profileTags.appendChild(span);
+    });
+  }
+}
+
+// リアルタイムオンライン人数
+function recalculateOnlineCount() {
+  const now = Date.now();
+  let count = 0;
+
+  latestUsersDocs.forEach((data) => {
+    if (
+      data.isOnline === true &&
+      typeof data.lastActiveMs === "number" &&
+      now - data.lastActiveMs < ONLINE_TIMEOUT_MS
+    ) {
+      count++;
+    }
+  });
+
+  if (currentUserId && count === 0) {
+    count = 1;
+  }
+
+  if (onlineCountEl) {
+    onlineCountEl.textContent = `${count}人`;
+  }
+}
+
+async function sendPresenceHeartbeat(isOnline = true) {
+  if (!currentUserId) return;
+  try {
+    const userRef = doc(db, "users", currentUserId);
+    await setDoc(
+      userRef,
+      {
+        isOnline: isOnline,
+        lastActiveMs: Date.now(),
+      },
+      { merge: true },
+    );
+  } catch (error) {
+    console.warn("オンライン状態の更新に失敗:", error);
+  }
+}
+
+function startOnlinePresence() {
+  sendPresenceHeartbeat(true);
+
+  if (heartbeatTimer) clearInterval(heartbeatTimer);
+  heartbeatTimer = setInterval(() => {
+    sendPresenceHeartbeat(true);
+    recalculateOnlineCount();
+  }, 30 * 1000);
+
+  if (!unsubscribeOnlineUsers) {
+    unsubscribeOnlineUsers = onSnapshot(
+      collection(db, "users"),
+      (snapshot) => {
+        latestUsersDocs = [];
+        snapshot.forEach((docSnap) => {
+          latestUsersDocs.push(docSnap.data());
+        });
+        recalculateOnlineCount();
+      },
+      (error) => {
+        console.warn("オンライン人数の取得に失敗:", error);
+        if (onlineCountEl) onlineCountEl.textContent = "1人";
+      },
+    );
+  }
+}
+
+window.addEventListener("pagehide", () => {
+  sendPresenceHeartbeat(false);
+});
+
+// 相対時間のフォーマット
+function formatRelativeTime(timestamp) {
+  if (!timestamp || !timestamp.toDate) return "たった今";
+  const diffSec = Math.floor((Date.now() - timestamp.toDate().getTime()) / 1000);
+  if (diffSec < 60) return "たった今";
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}分前`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour}時間前`;
+  const diffDay = Math.floor(diffHour / 24);
+  return `${diffDay}日前`;
+}
+
+// 掲示板のリアルタイム購読開始
+function startBoardListener() {
+  if (unsubscribeBoard) return;
+
+  const postsQuery = query(
+    collection(db, "posts"),
+    orderBy("createdAt", "desc"),
+    limit(20),
+  );
+
+  unsubscribeBoard = onSnapshot(
+    postsQuery,
+    (snapshot) => {
+      boardList.innerHTML = "";
+
+      if (snapshot.empty) {
+        boardList.innerHTML =
+          '<p class="board-empty">まだ投稿がありません。最初のメッセージを書いてみよう！</p>';
+        return;
+      }
+
+      snapshot.forEach((docSnap) => {
+        const post = docSnap.data();
+        const item = document.createElement("div");
+        item.className = "board-item";
+
+        const avatarDiv = document.createElement("div");
+        avatarDiv.className = "board-avatar";
+        avatarDiv.innerHTML = getAvatarSvg(post.avatar || "pink", 30);
+
+        const bodyDiv = document.createElement("div");
+        bodyDiv.className = "board-body";
+
+        const metaDiv = document.createElement("div");
+        metaDiv.className = "board-meta";
+
+        const authorSpan = document.createElement("span");
+        authorSpan.className = "board-author";
+        authorSpan.textContent = post.nickname || "名無しの地底人";
+
+        const timeSpan = document.createElement("span");
+        timeSpan.className = "board-time";
+        timeSpan.textContent = formatRelativeTime(post.createdAt);
+
+        const textP = document.createElement("p");
+        textP.className = "board-text";
+        textP.textContent = post.text || "";
+
+        metaDiv.appendChild(authorSpan);
+        metaDiv.appendChild(timeSpan);
+
+        // 自分の投稿には削除ボタンを表示
+        if (currentUserId && post.uid === currentUserId) {
+          const deleteBtn = document.createElement("button");
+          deleteBtn.type = "button";
+          deleteBtn.className = "board-delete-btn";
+          deleteBtn.title = "この投稿を削除";
+          deleteBtn.setAttribute("aria-label", "この投稿を削除");
+          deleteBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6h12Z" />
+            </svg>
+          `;
+          deleteBtn.addEventListener("click", async () => {
+            try {
+              await deleteDoc(doc(db, "posts", docSnap.id));
+            } catch (err) {
+              console.error("投稿削除エラー:", err);
+              alert("削除に失敗しました。");
+            }
+          });
+          metaDiv.appendChild(deleteBtn);
+        }
+
+        bodyDiv.appendChild(metaDiv);
+        bodyDiv.appendChild(textP);
+
+        item.appendChild(avatarDiv);
+        item.appendChild(bodyDiv);
+        boardList.appendChild(item);
+      });
+    },
+    (error) => {
+      console.error("掲示板の取得エラー:", error);
+      boardList.innerHTML =
+        '<p class="board-empty">掲示板の読み込みに失敗しました。</p>';
+    },
+  );
+}
+
+// ホーム画面入場時の共通初期化
+function enterHomeWithUser(uid, userData) {
+  currentUserId = uid;
+  renderUserData(userData || {});
+  startOnlinePresence();
+  startBoardListener();
+  switchUndergroundView("home");
+  showScreen(homeScreen);
+}
+
+// ② プロフィール：編集＆Firebase保存
+function openProfileEditForm() {
+  profileAvatarInput.value = AVATAR_PALETTE[currentUserData.avatar]
+    ? currentUserData.avatar
+    : "pink";
+  profileNicknameInput.value = currentUserData.nickname || "";
+  profileBioInput.value = currentUserData.bio || "";
+  const tagsList = Array.isArray(currentUserData.tags)
+    ? currentUserData.tags
+    : [];
+  profileTagsInput.value = tagsList.join(", ");
+  profileEditForm.hidden = false;
+}
+
+toggleProfileEditBtn.addEventListener("click", () => {
+  if (profileEditForm.hidden) {
+    openProfileEditForm();
+  } else {
+    profileEditForm.hidden = true;
+  }
+});
+
+cancelProfileEditBtn.addEventListener("click", () => {
+  profileEditForm.hidden = true;
+});
+
+profileEditForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const newAvatar = profileAvatarInput.value;
+  const newNickname = profileNicknameInput.value.trim();
+  const newBio = profileBioInput.value.trim();
+  const newTags = profileTagsInput.value
+    .split(/[,、\s]+/)
+    .map((t) => t.replace(/^#/, "").trim())
+    .filter(Boolean)
+    .slice(0, 3);
+
+  if (!newNickname) return;
+
+  const updatedFields = {
+    avatar: newAvatar,
+    nickname: newNickname,
+    bio: newBio || "地底でのんびり暮らしてます。よろしくお願いします！",
+    tags: newTags.length > 0 ? newTags : ["地底生活"],
+  };
+
+  renderUserData(updatedFields);
+  profileEditForm.hidden = true;
+
+  if (currentUserId) {
+    try {
+      const userRef = doc(db, "users", currentUserId);
+      await setDoc(userRef, updatedFields, { merge: true });
+    } catch (error) {
+      console.error("プロフィール保存エラー:", error);
+      alert("プロフィールの保存に失敗しました。");
+    }
+  }
+});
+
+// ③ 掲示板：新規投稿＆もっと見る切り替え
+boardPostForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const text = boardMessageInput.value.trim();
+  if (!text) return;
+
+  const submitBtn = boardPostForm.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+
+  try {
+    await addDoc(collection(db, "posts"), {
+      uid: currentUserId || "guest",
+      nickname: currentUserData.nickname || "ゲスト",
+      avatar: AVATAR_PALETTE[currentUserData.avatar]
+        ? currentUserData.avatar
+        : "pink",
+      text: text,
+      createdAt: serverTimestamp(),
+    });
+    boardMessageInput.value = "";
+  } catch (error) {
+    console.error("掲示板投稿エラー:", error);
+    alert("投稿に失敗しました。Firestoreのルール設定などを確認してください。");
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+toggleBoardMoreBtn.addEventListener("click", () => {
+  const isExpanded = boardList.classList.toggle("expanded");
+  toggleBoardMoreBtn.textContent = isExpanded ? "閉じる ^" : "もっと見る >";
 });
