@@ -90,6 +90,7 @@
         <header class="home-header">
           <div class="user-status">
             <span id="home-nickname">ゲストさん</span>
+            <button id="open-register" type="button">アカウント登録</button>
             <span id="online-count">参加者 -- 人</span>
           </div>
 
@@ -186,6 +187,89 @@
 
         <p class="home-message">まずは気になる子を選んでみてね！</p>
       </main>
+    </section>
+
+    <!-- アカウント登録ポップアップ -->
+    <div id="register-modal" class="modal" hidden>
+      <div
+        class="modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="register-title"
+      >
+        <button
+          id="close-register"
+          class="modal-close"
+          type="button"
+          aria-label="閉じる"
+        >
+          ×
+        </button>
+
+        <h2 id="register-title">地底住民登録</h2>
+        <p>登録すると、スマホでも続きから遊べるよ！</p>
+
+        <form id="register-form">
+          <div id="register-nickname-area">
+            <label for="register-nickname">ニックネーム</label>
+            <input
+              id="register-nickname"
+              type="text"
+              maxlength="20"
+              placeholder="地底人に呼んでもらう名前"
+              autocomplete="nickname"
+            />
+          </div>
+          <div id="register-email-area">
+            <label for="register-email">メールアドレス</label>
+            <input
+              id="register-email"
+              type="email"
+              autocomplete="email"
+            required
+          />
+
+          <label for="register-password">パスワード</label>
+          <input
+            id="register-password"
+            type="password"
+            autocomplete="new-password"
+            minlength="6"
+            required
+          />
+
+          <button type="submit" id="register-submit">アカウント登録する</button>
+        </form>
+
+        <p id="register-message" role="status"></p>
+      </div>
+    </div>
+
+    <!-- ログイン画面 -->
+    <section id="signin-screen" class="screen signin-screen" hidden>
+      <div class="signin-content">
+        <h2>おかえりなさい！</h2>
+        <p>地底生活の続きをはじめよう！</p>
+
+        <form id="signin-form">
+          <label for="signin-email">メールアドレス</label>
+          <input id="signin-email" type="email" autocomplete="email" required />
+
+          <label for="signin-password">パスワード</label>
+          <input
+            id="signin-password"
+            type="password"
+            autocomplete="current-password"
+            required
+          />
+
+          <button id="signin-submit" type="submit">続きから遊ぶ！</button>
+        </form>
+
+        <p id="signin-message" role="status"></p>
+
+        <button id="signin-back" type="button">もどる</button>
+      </div>
     </section>
 
     <script type="module" src="./js/main.js"></script>
