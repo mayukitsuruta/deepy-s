@@ -1,0 +1,172 @@
+/* 非表示の画面は表示しない */
+.screen[hidden] {
+  display: none !important;
+}
+
+/* 画面共通 */
+.screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  box-sizing: border-box;
+}
+
+/* ① ファーストビュー */
+.first-view {
+  background-image: url("../images/firstview.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 50px 20px;
+  text-align: center;
+}
+
+.first-view h1,
+.first-view p {
+  color: white;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* ② ストーリー画面 */
+.story-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  padding: 30px;
+}
+
+.story-content {
+  width: min(100%, 960px);
+  text-align: center;
+}
+
+#story-text {
+  min-height: 200px;
+  font-size: clamp(20px, 2.4vw, 30px);
+  line-height: 1.8;
+  white-space: pre-line;
+  text-align: left;
+}
+
+.story-dots {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin: 45px 0;
+}
+
+.dot {
+  width: 22px;
+  height: 22px;
+  border: 3px solid #222;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.dot.active {
+  background: #222;
+}
+
+#start-story,
+#next-story,
+#go-underground {
+  border: none;
+  border-radius: 50px;
+  background: #ff9138;
+  color: #111;
+  padding: 12px 30px;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+/* ③ 参加方法選択画面 */
+.login-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 30px;
+  text-align: center;
+}
+
+.login-screen button {
+  padding: 14px 30px;
+  border-radius: 30px;
+  border: 2px solid #222;
+  background: white;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.login-screen button:hover {
+  background: #ff9138;
+}
+
+@media (max-width: 600px) {
+  .first-view {
+    background-position: center;
+  }
+
+  .story-dots {
+    gap: 25px;
+  }
+
+  #story-text {
+    min-height: 260px;
+  }
+}
+
+/* ゲスト参加画面 */
+.guest-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  background: #fffaf2;
+}
+
+.guest-content {
+  width: min(100%, 450px);
+  text-align: center;
+}
+
+.guest-content h2 {
+  font-size: 32px;
+}
+
+#guest-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 30px;
+}
+
+#guest-name {
+  padding: 15px;
+  border: 2px solid #333;
+  border-radius: 12px;
+  font-size: 18px;
+}
+
+#guest-form button {
+  padding: 15px;
+  border: none;
+  border-radius: 30px;
+  background: #ff9138;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+#back-to-login {
+  margin-top: 25px;
+  border: none;
+  background: transparent;
+  text-decoration: underline;
+  cursor: pointer;
+}

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DEEPY’s - 地底人との暮らし</title>
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body>
+    <!-- ① ファーストビュー -->
+    <section id="first-view" class="screen first-view">
+      <h1>DEEPY’s</h1>
+      <p>地底人との暮らし</p>
+      <button id="start-story">物語をはじめる</button>
+    </section>
+
+    <!-- ② ストーリー導入 -->
+    <section id="story-screen" class="screen story-screen" hidden>
+      <div class="story-content">
+        <p id="story-text"></p>
+
+        <div class="story-dots">
+          <span class="dot active"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+        </div>
+
+        <button id="next-story">click！</button>
+      </div>
+    </section>
+
+    <!-- ③ ログイン・ゲスト参加 -->
+    <section id="login-screen" class="screen login-screen" hidden>
+      <h2>地底の世界へようこそ！</h2>
+      <p>あなたはどうやって地底生活を始める？</p>
+
+      <button id="guest-button">ゲストとして遊ぶ</button>
+      <button id="register-button">新規登録</button>
+      <button id="login-button">続きからログイン</button>
+    </section>
+
+    <!-- ④ ゲストのニックネーム入力画面 -->
+    <section id="guest-screen" class="screen guest-screen" hidden>
+      <div class="guest-content">
+        <h2>あなたのお名前は？</h2>
+        <p>地底人たちに呼んでもらう名前を教えてね！</p>
+
+        <form id="guest-form">
+          <input
+            type="text"
+            id="guest-name"
+            placeholder="ニックネームを入力"
+            maxlength="20"
+            required
+          />
+
+          <button type="submit">地底生活をはじめる！</button>
+        </form>
+
+        <button id="back-to-login" type="button">もどる</button>
+      </div>
+    </section>
+
+    <script type="module" src="./js/main.js"></script>
+  </body>
+</html>
