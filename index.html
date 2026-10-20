@@ -61,6 +61,133 @@
       </div>
     </section>
 
+    <!-- ⑤ 地底ホーム画面 -->
+    <section id="home-screen" class="screen home-screen" hidden>
+      <!-- 左側メニュー -->
+      <aside class="home-sidebar">
+        <div class="home-logo">
+          <h1>DEEPY's</h1>
+          <p>〜地底人との暮らし〜</p>
+        </div>
+
+        <nav class="home-nav">
+          <button class="nav-item active">⌂ ホーム</button>
+          <button class="nav-item">交流スペース</button>
+          <button class="nav-item">地底人診断</button>
+        </nav>
+
+        <div class="deepy-guide">
+          <div class="deepy-placeholder">Deepy</div>
+          <p>ようこそ<br />ディーピーズの世界へ！</p>
+        </div>
+
+        <button id="logout-button" class="logout-button">体験を終了する</button>
+      </aside>
+
+      <!-- メインエリア -->
+      <main class="home-main">
+        <!-- 右上のユーザー情報 -->
+        <header class="home-header">
+          <div class="user-status">
+            <span id="home-nickname">ゲストさん</span>
+            <span id="online-count">参加者 -- 人</span>
+          </div>
+
+          <div class="friendship-status">
+            ★ 友情ポイント
+            <span id="friendship-value">0</span>%
+          </div>
+        </header>
+
+        <!-- ホームの説明 -->
+        <div class="home-intro">
+          <div class="intro-title">
+            <h2>
+              5人の地底人たちと出会って、<br />
+              それぞれの暮らしをのぞいてみよう。
+            </h2>
+          </div>
+
+          <div class="intro-description">
+            <p>
+              地底のどこかで暮らす5人の地底人。<br />
+              それぞれの仕事や好きなもの、住んでいる地層がちがうよ。<br />
+              気になる子を選んで、ストーリーを見てみよう！
+            </p>
+          </div>
+        </div>
+
+        <!-- キャラクターカード -->
+        <div class="character-list">
+          <article class="character-card koizumi">
+            <div class="character-image-placeholder">KOIZUMIのイラスト</div>
+            <div class="character-info">
+              <h3>KOIZUMI</h3>
+              <p class="character-subtitle">〜 土を掘る人 〜</p>
+              <p class="character-description">
+                地底で家を作るために、土を除去する仕事をしているよ。
+                力持ちでまっすぐな性格。
+              </p>
+              <p class="character-detail">職業：土壌整備者</p>
+              <p class="character-detail">住んでいる地層：上層</p>
+              <button class="character-button" data-character="koizumi">
+                この子の暮らしをのぞく →
+              </button>
+            </div>
+          </article>
+
+          <article class="character-card kotone">
+            <div class="character-image-placeholder">KOTONEのイラスト</div>
+            <div class="character-info">
+              <h3>KOTONE</h3>
+              <p class="character-subtitle">〜 音を集める人 〜</p>
+              <p class="character-description">
+                地底に響くいろんな音を集めているよ。 歌うことや音楽が大好き。
+              </p>
+              <p class="character-detail">職業：音の採集家</p>
+              <p class="character-detail">住んでいる地層：中層</p>
+              <button class="character-button" data-character="kotone">
+                この子の暮らしをのぞく →
+              </button>
+            </div>
+          </article>
+
+          <article class="character-card nasupy">
+            <div class="character-image-placeholder">NASUPYのイラスト</div>
+            <div class="character-info">
+              <h3>NASUPY</h3>
+              <p class="character-subtitle">〜 植物のお医者さん 〜</p>
+              <p class="character-description">
+                地底の植物たちの健康を守るお医者さん。 植物と話せるよ。
+              </p>
+              <p class="character-detail">職業：植物の医者</p>
+              <p class="character-detail">住んでいる地層：深層</p>
+              <button class="character-button" data-character="nasupy">
+                この子の暮らしをのぞく →
+              </button>
+            </div>
+          </article>
+
+          <article class="character-card hitopy locked">
+            <div class="character-image-placeholder">？</div>
+            <div class="character-info">
+              <h3>HITOPY</h3>
+              <p class="character-subtitle">〜 建築家 〜</p>
+              <p class="character-description">
+                地底に素敵な家を建てるのが夢！ みんなの暮らしをつなぐ建築家。
+              </p>
+              <p class="character-detail">職業：建築家</p>
+              <p class="character-detail">住んでいる地層：？？？</p>
+              <button class="character-button" disabled>？？？</button>
+              <small>🔒 3つのルートを達成すると解放されます</small>
+            </div>
+          </article>
+        </div>
+
+        <p class="home-message">まずは気になる子を選んでみてね！</p>
+      </main>
+    </section>
+
     <script type="module" src="./js/main.js"></script>
   </body>
 </html>

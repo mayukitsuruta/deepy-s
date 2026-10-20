@@ -29,6 +29,9 @@ const backButton = document.getElementById("back-to-login");
 const guestForm = document.getElementById("guest-form");
 const guestName = document.getElementById("guest-name");
 
+const homeScreen = document.getElementById("home-screen");
+const homeNickname = document.getElementById("home-nickname");
+
 // 導入ストーリー（仮の文章）
 const stories = [
   `実は、地底人はずっと昔から地球の地下で暮らしていた。
@@ -52,6 +55,7 @@ function showScreen(screen) {
   storyScreen.hidden = true;
   loginScreen.hidden = true;
   guestScreen.hidden = true;
+  homeScreen.hidden = true;
 
   screen.hidden = false;
 }
@@ -131,6 +135,9 @@ guestForm.addEventListener("submit", async (event) => {
     }
 
     alert("地底生活へようこそ、" + nickname + "！");
+
+    homeNickname.textContent = nickname;
+    showScreen(homeScreen);
 
     // 次はここから地底のホーム画面へ進める予定
   } catch (error) {

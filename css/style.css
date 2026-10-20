@@ -170,3 +170,282 @@
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* ===== 地底ホーム画面 ===== */
+
+.home-screen {
+  display: flex;
+  background: #493124;
+  color: #fff3e4;
+  font-family: sans-serif;
+}
+
+/* 左サイドバー */
+.home-sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  min-height: 100vh;
+  background: #352218;
+  padding: 25px 18px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 35px;
+}
+
+.home-logo h1 {
+  font-size: 34px;
+  letter-spacing: 3px;
+  margin: 0;
+}
+
+.home-logo p {
+  font-size: 13px;
+}
+
+.home-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nav-item {
+  border: none;
+  border-radius: 30px;
+  padding: 15px;
+  text-align: left;
+  color: #fff3e4;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.nav-item.active,
+.nav-item:hover {
+  background: #91613c;
+}
+
+.deepy-guide {
+  text-align: center;
+  margin-top: auto;
+}
+
+.deepy-placeholder {
+  width: 100px;
+  height: 100px;
+  border: 2px dashed #c69a75;
+  border-radius: 50%;
+  margin: 0 auto 15px;
+  display: grid;
+  place-items: center;
+}
+
+.logout-button {
+  padding: 12px;
+  border-radius: 30px;
+  background: transparent;
+  border: 1px solid #c69a75;
+  color: #fff3e4;
+  cursor: pointer;
+}
+
+/* メイン */
+.home-main {
+  flex: 1;
+  min-width: 0;
+  padding: 25px 30px 50px;
+  box-sizing: border-box;
+
+  /* 後から背景画像を設定 */
+  background-color: #5c3d2b;
+}
+
+.home-header {
+  display: flex;
+  justify-content: flex-end;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 35px;
+}
+
+.user-status,
+.friendship-status {
+  background: #f6dfc3;
+  color: #513524;
+  border-radius: 30px;
+  padding: 12px 20px;
+  font-size: 14px;
+}
+
+.user-status {
+  display: flex;
+  gap: 20px;
+}
+
+.home-intro {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 35px;
+}
+
+.intro-title,
+.intro-description {
+  flex: 1;
+  background: #f4d5b1;
+  color: #4c3020;
+  border-radius: 45% 35% 40% 30% / 20% 30% 25% 35%;
+  padding: 25px;
+}
+
+.intro-title h2 {
+  font-size: 23px;
+  line-height: 1.7;
+}
+
+.intro-description p {
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+/* キャラクターカード */
+.character-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.character-card {
+  border-radius: 100px 100px 30px 30px;
+  padding: 12px;
+  color: #4b3028;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.koizumi {
+  background: #e9e9b2;
+}
+
+.kotone {
+  background: #ffd4d0;
+}
+
+.nasupy {
+  background: #e5d4f5;
+}
+
+.hitopy {
+  background: #77706c;
+  color: #fff;
+}
+
+.character-image-placeholder {
+  height: 200px;
+  border: 2px dashed currentColor;
+  border-radius: 100px 100px 20px 20px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.character-info {
+  padding: 15px 8px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.character-info h3 {
+  font-size: 23px;
+  text-align: center;
+  letter-spacing: 2px;
+  margin: 0;
+}
+
+.character-subtitle {
+  text-align: center;
+  font-size: 13px;
+}
+
+.character-description {
+  font-size: 13px;
+  line-height: 1.7;
+  min-height: 90px;
+}
+
+.character-detail {
+  font-size: 12px;
+}
+
+.character-button {
+  margin-top: auto;
+  border: 1px solid currentColor;
+  border-radius: 30px;
+  padding: 10px 5px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.character-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.character-button:disabled {
+  cursor: not-allowed;
+}
+
+.locked {
+  filter: grayscale(0.6);
+}
+
+.locked small {
+  font-size: 10px;
+  margin-top: 12px;
+  text-align: center;
+}
+
+.home-message {
+  margin-top: 30px;
+  text-align: center;
+  font-size: 18px;
+}
+
+/* タブレット */
+@media (max-width: 1100px) {
+  .character-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* スマホ */
+@media (max-width: 650px) {
+  .home-screen {
+    flex-direction: column;
+  }
+
+  .home-sidebar {
+    width: 100%;
+    min-height: auto;
+  }
+
+  .home-main {
+    padding: 20px 15px;
+  }
+
+  .home-intro {
+    flex-direction: column;
+  }
+
+  .character-list {
+    grid-template-columns: 1fr;
+  }
+
+  .character-image-placeholder {
+    height: 250px;
+  }
+}
