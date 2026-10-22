@@ -130,28 +130,22 @@ nextButton.addEventListener("click", () => {
 showScreen(firstView);
 
 // 「ゲストとして遊ぶ」をクリック（1ブラウザ＝1ゲスト：既存データがあればそのまま復帰）
+let pendingGuestDocData = null;
+
 guestButton.addEventListener("click", async () => {
   guestButton.disabled = true;
   try {
-    const userCredential = await signInAnonymously(auth);
-    const user = userCredential.user;
+    const user = auth.currentUser || (await signInAnonymously(auth)).user;
     currentUserId = user.uid;
 
     const userRef = doc(db, "users", user.uid);
     const userSnapshot = await getDoc(userRef);
+    pendingGuestDocData = userSnapshot.exists() ? userSnapshot.data() : null;
 
-    if (userSnapshot.exists() && userSnapshot.data().nickname) {
-      const existingData = userSnapshot.data();
-      await setDoc(
-        userRef,
-        {
-          isOnline: true,
-          lastActiveMs: Date.now(),
-        },
-        { merge: true },
-      );
+    if (pendingGuestDocData && pendingGuestDocData.nickname) {
       openRegister.hidden = !user.isAnonymous;
-      enterHomeWithUser(user.uid, existingData);
+      // オンライン状態の更新は enterHomeWithUser -> startOnlinePresence 内で非同期に行われるため待ち時間なしで入場
+      enterHomeWithUser(user.uid, pendingGuestDocData);
     } else {
       showScreen(guestScreen);
     }
@@ -183,17 +177,14 @@ guestForm.addEventListener("submit", async (event) => {
   submitButton.disabled = true;
 
   try {
-    // Firebaseで匿名ログイン
-    const userCredential = await signInAnonymously(auth);
-    const user = userCredential.user;
-
-    // ユーザーの保存先
+    // すでに匿名ログイン済みならそのまま再利用（通信を省略）
+    const user = auth.currentUser || (await signInAnonymously(auth)).user;
     const userRef = doc(db, "users", user.uid);
-    const userSnapshot = await getDoc(userRef);
 
     let userData;
-    // 初めてのユーザーだけ登録
-    if (!userSnapshot.exists()) {
+    let savePromise;
+    // 直前の確認結果を再利用して2回目の getDoc 通信を省略
+    if (!pendingGuestDocData) {
       userData = {
         nickname: nickname,
         avatar: "pink",
@@ -205,15 +196,15 @@ guestForm.addEventListener("submit", async (event) => {
         lastActiveMs: Date.now(),
         createdAt: serverTimestamp(),
       };
-      await setDoc(userRef, userData);
+      savePromise = setDoc(userRef, userData);
     } else {
       userData = {
-        ...userSnapshot.data(),
+        ...pendingGuestDocData,
         nickname: nickname,
         isOnline: true,
         lastActiveMs: Date.now(),
       };
-      await setDoc(
+      savePromise = setDoc(
         userRef,
         {
           nickname: nickname,
@@ -224,12 +215,12 @@ guestForm.addEventListener("submit", async (event) => {
       );
     }
 
-    alert("地底生活へようこそ、" + nickname + "！");
-
+    pendingGuestDocData = userData;
     openRegister.hidden = !user.isAnonymous;
     enterHomeWithUser(user.uid, userData);
+    alert("地底生活へようこそ、" + nickname + "！");
 
-    // 次はここから地底のホーム画面へ進める予定
+    await savePromise;
   } catch (error) {
     console.error("ゲスト登録エラー:", error);
     alert("登録に失敗しました。コンソールを確認してね。");
@@ -247,10 +238,12 @@ logoutButton.addEventListener("click", async () => {
   if (!confirmed) return;
 
   try {
+    stopCamera();
     await sendPresenceHeartbeat(false);
     // Firebaseからログアウト
     await signOut(auth);
     currentUserId = null;
+    pendingGuestDocData = null;
 
     // 入力欄を空にする
     guestName.value = "";
@@ -462,6 +455,7 @@ signinForm.addEventListener("submit", async (event) => {
 const navItems = document.querySelectorAll(".home-nav .nav-item");
 const homeViewContent = document.getElementById("home-view-content");
 const spaceViewContent = document.getElementById("space-view-content");
+const cameraViewContent = document.getElementById("camera-view-content");
 const topbarTitleArea = document.getElementById("topbar-title-area");
 const topbarAvatar = document.getElementById("topbar-avatar");
 const onlineCountEl = document.getElementById("online-count");
@@ -525,6 +519,8 @@ const ONLINE_TIMEOUT_MS = 90 * 1000;
 
 // ホーム画面内のサブビュー切り替え（ホーム / 交流スペース）
 function switchUndergroundView(viewName) {
+  homeScreen.classList.toggle("camera-mode", viewName === "camera");
+  homeScreen.classList.toggle("space-mode", viewName === "space");
   navItems.forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.view === viewName);
   });
@@ -532,13 +528,22 @@ function switchUndergroundView(viewName) {
   if (viewName === "space") {
     homeViewContent.hidden = true;
     spaceViewContent.hidden = false;
+    cameraViewContent.hidden = true;
     if (topbarTitleArea) {
-      topbarTitleArea.textContent =
-        "地底でくらす、それぞれの家を訪れてみよう。";
+      topbarTitleArea.textContent = "";
     }
+    requestAnimationFrame(() => {
+      updateMapScrollbar();
+    });
+  } else if (viewName === "camera") {
+    homeViewContent.hidden = true;
+    spaceViewContent.hidden = true;
+    cameraViewContent.hidden = false;
+    if (topbarTitleArea) topbarTitleArea.textContent = "地底の思い出を写真に残そう。";
   } else {
     homeViewContent.hidden = false;
     spaceViewContent.hidden = true;
+    cameraViewContent.hidden = true;
     if (topbarTitleArea) {
       topbarTitleArea.textContent = "";
     }
@@ -548,12 +553,194 @@ function switchUndergroundView(viewName) {
 navItems.forEach((btn) => {
   btn.addEventListener("click", () => {
     const view = btn.dataset.view;
-    if (view === "home" || view === "space") {
+    if (view === "home" || view === "space" || view === "camera") {
       switchUndergroundView(view);
+      if (view !== "camera") stopCamera();
     } else {
       alert("この画面は現在準備中です！");
     }
   });
+});
+
+// フレーム付きカメラ（画像はこの画面内でのみ扱い、Firebaseには保存しない）
+const cameraVideo = document.getElementById("camera-video");
+const cameraResult = document.getElementById("camera-result");
+const cameraMessage = document.getElementById("camera-message");
+const startCameraButton = document.getElementById("start-camera");
+const takePhotoButton = document.getElementById("take-photo");
+const retakePhotoButton = document.getElementById("retake-photo");
+const downloadPhotoLink = document.getElementById("download-photo");
+const photoRewardDialog = document.getElementById("photo-reward-dialog");
+const closePhotoRewardButton = document.getElementById("close-photo-reward");
+const frameChoices = document.querySelectorAll(".frame-choice");
+const frameImages = document.querySelectorAll("[data-frame-image]");
+let cameraStream = null;
+let selectedFrame = "frame-1";
+
+function stopCamera() {
+  cameraStream?.getTracks().forEach((track) => track.stop());
+  cameraStream = null;
+  if (cameraVideo) cameraVideo.srcObject = null;
+  if (cameraResult) cameraResult.hidden = true;
+  if (takePhotoButton) takePhotoButton.disabled = true;
+  if (retakePhotoButton) retakePhotoButton.hidden = true;
+  if (downloadPhotoLink) downloadPhotoLink.hidden = true;
+  if (photoRewardDialog) photoRewardDialog.hidden = true;
+  if (cameraMessage) cameraMessage.hidden = true;
+}
+
+function setCameraMessage(message, visible = true) {
+  cameraMessage.textContent = message;
+  cameraMessage.hidden = !visible;
+}
+
+function closePhotoReward() {
+  photoRewardDialog.hidden = true;
+  downloadPhotoLink.focus();
+}
+
+closePhotoRewardButton?.addEventListener("click", closePhotoReward);
+photoRewardDialog?.addEventListener("click", (event) => {
+  if (event.target === photoRewardDialog) closePhotoReward();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !photoRewardDialog.hidden) closePhotoReward();
+});
+
+startCameraButton?.addEventListener("click", async () => {
+  if (window.location.protocol === "file:" || !window.isSecureContext) {
+    setCameraMessage("カメラを使うにはlocalhostまたはHTTPSでページを開いてね。index.htmlを直接開いた場合は利用できません。");
+    return;
+  }
+
+  if (!navigator.mediaDevices?.getUserMedia) {
+    setCameraMessage("このブラウザーではカメラを利用できません。対応ブラウザーでページを開いてね。");
+    return;
+  }
+
+  startCameraButton.disabled = true;
+  setCameraMessage("カメラを起動しています…");
+  try {
+    stopCamera();
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: { facingMode: "user" },
+    });
+    cameraVideo.srcObject = cameraStream;
+    await cameraVideo.play();
+    cameraResult.hidden = true;
+    takePhotoButton.disabled = false;
+    retakePhotoButton.hidden = true;
+    downloadPhotoLink.hidden = true;
+    photoRewardDialog.hidden = true;
+    setCameraMessage("", false);
+  } catch (error) {
+    console.error("カメラを起動できませんでした:", error);
+    if (error.name === "NotAllowedError" || error.name === "SecurityError") {
+      setCameraMessage("カメラの許可が必要です。アドレスバー横、またはブラウザー設定でこのサイトのカメラを許可してね。");
+    } else if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
+      setCameraMessage("カメラが見つかりません。カメラが接続されているか確認してね。");
+    } else if (error.name === "NotReadableError" || error.name === "TrackStartError") {
+      setCameraMessage("カメラを別のアプリが使用中のようです。他のアプリを閉じてからもう一度試してね。");
+    } else {
+      setCameraMessage("カメラを起動できませんでした。ブラウザーとOSのカメラ許可を確認してね。");
+    }
+  } finally {
+    startCameraButton.disabled = false;
+  }
+});
+
+frameChoices.forEach((choice) => {
+  choice.addEventListener("click", () => {
+    selectedFrame = choice.dataset.frame;
+    frameChoices.forEach((button) => {
+      const isSelected = button === choice;
+      button.classList.toggle("active", isSelected);
+      button.setAttribute("aria-pressed", String(isSelected));
+    });
+    frameImages.forEach((image) => {
+      image.hidden = image.dataset.frameImage !== selectedFrame;
+    });
+    // 切り替えたフレームが撮影結果にも反映されるよう、再撮影を案内する。
+    if (!cameraResult.hidden) {
+      cameraResult.hidden = true;
+      cameraVideo.hidden = false;
+      takePhotoButton.disabled = false;
+      retakePhotoButton.hidden = true;
+      downloadPhotoLink.hidden = true;
+      photoRewardDialog.hidden = true;
+      setCameraMessage("フレームを切り替えました。もう一度撮ってね！");
+    }
+  });
+});
+
+takePhotoButton?.addEventListener("click", () => {
+  if (!cameraVideo.videoWidth || !cameraVideo.videoHeight) return;
+  const canvas = document.createElement("canvas");
+  canvas.width = 960;
+  canvas.height = 1280;
+  const context = canvas.getContext("2d");
+
+  // プレビューと同じく cover で中央を切り抜いて撮影する。
+  const sourceRatio = cameraVideo.videoWidth / cameraVideo.videoHeight;
+  const targetRatio = canvas.width / canvas.height;
+  let sx = 0;
+  let sy = 0;
+  let sw = cameraVideo.videoWidth;
+  let sh = cameraVideo.videoHeight;
+  if (sourceRatio > targetRatio) {
+    sw = cameraVideo.videoHeight * targetRatio;
+    sx = (cameraVideo.videoWidth - sw) / 2;
+  } else {
+    sh = cameraVideo.videoWidth / targetRatio;
+    sy = (cameraVideo.videoHeight - sh) / 2;
+  }
+  context.drawImage(cameraVideo, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+
+  const selectedImage = document.querySelector(`[data-frame-image="${selectedFrame}"]`);
+  if (selectedImage?.complete && selectedImage.naturalWidth > 0) {
+    const frameRatio = selectedImage.naturalWidth / selectedImage.naturalHeight;
+    let frameSx = 0;
+    let frameSy = 0;
+    let frameSw = selectedImage.naturalWidth;
+    let frameSh = selectedImage.naturalHeight;
+    if (frameRatio > targetRatio) {
+      frameSw = selectedImage.naturalHeight * targetRatio;
+      frameSx = (selectedImage.naturalWidth - frameSw) / 2;
+    } else {
+      frameSh = selectedImage.naturalWidth / targetRatio;
+      frameSy = (selectedImage.naturalHeight - frameSh) / 2;
+    }
+    context.drawImage(
+      selectedImage,
+      frameSx,
+      frameSy,
+      frameSw,
+      frameSh,
+      0,
+      0,
+      canvas.width,
+      canvas.height,
+    );
+  }
+  cameraResult.src = canvas.toDataURL("image/png");
+  downloadPhotoLink.href = cameraResult.src;
+  cameraResult.hidden = false;
+  takePhotoButton.disabled = true;
+  retakePhotoButton.hidden = false;
+  downloadPhotoLink.hidden = false;
+  photoRewardDialog.hidden = false;
+  closePhotoRewardButton.focus();
+  setCameraMessage("", false);
+});
+
+retakePhotoButton?.addEventListener("click", () => {
+  cameraResult.hidden = true;
+  takePhotoButton.disabled = !cameraStream;
+  retakePhotoButton.hidden = true;
+  downloadPhotoLink.hidden = true;
+  photoRewardDialog.hidden = true;
+  setCameraMessage("", false);
 });
 
 // ユーザー情報を右上バー・私の家・プロフィールに反映
@@ -885,3 +1072,75 @@ toggleBoardMoreBtn.addEventListener("click", () => {
   const isExpanded = boardList.classList.toggle("expanded");
   toggleBoardMoreBtn.textContent = isExpanded ? "閉じる ^" : "もっと見る >";
 });
+
+// =========================================
+// ④ 交流スペース：地層マップエリア（上下ドラッグ＆スクロール連動）
+// =========================================
+const spaceMapViewport = document.getElementById("space-map-viewport");
+const currentLayerIndicator = document.getElementById("current-layer-indicator");
+
+function updateMapScrollbar() {
+  if (!spaceMapViewport || !currentLayerIndicator) return;
+
+  const viewportHeight = spaceMapViewport.clientHeight;
+  const scrollHeight = spaceMapViewport.scrollHeight;
+  const scrollTop = spaceMapViewport.scrollTop;
+  const maxScroll = Math.max(1, scrollHeight - viewportHeight);
+
+  // 現在表示中の地層と深度を計算してバッジに表示
+  const centerPos = scrollTop + viewportHeight * 0.45;
+  const depthMeters = Math.min(
+    300,
+    Math.max(0, Math.round((scrollTop / maxScroll) * 300)),
+  );
+  let layerText = "第1層（上層）";
+  if (centerPos >= (scrollHeight * 2) / 3) {
+    layerText = "第3層（深層）";
+  } else if (centerPos >= scrollHeight / 3) {
+    layerText = "第2層（中層）";
+  }
+  currentLayerIndicator.textContent = `${layerText}｜地下 -${depthMeters}m`;
+}
+
+if (spaceMapViewport) {
+  // スクロール時に深度表示を同期
+  spaceMapViewport.addEventListener("scroll", updateMapScrollbar, {
+    passive: true,
+  });
+  window.addEventListener("resize", updateMapScrollbar);
+
+  // マップ本体の「押したまま上下にドラッグ（Grab Scroll）」
+  let isMapDragging = false;
+  let mapStartY = 0;
+  let mapStartScrollTop = 0;
+
+  spaceMapViewport.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0 && event.pointerType === "mouse") return;
+    isMapDragging = true;
+    mapStartY = event.clientY;
+    mapStartScrollTop = spaceMapViewport.scrollTop;
+    spaceMapViewport.classList.add("is-dragging");
+    spaceMapViewport.setPointerCapture(event.pointerId);
+  });
+
+  spaceMapViewport.addEventListener("pointermove", (event) => {
+    if (!isMapDragging) return;
+    const deltaY = event.clientY - mapStartY;
+    spaceMapViewport.scrollTop = mapStartScrollTop - deltaY;
+  });
+
+  const stopMapDragging = (event) => {
+    if (!isMapDragging) return;
+    isMapDragging = false;
+    spaceMapViewport.classList.remove("is-dragging");
+    if (
+      event?.pointerId !== undefined &&
+      spaceMapViewport.hasPointerCapture?.(event.pointerId)
+    ) {
+      spaceMapViewport.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  spaceMapViewport.addEventListener("pointerup", stopMapDragging);
+  spaceMapViewport.addEventListener("pointercancel", stopMapDragging);
+}

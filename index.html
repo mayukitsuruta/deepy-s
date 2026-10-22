@@ -1,550 +1,672 @@
 <!doctype html>
 <html lang="ja">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DEEPY’s - 地底人との暮らし</title>
-    <link rel="stylesheet" href="./css/style.css" />
-  </head>
-  <body>
-    <!-- ① ファーストビュー -->
-    <section id="first-view" class="screen first-view">
-      <h1>DEEPY’s</h1>
-      <p>地底人との暮らし</p>
-      <button id="start-story">物語をはじめる</button>
-    </section>
 
-    <!-- ② ストーリー導入 -->
-    <section id="story-screen" class="screen story-screen" hidden>
-      <div class="story-content">
-        <p id="story-text"></p>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DEEPY’s - 地底人との暮らし</title>
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
 
-        <div class="story-dots">
-          <span class="dot active"></span>
-          <span class="dot"></span>
-          <span class="dot"></span>
-        </div>
+<body>
+  <!-- ① ファーストビュー -->
+  <section id="first-view" class="screen first-view">
+    <h1>DEEPY’s</h1>
+    <p>地底人との暮らし</p>
+    <button id="start-story">物語をはじめる</button>
+  </section>
 
-        <button id="next-story">click！</button>
+  <!-- ② ストーリー導入 -->
+  <section id="story-screen" class="screen story-screen" hidden>
+    <div class="story-content">
+      <p id="story-text"></p>
+
+      <div class="story-dots">
+        <span class="dot active"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
       </div>
-    </section>
 
-    <!-- ③ ログイン・ゲスト参加 -->
-    <section id="login-screen" class="screen login-screen" hidden>
-      <h2>地底の世界へようこそ！</h2>
-      <p>あなたはどうやって地底生活を始める？</p>
+      <button id="next-story">click！</button>
+    </div>
+  </section>
 
-      <button id="guest-button">ゲストとして遊ぶ</button>
-      <button id="register-button">新規登録</button>
-      <button id="login-button">続きからログイン</button>
-    </section>
+  <!-- ③ ログイン・ゲスト参加 -->
+  <section id="login-screen" class="screen login-screen" hidden>
+    <h2>地底の世界へようこそ！</h2>
+    <p>あなたはどうやって地底生活を始める？</p>
 
-    <!-- ④ ゲストのニックネーム入力画面 -->
-    <section id="guest-screen" class="screen guest-screen" hidden>
-      <div class="guest-content">
-        <h2>あなたのお名前は？</h2>
-        <p>地底人たちに呼んでもらう名前を教えてね！</p>
+    <button id="guest-button">ゲストとして遊ぶ</button>
+    <button id="register-button">新規登録</button>
+    <button id="login-button">続きからログイン</button>
+  </section>
 
-        <form id="guest-form">
-          <input
-            type="text"
-            id="guest-name"
-            placeholder="ニックネームを入力"
-            maxlength="20"
-            required
-          />
+  <!-- ④ ゲストのニックネーム入力画面 -->
+  <section id="guest-screen" class="screen guest-screen" hidden>
+    <div class="guest-content">
+      <h2>あなたのお名前は？</h2>
+      <p>地底人たちに呼んでもらう名前を教えてね！</p>
 
-          <button type="submit">地底生活をはじめる！</button>
-        </form>
+      <form id="guest-form">
+        <input type="text" id="guest-name" placeholder="ニックネームを入力" maxlength="20" required />
 
-        <button id="back-to-login" type="button">もどる</button>
-      </div>
-    </section>
+        <button type="submit">地底生活をはじめる！</button>
+      </form>
 
-    <!-- ⑤ 地底ホーム画面 -->
-    <section id="home-screen" class="screen home-screen" hidden>
-      <!-- 左側メニュー -->
-      <aside class="home-sidebar">
-        <div class="sidebar-logo">
-          <div class="logo-main">
-            <span class="logo-icon" aria-hidden="true">
-              <svg viewBox="0 0 40 40" width="34" height="34" fill="currentColor">
-                <circle cx="14" cy="7" r="2.5" />
-                <circle cx="26" cy="7" r="2.5" />
-                <path d="M14 9v5M26 9v5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
-                <rect x="8" y="12" width="24" height="20" rx="10" />
-                <circle cx="15" cy="21" r="2" fill="#3b2518" />
-                <circle cx="25" cy="21" r="2" fill="#3b2518" />
-                <path d="M18 25c1.2 1.2 2.8 1.2 4 0" stroke="#3b2518" stroke-width="2" fill="none" stroke-linecap="round" />
-              </svg>
-            </span>
-            <span class="logo-text">DEEPY’s</span>
-          </div>
-          <p class="logo-sub">〜地底人との暮らし〜</p>
-        </div>
+      <button id="back-to-login" type="button">もどる</button>
+    </div>
+  </section>
 
-        <nav class="home-nav">
-          <button class="nav-item active" data-view="home" type="button">
-            <span class="nav-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                <path d="M12 3.2 3 10.5V20a1 1 0 0 0 1 1h5.5v-6h5v6H20a1 1 0 0 0 1-1v-9.5L12 3.2Z" />
-              </svg>
-            </span>
-            <span>ホーム</span>
-          </button>
-          <button class="nav-item" data-view="space" type="button">
-            <span class="nav-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                <circle cx="9" cy="8" r="3.5" />
-                <path d="M3 19c0-3.1 2.7-5.5 6-5.5s6 2.4 6 5.5v1H3v-1Z" />
-                <circle cx="17" cy="9" r="2.8" />
-                <path d="M15.5 14.2c2.8.3 5 2.3 5 4.8v1h-4v-1c0-1.9-.4-3.5-1-4.8Z" />
-              </svg>
-            </span>
-            <span>交流スペース</span>
-          </button>
-          <button class="nav-item" data-view="diagnosis" type="button">
-            <span class="nav-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
-                <circle cx="10.5" cy="10.5" r="6.5" />
-                <path d="m15.5 15.5 5 5" />
-              </svg>
-            </span>
-            <span>地底人診断</span>
-          </button>
-          <button class="nav-item" data-view="notice" type="button">
-            <span class="nav-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                <path d="M12 3a6 6 0 0 0-6 6v4.2l-1.6 2.4A1 1 0 0 0 5.2 17h13.6a1 1 0 0 0 .8-1.4L18 13.2V9a6 6 0 0 0-6-6Zm0 18a2.5 2.5 0 0 0 2.4-2h-4.8a2.5 2.5 0 0 0 2.4 2Z" />
-              </svg>
-            </span>
-            <span>お知らせ</span>
-          </button>
-        </nav>
-
-        <div class="sidebar-footer">
-          <div class="mascot-badge" aria-hidden="true">
-            <svg viewBox="0 0 64 48" width="54" height="40" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M26 12c0-4 2.5-6 4-6s2 3 2 6M36 12c0-4 1.5-6 3-6s3 2 3 6" />
-              <path d="M14 34c-2-8 4-20 18-20s20 12 18 20c-1.5 5-8 7-18 7s-16.5-2-18-7Z" />
-              <circle cx="26" cy="27" r="1.5" fill="currentColor" />
-              <circle cx="38" cy="27" r="1.5" fill="currentColor" />
-              <path d="M30 30c1.2 1.2 2.8 1.2 4 0" />
+  <!-- ⑤ 地底ホーム画面 -->
+  <section id="home-screen" class="screen home-screen" hidden>
+    <!-- 左側メニュー -->
+    <aside class="home-sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-main">
+          <span class="logo-icon" aria-hidden="true">
+            <svg viewBox="0 0 40 40" width="34" height="34" fill="currentColor">
+              <circle cx="14" cy="7" r="2.5" />
+              <circle cx="26" cy="7" r="2.5" />
+              <path d="M14 9v5M26 9v5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+              <rect x="8" y="12" width="24" height="20" rx="10" />
+              <circle cx="15" cy="21" r="2" fill="#3b2518" />
+              <circle cx="25" cy="21" r="2" fill="#3b2518" />
+              <path d="M18 25c1.2 1.2 2.8 1.2 4 0" stroke="#3b2518" stroke-width="2" fill="none"
+                stroke-linecap="round" />
             </svg>
-          </div>
-          <p>ようこそ<br />ディーピーズの<br />世界へ！</p>
+          </span>
+          <span class="logo-text">DEEPY’s</span>
         </div>
+        <p class="logo-sub">〜地底人との暮らし〜</p>
+      </div>
 
-        <button id="logout-button" class="logout-button" type="button">体験を終了する</button>
-      </aside>
+      <nav class="home-nav">
+        <button class="nav-item active" data-view="home" type="button">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M12 3.2 3 10.5V20a1 1 0 0 0 1 1h5.5v-6h5v6H20a1 1 0 0 0 1-1v-9.5L12 3.2Z" />
+            </svg>
+          </span>
+          <span>ホーム</span>
+        </button>
+        <button class="nav-item" data-view="space" type="button">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <circle cx="9" cy="8" r="3.5" />
+              <path d="M3 19c0-3.1 2.7-5.5 6-5.5s6 2.4 6 5.5v1H3v-1Z" />
+              <circle cx="17" cy="9" r="2.8" />
+              <path d="M15.5 14.2c2.8.3 5 2.3 5 4.8v1h-4v-1c0-1.9-.4-3.5-1-4.8Z" />
+            </svg>
+          </span>
+          <span>交流スペース</span>
+        </button>
+        <button class="nav-item" data-view="diagnosis" type="button">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4"
+              stroke-linecap="round">
+              <circle cx="10.5" cy="10.5" r="6.5" />
+              <path d="m15.5 15.5 5 5" />
+            </svg>
+          </span>
+          <span>地底人診断</span>
+        </button>
+        <button class="nav-item" data-view="notice" type="button">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path
+                d="M12 3a6 6 0 0 0-6 6v4.2l-1.6 2.4A1 1 0 0 0 5.2 17h13.6a1 1 0 0 0 .8-1.4L18 13.2V9a6 6 0 0 0-6-6Zm0 18a2.5 2.5 0 0 0 2.4-2h-4.8a2.5 2.5 0 0 0 2.4 2Z" />
+            </svg>
+          </span>
+          <span>お知らせ</span>
+        </button>
+        <button class="nav-item" data-view="camera" type="button">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
+          </span>
+          <span>カメラ</span>
+        </button>
+      </nav>
 
-      <!-- メインエリア -->
-      <main class="home-main">
-        <!-- 右上のユーザー情報 -->
-        <header class="home-header">
-          <div class="topbar-left" id="topbar-title-area"></div>
+      <div class="sidebar-footer">
+        <div class="mascot-badge" aria-hidden="true">
+          <svg viewBox="0 0 64 48" width="54" height="40" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M26 12c0-4 2.5-6 4-6s2 3 2 6M36 12c0-4 1.5-6 3-6s3 2 3 6" />
+            <path d="M14 34c-2-8 4-20 18-20s20 12 18 20c-1.5 5-8 7-18 7s-16.5-2-18-7Z" />
+            <circle cx="26" cy="27" r="1.5" fill="currentColor" />
+            <circle cx="38" cy="27" r="1.5" fill="currentColor" />
+            <path d="M30 30c1.2 1.2 2.8 1.2 4 0" />
+          </svg>
+        </div>
+        <p>ようこそ<br />ディーピーズの<br />世界へ！</p>
+      </div>
 
-          <div class="topbar-right">
-            <div class="user-status-pill">
-              <div class="user-info-badge">
-                <span class="user-avatar" id="topbar-avatar"></span>
-                <span class="user-name" id="home-nickname">ゲストさん</span>
-              </div>
-              <button id="open-register" type="button">アカウント登録</button>
-              <div class="user-count-badge" title="オンライン人数">
-                <span class="icon-inline" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                    <circle cx="9" cy="8" r="3.5" />
-                    <path d="M3 19c0-3 2.7-5.5 6-5.5s6 2.5 6 5.5v1H3v-1Z" />
-                    <circle cx="17" cy="9.5" r="2.5" />
-                    <path d="M15.5 14.5c2.6.4 4.5 2.2 4.5 4.5v1h-3.5v-1c0-1.7-.3-3.2-1-4.5Z" />
-                  </svg>
-                </span>
-                <span id="online-count">--人</span>
-              </div>
+      <button id="logout-button" class="logout-button" type="button">体験を終了する</button>
+    </aside>
+
+    <!-- メインエリア -->
+    <main class="home-main">
+      <!-- 右上のユーザー情報 -->
+      <header class="home-header">
+        <div class="topbar-left" id="topbar-title-area"></div>
+
+        <div class="topbar-right">
+          <div class="user-status-pill">
+            <div class="user-info-badge">
+              <span class="user-avatar" id="topbar-avatar"></span>
+              <span class="user-name" id="home-nickname">ゲストさん</span>
             </div>
-
-            <div class="friendship-pill">
-              <span class="star-icon" aria-hidden="true">
+            <button id="open-register" type="button">アカウント登録</button>
+            <div class="user-count-badge" title="オンライン人数">
+              <span class="icon-inline" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                  <path d="m12 2.5 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.3l-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9L12 2.5Z" />
+                  <circle cx="9" cy="8" r="3.5" />
+                  <path d="M3 19c0-3 2.7-5.5 6-5.5s6 2.5 6 5.5v1H3v-1Z" />
+                  <circle cx="17" cy="9.5" r="2.5" />
+                  <path d="M15.5 14.5c2.6.4 4.5 2.2 4.5 4.5v1h-3.5v-1c0-1.7-.3-3.2-1-4.5Z" />
                 </svg>
               </span>
-              <span>友情ポイント <strong><span id="friendship-value">0</span>%</strong></span>
-            </div>
-          </div>
-        </header>
-
-        <!-- ホーム画面コンテンツ -->
-        <div id="home-view-content">
-          <!-- ホームの説明 -->
-          <div class="home-intro">
-            <div class="intro-title">
-              <h2>
-                5人の地底人たちと出会って、<br />
-                それぞれの暮らしをのぞいてみよう。
-              </h2>
-            </div>
-
-            <div class="intro-description">
-              <p>
-                地底のどこかで暮らす5人の地底人。<br />
-                それぞれの仕事や好きなもの、住んでいる地層がちがうよ。<br />
-                気になる子を選んで、ストーリーを見てみよう！
-              </p>
+              <span id="online-count">--人</span>
             </div>
           </div>
 
-          <!-- キャラクターカード -->
-          <div class="character-list">
-            <article class="character-card koizumi">
-              <div class="character-image-placeholder">KOIZUMIのイラスト</div>
-              <div class="character-info">
-                <h3>KOIZUMI</h3>
-                <p class="character-subtitle">〜 土を掘る人 〜</p>
-                <p class="character-description">
-                  地底で家を作るために、土を除去する仕事をしているよ。
-                  力持ちでまっすぐな性格。
-                </p>
-                <p class="character-detail">職業：土壌整備者</p>
-                <p class="character-detail">住んでいる地層：上層</p>
-                <button class="character-button" data-character="koizumi">
-                  この子の暮らしをのぞく →
-                </button>
-              </div>
-            </article>
+          <div class="friendship-pill">
+            <span class="star-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path d="m12 2.5 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.3l-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9L12 2.5Z" />
+              </svg>
+            </span>
+            <span>友情ポイント <strong><span id="friendship-value">0</span>%</strong></span>
+          </div>
+        </div>
+      </header>
 
-            <article class="character-card kotone">
-              <div class="character-image-placeholder">KOTONEのイラスト</div>
-              <div class="character-info">
-                <h3>KOTONE</h3>
-                <p class="character-subtitle">〜 音を集める人 〜</p>
-                <p class="character-description">
-                  地底に響くいろんな音を集めているよ。 歌うことや音楽が大好き。
-                </p>
-                <p class="character-detail">職業：音の採集家</p>
-                <p class="character-detail">住んでいる地層：中層</p>
-                <button class="character-button" data-character="kotone">
-                  この子の暮らしをのぞく →
-                </button>
-              </div>
-            </article>
-
-            <article class="character-card nasupy">
-              <div class="character-image-placeholder">NASUPYのイラスト</div>
-              <div class="character-info">
-                <h3>NASUPY</h3>
-                <p class="character-subtitle">〜 植物のお医者さん 〜</p>
-                <p class="character-description">
-                  地底の植物たちの健康を守るお医者さん。 植物と話せるよ。
-                </p>
-                <p class="character-detail">職業：植物の医者</p>
-                <p class="character-detail">住んでいる地層：深層</p>
-                <button class="character-button" data-character="nasupy">
-                  この子の暮らしをのぞく →
-                </button>
-              </div>
-            </article>
-
-            <article class="character-card hitopy locked">
-              <div class="character-image-placeholder">？</div>
-              <div class="character-info">
-                <h3>HITOPY</h3>
-                <p class="character-subtitle">〜 建築家 〜</p>
-                <p class="character-description">
-                  地底に素敵な家を建てるのが夢！ みんなの暮らしをつなぐ建築家。
-                </p>
-                <p class="character-detail">職業：建築家</p>
-                <p class="character-detail">住んでいる地層：？？？</p>
-                <button class="character-button" disabled>？？？</button>
-                <small>🔒 3つのルートを達成すると解放されます</small>
-              </div>
-            </article>
+      <!-- ホーム画面コンテンツ -->
+      <div id="home-view-content">
+        <!-- ホームの説明 -->
+        <div class="home-intro">
+          <div class="intro-title">
+            <h2>
+              5人の地底人たちと出会って、<br />
+              それぞれの暮らしをのぞいてみよう。
+            </h2>
           </div>
 
-          <p class="home-message">まずは気になる子を選んでみてね！</p>
+          <div class="intro-description">
+            <p>
+              地底のどこかで暮らす5人の地底人。<br />
+              それぞれの仕事や好きなもの、住んでいる地層がちがうよ。<br />
+              気になる子を選んで、ストーリーを見てみよう！
+            </p>
+          </div>
         </div>
 
-        <!-- 交流スペース画面コンテンツ -->
-        <div id="space-view-content" class="space-view" hidden>
-          <!-- 中央エリア（一旦空のプレースホルダー） -->
-          <div class="space-center-placeholder">
-            <div class="placeholder-layer-badge">第1層〜第3層 マップエリア（準備中）</div>
+        <!-- キャラクターカード -->
+        <div class="character-list">
+          <article class="character-card koizumi">
+            <div class="character-image-placeholder">KOIZUMIのイラスト</div>
+            <div class="character-info">
+              <h3>KOIZUMI</h3>
+              <p class="character-subtitle">〜 土を掘る人 〜</p>
+              <p class="character-description">
+                地底で家を作るために、土を除去する仕事をしているよ。
+                力持ちでまっすぐな性格。
+              </p>
+              <p class="character-detail">職業：土壌整備者</p>
+              <p class="character-detail">住んでいる地層：上層</p>
+              <button class="character-button" data-character="koizumi">
+                この子の暮らしをのぞく →
+              </button>
+            </div>
+          </article>
+
+          <article class="character-card kotone">
+            <div class="character-image-placeholder">KOTONEのイラスト</div>
+            <div class="character-info">
+              <h3>KOTONE</h3>
+              <p class="character-subtitle">〜 音を集める人 〜</p>
+              <p class="character-description">
+                地底に響くいろんな音を集めているよ。 歌うことや音楽が大好き。
+              </p>
+              <p class="character-detail">職業：音の採集家</p>
+              <p class="character-detail">住んでいる地層：中層</p>
+              <button class="character-button" data-character="kotone">
+                この子の暮らしをのぞく →
+              </button>
+            </div>
+          </article>
+
+          <article class="character-card nasupy">
+            <div class="character-image-placeholder">NASUPYのイラスト</div>
+            <div class="character-info">
+              <h3>NASUPY</h3>
+              <p class="character-subtitle">〜 植物のお医者さん 〜</p>
+              <p class="character-description">
+                地底の植物たちの健康を守るお医者さん。 植物と話せるよ。
+              </p>
+              <p class="character-detail">職業：植物の医者</p>
+              <p class="character-detail">住んでいる地層：深層</p>
+              <button class="character-button" data-character="nasupy">
+                この子の暮らしをのぞく →
+              </button>
+            </div>
+          </article>
+
+          <article class="character-card hitopy locked">
+            <div class="character-image-placeholder">？</div>
+            <div class="character-info">
+              <h3>HITOPY</h3>
+              <p class="character-subtitle">〜 建築家 〜</p>
+              <p class="character-description">
+                地底に素敵な家を建てるのが夢！ みんなの暮らしをつなぐ建築家。
+              </p>
+              <p class="character-detail">職業：建築家</p>
+              <p class="character-detail">住んでいる地層：？？？</p>
+              <button class="character-button" disabled>？？？</button>
+              <small>🔒 3つのルートを達成すると解放されます</small>
+            </div>
+          </article>
+        </div>
+
+        <p class="home-message">まずは気になる子を選んでみてね！</p>
+      </div>
+
+      <!-- 交流スペース画面コンテンツ -->
+      <div id="space-view-content" class="space-view" hidden>
+        <!-- 中央エリア：地層マップエリア -->
+        <div class="space-map-wrapper" id="space-map-wrapper">
+          <!-- 上部固定ガイドバッジ -->
+          <div class="space-map-hud">
+            <div class="placeholder-layer-badge" id="current-layer-indicator">
+              第1層（上層）〜 第3層（深層）地層マップ
+            </div>
           </div>
 
-          <!-- 右カラム：私の家・プロフィール・掲示板 -->
-          <aside class="space-right-panel">
-            <!-- ① 私の家カード -->
-            <section class="panel-card my-house-card">
-              <div class="card-header">
-                <div class="card-title">
-                  <span class="card-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                      <path d="M12 3.5 3.5 10.5V20a1 1 0 0 0 1 1h5v-5.5h5V21h5a1 1 0 0 0 1-1v-9.5L12 3.5Z" />
-                    </svg>
-                  </span>
-                  <h3>私の家</h3>
-                </div>
-                <button
-                  class="icon-btn"
-                  type="button"
-                  title="編集（準備中）"
-                  aria-label="編集"
-                >
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                    <path d="M16.8 3.5a2.1 2.1 0 0 1 3 3L8.3 18l-4.3 1 1-4.3L16.8 3.5Z" />
-                  </svg>
-                </button>
+          <div class="space-map-viewport" id="space-map-viewport" tabindex="0" aria-label="地層マップエリア">
+            <div class="space-map-canvas" id="space-map-canvas">
+              <!-- 地表からの光演出 -->
+              <div class="stratum-surface-glow" aria-hidden="true"></div>
+
+              <!-- 地層の波模様オーバーレイ（SVG：自然なうねりの地層断面） -->
+              <svg class="stratum-waves-svg" viewBox="0 0 1200 1800" preserveAspectRatio="none" aria-hidden="true">
+                <!-- 地表直下の明るい砂質層 -->
+                <path d="M0 0 L 1200 0 L 1200 170 Q 920 210, 620 165 T 0 190 Z" fill="rgba(255, 244, 222, 0.24)" />
+                <path d="M0 150 Q 320 110, 640 155 T 1200 130 L 1200 260 Q 880 295, 560 245 T 0 275 Z"
+                  fill="rgba(238, 198, 148, 0.22)" />
+                <path d="M0 265 Q 300 310, 660 260 T 1200 295 L 1200 440 Q 860 400, 480 450 T 0 420 Z"
+                  fill="rgba(168, 108, 58, 0.18)" />
+                <path d="M0 430 Q 360 395, 720 445 T 1200 415" fill="none" stroke="rgba(255, 240, 215, 0.22)"
+                  stroke-width="2.5" stroke-dasharray="12 10" />
+
+                <!-- 第1層と第2層の自然な地層境界 -->
+                <path d="M0 560 Q 280 520, 610 575 T 1200 545 L 1200 660 Q 890 700, 560 645 T 0 675 Z"
+                  fill="rgba(96, 54, 26, 0.34)" />
+                <path d="M0 585 Q 280 545, 610 600 T 1200 570" fill="none" stroke="rgba(242, 205, 165, 0.3)"
+                  stroke-width="3" />
+
+                <!-- 第2層（中層）の赤土・鉱石うねり層 -->
+                <path d="M0 740 Q 360 790, 720 735 T 1200 770 L 1200 910 Q 840 865, 460 920 T 0 885 Z"
+                  fill="rgba(68, 37, 17, 0.3)" />
+                <path d="M0 900 Q 420 855, 780 915 T 1200 880 L 1200 1040 Q 820 1080, 440 1025 T 0 1060 Z"
+                  fill="rgba(195, 135, 84, 0.1)" />
+                <path d="M0 1050 Q 330 1090, 690 1040 T 1200 1075" fill="none" stroke="rgba(214, 172, 130, 0.16)"
+                  stroke-width="2" stroke-dasharray="16 12" />
+
+                <!-- 第2層と第3層の自然な深層境界 -->
+                <path d="M0 1165 Q 340 1215, 680 1160 T 1200 1195 L 1200 1310 Q 840 1265, 480 1320 T 0 1285 Z"
+                  fill="rgba(28, 14, 6, 0.45)" />
+                <path d="M0 1190 Q 340 1240, 680 1185 T 1200 1220" fill="none" stroke="rgba(175, 126, 86, 0.25)"
+                  stroke-width="2.5" />
+
+                <!-- 第3層（深層）の黒土・深淵層 -->
+                <path d="M0 1370 Q 300 1330, 650 1385 T 1200 1355 L 1200 1520 Q 850 1560, 490 1505 T 0 1540 Z"
+                  fill="rgba(14, 6, 2, 0.45)" />
+                <path d="M0 1560 Q 400 1610, 760 1555 T 1200 1590 L 1200 1800 L 0 1800 Z" fill="rgba(8, 3, 1, 0.55)" />
+              </svg>
+
+              <!-- 地勢・深度メモリ（左側） -->
+              <div class="stratum-depth-scale" aria-hidden="true">
+                <span class="depth-tick" style="top: 40px">0m (地表付近)</span>
+                <span class="depth-tick" style="top: 520px">-50m</span>
+                <span class="depth-tick" style="top: 1000px">-100m</span>
+                <span class="depth-tick" style="top: 1500px">-150m</span>
+                <span class="depth-tick" style="top: 2000px">-200m</span>
+                <span class="depth-tick" style="top: 2500px">-250m</span>
+                <span class="depth-tick" style="top: 2920px">-300m (最深部)</span>
               </div>
 
-              <div class="house-preview" id="house-preview-box">
-                <div class="house-preview-art" aria-hidden="true">
-                  <svg viewBox="0 0 160 80" width="140" height="70" fill="none">
-                    <path d="M15 72C18 35 46 14 80 14s62 21 65 58H15Z" fill="#a57551" opacity="0.45" />
-                    <path d="M38 72c4-24 20-38 42-38s38 14 42 38H38Z" fill="#d39e72" />
-                    <path d="M63 72c2-15 8-23 17-23s15 8 17 23H63Z" fill="#4b2e1b" />
-                    <circle cx="52" cy="52" r="5" fill="#fff0c9" />
-                    <circle cx="108" cy="52" r="5" fill="#fff0c9" />
-                  </svg>
+              <!-- 第1層：上層（明るい砂土・陽だまり層） -->
+              <section class="stratum-layer layer-1" data-layer-name="第1層（上層）">
+                <div class="layer-header-tag">
+                  <span class="layer-depth-pill">第1層・上層</span>
+                  <span class="layer-desc">あたたかい光が届く砂と土の層</span>
                 </div>
-                <!-- 仮ボタン（ダミー） -->
-                <button id="change-interior-btn" class="interior-badge-btn" type="button">
-                  インテリアを変更
-                </button>
-              </div>
-
-              <div class="house-location-row">
-                <div class="location-info">
-                  <span class="location-label">
-                    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" class="inline-svg">
-                      <path d="M12 3.5 3.5 10.5V20a1 1 0 0 0 1 1h5v-5.5h5V21h5a1 1 0 0 0 1-1v-9.5L12 3.5Z" />
-                    </svg>
-                    家の場所
-                  </span>
-                  <p class="location-value" id="house-location-text">第3層・右下エリア</p>
+                <div class="stratum-pebbles" aria-hidden="true">
+                  <span class="pebble p1"></span>
+                  <span class="pebble p2"></span>
+                  <span class="pebble p3"></span>
                 </div>
-                <!-- 仮ボタン（ダミー） -->
-                <button id="move-house-btn" class="pill-outline-btn" type="button">
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="inline-svg">
-                    <path d="M12 3v18M3 12h18M12 3 9 6m3-3 3 3M12 21l-3-3m3 3 3-3M3 12l3-3m-3 3 3 3M21 12l-3-3m3 3-3 3" />
-                  </svg>
-                  移動する
-                </button>
-              </div>
-            </section>
+              </section>
 
-            <!-- ② プロフィールカード -->
-            <section class="panel-card profile-card">
-              <div class="card-header">
-                <div class="card-title">
-                  <span class="card-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                      <circle cx="12" cy="8" r="4" />
-                      <path d="M4.5 20c0-3.6 3.4-6.5 7.5-6.5s7.5 2.9 7.5 6.5v.5h-15V20Z" />
-                    </svg>
-                  </span>
-                  <h3>プロフィール</h3>
+              <!-- 第2層：中層（赤土と鉱石の回廊） -->
+              <section class="stratum-layer layer-2" data-layer-name="第2層（中層）">
+                <div class="layer-header-tag">
+                  <span class="layer-depth-pill">第2層・中層</span>
+                  <span class="layer-desc">音が反響する赤土と鉱石の層</span>
                 </div>
-                <button
-                  id="toggle-profile-edit"
-                  class="icon-btn"
-                  type="button"
-                  title="プロフィールを編集"
-                  aria-label="プロフィールを編集"
-                >
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                    <path d="M16.8 3.5a2.1 2.1 0 0 1 3 3L8.3 18l-4.3 1 1-4.3L16.8 3.5Z" />
-                  </svg>
-                </button>
-              </div>
-
-              <div id="profile-display">
-                <div class="profile-main">
-                  <div class="profile-avatar" id="profile-avatar-display"></div>
-                  <div class="profile-meta">
-                    <h4 id="profile-nickname">ゲスト</h4>
-                    <span class="online-status">
-                      <span class="online-dot"></span>オンライン
-                    </span>
-                    <p class="profile-bio" id="profile-bio">
-                      地底でのんびり暮らしてます。よろしくお願いします！
-                    </p>
-                  </div>
+                <div class="stratum-pebbles" aria-hidden="true">
+                  <span class="pebble p4"></span>
+                  <span class="pebble p5"></span>
+                  <span class="pebble p6"></span>
                 </div>
-                <div class="profile-tags" id="profile-tags">
-                  <span class="tag">#地底生活</span>
-                  <span class="tag">#よろしく</span>
+              </section>
+
+              <!-- 第3層：深層（暗い黒土と深淵の層） -->
+              <section class="stratum-layer layer-3" data-layer-name="第3層（深層）">
+                <div class="layer-header-tag">
+                  <span class="layer-depth-pill">第3層・深層</span>
+                  <span class="layer-desc">静かでひんやりした黒土と深淵の層</span>
                 </div>
-              </div>
-
-              <!-- プロフィール編集フォーム（折りたたみ） -->
-              <form id="profile-edit-form" class="inline-edit-form" hidden>
-                <label class="form-field">
-                  <span>アイコンカラー</span>
-                  <select id="profile-avatar-input">
-                    <option value="pink">ピンク</option>
-                    <option value="green">グリーン</option>
-                    <option value="cream">クリーム</option>
-                    <option value="purple">パープル</option>
-                    <option value="orange">オレンジ</option>
-                  </select>
-                </label>
-                <label class="form-field">
-                  <span>ニックネーム</span>
-                  <input type="text" id="profile-nickname-input" maxlength="20" required />
-                </label>
-                <label class="form-field">
-                  <span>ひとこと紹介</span>
-                  <textarea id="profile-bio-input" rows="2" maxlength="80"></textarea>
-                </label>
-                <label class="form-field">
-                  <span>タグ（カンマ区切り・最大3つ）</span>
-                  <input
-                    type="text"
-                    id="profile-tags-input"
-                    placeholder="デザイン, カフェ巡り, 音楽"
-                  />
-                </label>
-                <div class="form-actions">
-                  <button type="submit" class="save-btn">保存する</button>
-                  <button type="button" id="cancel-profile-edit" class="cancel-btn">キャンセル</button>
+                <div class="stratum-pebbles" aria-hidden="true">
+                  <span class="pebble p7"></span>
+                  <span class="pebble p8"></span>
+                  <span class="pebble p9"></span>
                 </div>
-              </form>
-            </section>
+              </section>
+            </div>
+          </div>
+        </div>
 
-            <!-- ③ 掲示板カード -->
-            <section class="panel-card board-card">
-              <div class="card-header">
-                <div class="card-title">
-                  <span class="card-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                      <path d="M12 3C6.5 3 2 6.6 2 11c0 2.3 1.2 4.4 3.2 5.9L4 21l4.6-1.8c1.1.3 2.2.5 3.4.5 5.5 0 10-3.6 10-8s-4.5-8.7-10-8.7Z" />
-                    </svg>
-                  </span>
-                  <h3>掲示板</h3>
-                </div>
-                <button id="toggle-board-more" class="text-link-btn" type="button">
-                  もっと見る &gt;
-                </button>
-              </div>
-
-              <!-- 投稿フォーム -->
-              <form id="board-post-form" class="board-post-form">
-                <input
-                  type="text"
-                  id="board-message-input"
-                  placeholder="地底の仲間へメッセージを書く…"
-                  maxlength="100"
-                  required
-                />
-                <button type="submit">投稿</button>
-              </form>
-
-              <!-- 投稿リスト（Firebaseリアルタイム連動） -->
-              <div id="board-list" class="board-list">
-                <p class="board-empty">読み込み中...</p>
-              </div>
-
-              <div class="board-footer-banner">
-                <span class="banner-mascot" aria-hidden="true">
-                  <svg viewBox="0 0 48 40" width="34" height="28" fill="currentColor">
-                    <path d="M8 28c0-10 7-18 16-18s16 8 16 18c0 5-5 8-16 8S8 33 8 28Z" fill="#6b4932" />
-                    <circle cx="19" cy="24" r="2" fill="#fff6ea" />
-                    <circle cx="29" cy="24" r="2" fill="#fff6ea" />
-                    <path d="M22 28c1.2 1 2.8 1 4 0" stroke="#fff6ea" stroke-width="1.8" fill="none" stroke-linecap="round" />
+        <!-- 右カラム：私の家・プロフィール・掲示板 -->
+        <aside class="space-right-panel">
+          <!-- ① 私の家カード -->
+          <section class="panel-card my-house-card">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="card-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                    <path d="M12 3.5 3.5 10.5V20a1 1 0 0 0 1 1h5v-5.5h5V21h5a1 1 0 0 0 1-1v-9.5L12 3.5Z" />
                   </svg>
                 </span>
-                <p>地底の住人たちと<br />自由に交流しよう！</p>
+                <h3>私の家</h3>
               </div>
-            </section>
-          </aside>
-        </div>
-      </main>
-    </section>
+              <button class="icon-btn" type="button" title="編集（準備中）" aria-label="編集">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M16.8 3.5a2.1 2.1 0 0 1 3 3L8.3 18l-4.3 1 1-4.3L16.8 3.5Z" />
+                </svg>
+              </button>
+            </div>
 
-    <!-- アカウント登録ポップアップ -->
-    <div id="register-modal" class="modal" hidden>
-      <div
-        class="modal-content"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="register-title"
-      >
-        <button
-          id="close-register"
-          class="modal-close"
-          type="button"
-          aria-label="閉じる"
-        >
-          ×
-        </button>
+            <div class="house-preview" id="house-preview-box">
+              <div class="house-preview-art" aria-hidden="true">
+                <svg viewBox="0 0 160 80" width="140" height="70" fill="none">
+                  <path d="M15 72C18 35 46 14 80 14s62 21 65 58H15Z" fill="#a57551" opacity="0.45" />
+                  <path d="M38 72c4-24 20-38 42-38s38 14 42 38H38Z" fill="#d39e72" />
+                  <path d="M63 72c2-15 8-23 17-23s15 8 17 23H63Z" fill="#4b2e1b" />
+                  <circle cx="52" cy="52" r="5" fill="#fff0c9" />
+                  <circle cx="108" cy="52" r="5" fill="#fff0c9" />
+                </svg>
+              </div>
+              <!-- 仮ボタン（ダミー） -->
+              <button id="change-interior-btn" class="interior-badge-btn" type="button">
+                インテリアを変更
+              </button>
+            </div>
 
-        <h2 id="register-title">地底住民登録</h2>
-        <p>登録すると、スマホでも続きから遊べるよ！</p>
+            <div class="house-location-row">
+              <div class="location-info">
+                <span class="location-label">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" class="inline-svg">
+                    <path d="M12 3.5 3.5 10.5V20a1 1 0 0 0 1 1h5v-5.5h5V21h5a1 1 0 0 0 1-1v-9.5L12 3.5Z" />
+                  </svg>
+                  家の場所
+                </span>
+                <p class="location-value" id="house-location-text">第3層・右下エリア</p>
+              </div>
+              <!-- 仮ボタン（ダミー） -->
+              <button id="move-house-btn" class="pill-outline-btn" type="button">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"
+                  stroke-linecap="round" stroke-linejoin="round" class="inline-svg">
+                  <path d="M12 3v18M3 12h18M12 3 9 6m3-3 3 3M12 21l-3-3m3 3 3-3M3 12l3-3m-3 3 3 3M21 12l-3-3m3 3-3 3" />
+                </svg>
+                移動する
+              </button>
+            </div>
+          </section>
 
-        <form id="register-form">
-          <div id="register-nickname-area">
-            <label for="register-nickname">ニックネーム</label>
-            <input
-              id="register-nickname"
-              type="text"
-              maxlength="20"
-              placeholder="地底人に呼んでもらう名前"
-              autocomplete="nickname"
-            />
+          <!-- ② プロフィールカード -->
+          <section class="panel-card profile-card">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="card-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                    <circle cx="12" cy="8" r="4" />
+                    <path d="M4.5 20c0-3.6 3.4-6.5 7.5-6.5s7.5 2.9 7.5 6.5v.5h-15V20Z" />
+                  </svg>
+                </span>
+                <h3>プロフィール</h3>
+              </div>
+              <button id="toggle-profile-edit" class="icon-btn" type="button" title="プロフィールを編集" aria-label="プロフィールを編集">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M16.8 3.5a2.1 2.1 0 0 1 3 3L8.3 18l-4.3 1 1-4.3L16.8 3.5Z" />
+                </svg>
+              </button>
+            </div>
+
+            <div id="profile-display">
+              <div class="profile-main">
+                <div class="profile-avatar" id="profile-avatar-display"></div>
+                <div class="profile-meta">
+                  <h4 id="profile-nickname">ゲスト</h4>
+                  <span class="online-status">
+                    <span class="online-dot"></span>オンライン
+                  </span>
+                  <p class="profile-bio" id="profile-bio">
+                    地底でのんびり暮らしてます。よろしくお願いします！
+                  </p>
+                </div>
+              </div>
+              <div class="profile-tags" id="profile-tags">
+                <span class="tag">#地底生活</span>
+                <span class="tag">#よろしく</span>
+              </div>
+            </div>
+
+            <!-- プロフィール編集フォーム（折りたたみ） -->
+            <form id="profile-edit-form" class="inline-edit-form" hidden>
+              <label class="form-field">
+                <span>アイコンカラー</span>
+                <select id="profile-avatar-input">
+                  <option value="pink">ピンク</option>
+                  <option value="green">グリーン</option>
+                  <option value="cream">クリーム</option>
+                  <option value="purple">パープル</option>
+                  <option value="orange">オレンジ</option>
+                </select>
+              </label>
+              <label class="form-field">
+                <span>ニックネーム</span>
+                <input type="text" id="profile-nickname-input" maxlength="20" required />
+              </label>
+              <label class="form-field">
+                <span>ひとこと紹介</span>
+                <textarea id="profile-bio-input" rows="2" maxlength="80"></textarea>
+              </label>
+              <label class="form-field">
+                <span>タグ（カンマ区切り・最大3つ）</span>
+                <input type="text" id="profile-tags-input" placeholder="デザイン, カフェ巡り, 音楽" />
+              </label>
+              <div class="form-actions">
+                <button type="submit" class="save-btn">保存する</button>
+                <button type="button" id="cancel-profile-edit" class="cancel-btn">キャンセル</button>
+              </div>
+            </form>
+          </section>
+
+          <!-- ③ 掲示板カード -->
+          <section class="panel-card board-card">
+            <div class="card-header">
+              <div class="card-title">
+                <span class="card-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                    <path
+                      d="M12 3C6.5 3 2 6.6 2 11c0 2.3 1.2 4.4 3.2 5.9L4 21l4.6-1.8c1.1.3 2.2.5 3.4.5 5.5 0 10-3.6 10-8s-4.5-8.7-10-8.7Z" />
+                  </svg>
+                </span>
+                <h3>掲示板</h3>
+              </div>
+              <button id="toggle-board-more" class="text-link-btn" type="button">
+                もっと見る &gt;
+              </button>
+            </div>
+
+            <!-- 投稿フォーム -->
+            <form id="board-post-form" class="board-post-form">
+              <input type="text" id="board-message-input" placeholder="地底の仲間へメッセージを書く…" maxlength="100" required />
+              <button type="submit">投稿</button>
+            </form>
+
+            <!-- 投稿リスト（Firebaseリアルタイム連動） -->
+            <div id="board-list" class="board-list">
+              <p class="board-empty">読み込み中...</p>
+            </div>
+
+            <div class="board-footer-banner">
+              <span class="banner-mascot" aria-hidden="true">
+                <svg viewBox="0 0 48 40" width="34" height="28" fill="currentColor">
+                  <path d="M8 28c0-10 7-18 16-18s16 8 16 18c0 5-5 8-16 8S8 33 8 28Z" fill="#6b4932" />
+                  <circle cx="19" cy="24" r="2" fill="#fff6ea" />
+                  <circle cx="29" cy="24" r="2" fill="#fff6ea" />
+                  <path d="M22 28c1.2 1 2.8 1 4 0" stroke="#fff6ea" stroke-width="1.8" fill="none"
+                    stroke-linecap="round" />
+                </svg>
+              </span>
+              <p>地底の住人たちと<br />自由に交流しよう！</p>
+            </div>
+          </section>
+        </aside>
+      </div>
+
+      <!-- カメラ画面 -->
+      <section id="camera-view-content" class="camera-view" hidden>
+        <div class="camera-stage-wrap">
+          <div class="camera-frame-picker" role="group" aria-label="フレームを選択">
+            <button class="frame-choice active" type="button" data-frame="frame-1" aria-label="フレーム1を選択"
+              aria-pressed="true">
+              <img src="./images/frame-1.PNG" alt="" />
+            </button>
+            <button class="frame-choice" type="button" data-frame="frame-2" aria-label="フレーム2を選択" aria-pressed="false">
+              <img src="./images/frame-2.PNG" alt="" />
+            </button>
+            <button class="frame-choice" type="button" data-frame="frame-3" aria-label="フレーム3を選択"
+              aria-pressed="false">
+              <img src="./images/frame-3.PNG" alt="" />
+            </button>
+            <button class="frame-choice" type="button" data-frame="frame-4" aria-label="フレーム4を選択" aria-pressed="false">
+              <img src="./images/frame-4.PNG" alt="" />
+            </button>
           </div>
-          <div id="register-email-area">
-            <label for="register-email">メールアドレス</label>
-            <input
-              id="register-email"
-              type="email"
-              autocomplete="email"
-            required
-          />
+          <div class="camera-stage" id="camera-stage">
+            <video id="camera-video" autoplay muted playsinline aria-label="カメラのプレビュー"></video>
+            <img class="camera-overlay camera-frame" data-frame-image="frame-1" src="./images/frame-1.PNG" alt="" />
+            <img class="camera-overlay camera-frame" data-frame-image="frame-2" src="./images/frame-2.PNG" alt="" hidden />
+            <img class="camera-overlay camera-frame" data-frame-image="frame-3" src="./images/frame-3.PNG" alt="" hidden />
+            <img class="camera-overlay camera-frame" data-frame-image="frame-4" src="./images/frame-4.PNG" alt="" hidden />
+            <img id="camera-result" class="camera-result" alt="撮影した写真" hidden />
+          </div>
+          <div class="camera-actions">
+            <button id="start-camera" class="camera-button camera-button-secondary" type="button">カメラを起動</button>
+            <button id="take-photo" class="camera-button" type="button" disabled>写真を撮る</button>
+            <button id="retake-photo" class="camera-button camera-button-secondary" type="button" hidden>もう一度撮る</button>
+            <a id="download-photo" class="camera-button camera-button-secondary camera-download"
+              download="deepys-photo.png" hidden>ダウンロード</a>
+            <p id="camera-message" class="camera-message" role="status" hidden></p>
+          </div>
+        </div>
+        <div id="photo-reward-dialog" class="reward-backdrop" hidden>
+          <section class="reward-dialog" role="dialog" aria-modal="true" aria-labelledby="reward-title"
+            aria-describedby="reward-description">
+            <div class="reward-medal" aria-hidden="true">
+              <svg viewBox="0 0 100 116" fill="none">
+                <path d="m30 61-8 42 23-13 13 21 8-42" fill="#B97848" stroke="#754629" stroke-width="3"
+                  stroke-linejoin="round" />
+                <path d="m68 61 8 42-23-13-13 21-8-42" fill="#D99B5D" stroke="#754629" stroke-width="3"
+                  stroke-linejoin="round" />
+                <circle cx="50" cy="43" r="31" fill="#F4D68E" stroke="#754629" stroke-width="4" />
+                <circle cx="50" cy="43" r="23" fill="#FFF3CE" stroke="#D19A4B" stroke-width="2" />
+                <path d="m50 25 5.2 10.5 11.6 1.7-8.4 8.2 2 11.6L50 46.5l-10.4 5.5 2-11.6-8.4-8.2 11.6-1.7L50 25Z"
+                  fill="#D99B32" stroke="#9A671F" stroke-width="1.5" stroke-linejoin="round" />
+                <path
+                  d="m18 20 2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5ZM82 8l1.5 4.5L88 14l-4.5 1.5L82 20l-1.5-4.5L76 14l4.5-1.5L82 8Z"
+                  fill="#D99B32" />
+              </svg>
+            </div>
+            <p class="reward-kicker">撮影ごほうび</p>
+            <h2 id="reward-title">地底の星シールをゲット！</h2>
+            <p id="reward-description">今日の一枚を撮った記念に、星のしるしをプレゼント。</p>
+            <button id="close-photo-reward" class="reward-close-button" type="button">閉じる</button>
+          </section>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <!-- アカウント登録ポップアップ -->
+  <div id="register-modal" class="modal" hidden>
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="register-title">
+      <button id="close-register" class="modal-close" type="button" aria-label="閉じる">
+        ×
+      </button>
+
+      <h2 id="register-title">地底住民登録</h2>
+      <p>登録すると、スマホでも続きから遊べるよ！</p>
+
+      <form id="register-form">
+        <div id="register-nickname-area">
+          <label for="register-nickname">ニックネーム</label>
+          <input id="register-nickname" type="text" maxlength="20" placeholder="地底人に呼んでもらう名前" autocomplete="nickname" />
+        </div>
+        <div id="register-email-area">
+          <label for="register-email">メールアドレス</label>
+          <input id="register-email" type="email" autocomplete="email" required />
 
           <label for="register-password">パスワード</label>
-          <input
-            id="register-password"
-            type="password"
-            autocomplete="new-password"
-            minlength="6"
-            required
-          />
+          <input id="register-password" type="password" autocomplete="new-password" minlength="6" required />
 
           <button type="submit" id="register-submit">アカウント登録する</button>
-        </form>
+      </form>
 
-        <p id="register-message" role="status"></p>
-      </div>
+      <p id="register-message" role="status"></p>
     </div>
+  </div>
 
-    <!-- ログイン画面 -->
-    <section id="signin-screen" class="screen signin-screen" hidden>
-      <div class="signin-content">
-        <h2>おかえりなさい！</h2>
-        <p>地底生活の続きをはじめよう！</p>
+  <!-- ログイン画面 -->
+  <section id="signin-screen" class="screen signin-screen" hidden>
+    <div class="signin-content">
+      <h2>おかえりなさい！</h2>
+      <p>地底生活の続きをはじめよう！</p>
 
-        <form id="signin-form">
-          <label for="signin-email">メールアドレス</label>
-          <input id="signin-email" type="email" autocomplete="email" required />
+      <form id="signin-form">
+        <label for="signin-email">メールアドレス</label>
+        <input id="signin-email" type="email" autocomplete="email" required />
 
-          <label for="signin-password">パスワード</label>
-          <input
-            id="signin-password"
-            type="password"
-            autocomplete="current-password"
-            required
-          />
+        <label for="signin-password">パスワード</label>
+        <input id="signin-password" type="password" autocomplete="current-password" required />
 
-          <button id="signin-submit" type="submit">続きから遊ぶ！</button>
-        </form>
+        <button id="signin-submit" type="submit">続きから遊ぶ！</button>
+      </form>
 
-        <p id="signin-message" role="status"></p>
+      <p id="signin-message" role="status"></p>
 
-        <button id="signin-back" type="button">もどる</button>
-      </div>
-    </section>
+      <button id="signin-back" type="button">もどる</button>
+    </div>
+  </section>
 
-    <script type="module" src="./js/main.js"></script>
-  </body>
+  <script type="module" src="./js/main.js"></script>
+</body>
+
 </html>

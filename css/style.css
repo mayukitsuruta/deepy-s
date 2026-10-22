@@ -568,6 +568,83 @@ body {
   .character-image-placeholder {
     height: 250px;
   }
+
+  .home-screen.camera-mode {
+    flex-direction: column;
+  }
+
+  .camera-mode .home-sidebar {
+    width: 100%;
+    min-height: 0;
+    flex: 0 0 auto;
+    gap: 0;
+    padding: 6px 8px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(226, 193, 158, 0.18);
+  }
+
+  .camera-mode .sidebar-logo,
+  .camera-mode .sidebar-footer,
+  .camera-mode .logout-button {
+    display: none;
+  }
+
+  .camera-mode .home-nav {
+    flex: 0 0 auto;
+    flex-direction: row;
+    gap: 4px;
+    overflow-x: auto;
+  }
+
+  .camera-mode .nav-item {
+    width: auto;
+    flex: 0 0 auto;
+    gap: 6px;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .camera-mode .nav-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .camera-mode .home-main {
+    flex: 1 1 auto;
+    padding: 5px 8px;
+    gap: 0;
+  }
+
+  .camera-mode .camera-view {
+    padding: 4px 0 6px;
+  }
+
+  .camera-mode .camera-stage-wrap {
+    gap: 10px;
+  }
+
+  .camera-mode .camera-frame-picker {
+    gap: 8px;
+  }
+
+  .camera-mode .frame-choice {
+    width: clamp(50px, 14vw, 68px);
+  }
+
+  .camera-mode .camera-stage {
+    max-width: calc(100vw - 100px);
+  }
+
+  .camera-mode .camera-message {
+    margin: 4px 0;
+    font-size: 12px;
+  }
+
+  .camera-mode .camera-button {
+    min-width: 110px;
+    padding: 8px 13px;
+    font-size: 14px;
+  }
 }
 
 /* アカウント登録ボタン */
@@ -754,41 +831,692 @@ body {
    交流スペース画面（私の家・プロフィール・掲示板）
    ========================================= */
 #home-view-content[hidden],
-#space-view-content[hidden] {
+#space-view-content[hidden],
+#camera-view-content[hidden] {
   display: none !important;
 }
 
-.space-view {
-  display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 18px;
-  align-items: start;
+/* カメラ・フレーム撮影 */
+.home-screen.camera-mode {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.space-center-placeholder {
-  min-height: 620px;
-  border: 2px solid rgba(214, 182, 148, 0.45);
-  border-radius: 22px;
-  background: rgba(42, 26, 16, 0.45);
+.camera-mode .home-main {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.camera-mode .home-header {
+  display: none;
+}
+
+.camera-view {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: min(100%, 1050px);
+  min-height: 0;
+  margin: 0 auto;
+  padding: 6px 12px 10px;
+  box-sizing: border-box;
+  color: #4b3526;
+}
+
+.camera-heading {
+  flex-shrink: 0;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.camera-eyebrow {
+  margin: 0 0 2px;
+  color: #a5744c;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+}
+
+.camera-heading h1 {
+  margin: 0;
+  font-size: clamp(20px, 3vw, 28px);
+}
+
+.camera-stage-wrap {
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 0;
+}
+
+.camera-frame-picker {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.frame-choice {
+  width: clamp(58px, 9vw, 82px);
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  padding: 3px;
+  border: 2px solid #d5c0a9;
+  border-radius: 12px;
+  background: #fffaf2;
+  cursor: pointer;
+  opacity: 0.72;
+  transition: opacity 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.frame-choice.active {
+  border-color: #865c3e;
+  opacity: 1;
+  transform: scale(1.04);
+  box-shadow: 0 3px 10px rgba(77, 49, 25, 0.18);
+}
+
+.frame-choice img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-stage {
+  position: relative;
+  width: auto;
+  height: min(100%, 600px);
+  max-height: calc(100dvh - 80px);
+  max-width: min(450px, calc((100dvh - 80px) * 0.75));
+  aspect-ratio: 3 / 4;
+  flex: 0 1 auto;
+  overflow: hidden;
+  border: 8px solid #fffaf2;
+  border-radius: 24px;
+  background: #e9dbc8;
+  box-shadow: 0 14px 35px rgba(77, 49, 25, 0.2);
+}
+
+.camera-stage video,
+.camera-result,
+.camera-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.camera-stage video,
+.camera-result {
+  object-fit: cover;
+}
+
+.camera-stage video.is-mirrored {
+  transform: scaleX(-1);
+}
+
+.camera-overlay {
+  z-index: 2;
+  object-fit: fill;
+  pointer-events: none;
+}
+
+.camera-result {
+  z-index: 4;
+}
+
+.camera-overlay[hidden] {
+  display: none !important;
+}
+
+.camera-result[hidden] {
+  display: none;
+}
+
+.camera-message {
+  flex-shrink: 0;
+  max-width: 160px;
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #806c5b;
+  text-align: center;
+}
+
+.camera-actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 9px;
+}
+
+.camera-button {
+  min-width: 132px;
+  padding: 9px 17px;
+  border: 0;
+  border-radius: 999px;
+  background: #865c3e;
+  color: white;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.camera-button-secondary {
+  border: 1px solid #b99878;
+  background: #fff8ee;
+  color: #684b34;
+}
+
+.camera-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.camera-actions [hidden] {
+  display: none !important;
+}
+
+.camera-download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.reward-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
   padding: 20px;
   box-sizing: border-box;
+  background: rgba(26, 17, 12, 0.76);
+  backdrop-filter: blur(5px);
+  animation: reward-backdrop-in 180ms ease-out both;
+}
+
+.reward-backdrop[hidden] {
+  display: none !important;
+}
+
+.reward-dialog {
+  position: relative;
+  width: min(100%, 370px);
+  padding: 24px 30px 28px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 2px solid #d5ad68;
+  border-radius: 20px;
+  background: #fbf2dc;
+  color: #402a1d;
+  text-align: center;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.38), inset 0 0 0 5px #f4e4bd;
+  animation: reward-dialog-in 280ms cubic-bezier(0.2, 0.85, 0.25, 1.15) both;
+}
+
+.reward-medal {
+  width: 82px;
+  height: 96px;
+  margin: 0 auto 8px;
+}
+
+.reward-medal svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.reward-kicker {
+  margin: 0 0 8px;
+  color: #9a7030;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.reward-dialog h2 {
+  margin: 0;
+  font-size: clamp(20px, 5vw, 25px);
+  line-height: 1.35;
+}
+
+.reward-dialog>p:not(.reward-kicker) {
+  margin: 10px 0 22px;
+  color: #755b45;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.reward-close-button {
+  min-width: 180px;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 999px;
+  background: #765037;
+  color: #fff8e9;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #4d3424;
+}
+
+.reward-close-button:hover {
+  background: #865c3e;
+}
+
+@keyframes reward-backdrop-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes reward-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.88);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .reward-backdrop,
+  .reward-dialog {
+    animation: none;
+  }
+}
+
+/* 交流スペースモード：画面全体が地層ワールドになり、UIが上に浮かぶゲーム風レイアウト */
+.home-screen.space-mode {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.space-mode .home-sidebar {
+  position: relative;
+  z-index: 25;
+  background: rgba(34, 20, 12, 0.84);
+  backdrop-filter: blur(8px);
+}
+
+.space-mode .home-main {
+  position: relative;
+  min-height: 0;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  padding: 16px 24px 20px;
+}
+
+.space-mode .home-header {
+  position: relative;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.space-mode .topbar-left {
+  color: #fff8ee;
+  font-weight: 700;
+  text-shadow: 0 2px 8px rgba(32, 16, 6, 0.65);
+  pointer-events: auto;
+}
+
+.space-mode .topbar-right {
+  pointer-events: auto;
+}
+
+.space-view {
+  position: static;
+  flex: 1;
+  min-height: 0;
   display: flex;
+  justify-content: flex-end;
   align-items: flex-start;
+  pointer-events: none;
+}
+
+/* 地層マップエリア全体ラッパー（四角い枠をなくし、メイン画面全体に自然に広がる） */
+.space-map-wrapper {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: none;
+  border-radius: 0;
+  background: #2b180d;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  pointer-events: auto;
+}
+
+/* 画面端の自然な地底陰影（四角い枠感を消すビネット） */
+.space-map-wrapper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  box-shadow:
+    inset 24px 0 42px -12px rgba(28, 15, 7, 0.55),
+    inset -24px 0 48px -12px rgba(22, 11, 5, 0.5),
+    inset 0 -30px 45px -15px rgba(14, 6, 2, 0.6);
+}
+
+/* 上部固定オーバーレイ（現在地層バッジ） */
+.space-map-hud {
+  position: absolute;
+  top: 66px;
+  left: 24px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
 }
 
 .placeholder-layer-badge {
-  background: rgba(125, 92, 65, 0.85);
-  border: 1.5px solid #cbb094;
-  border-radius: 14px;
-  padding: 8px 16px;
+  background: rgba(58, 36, 20, 0.72);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(235, 204, 170, 0.65);
+  border-radius: 999px;
+  padding: 7px 16px;
   font-size: 13px;
+  font-weight: 700;
   color: #fff6ea;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+/* スクロール＆ドラッグ用ビューポート */
+.space-map-viewport {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  position: relative;
+  outline: none;
+}
+
+.space-map-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.space-map-viewport.is-dragging {
+  cursor: grabbing;
+}
+
+/* 地層キャンバス：上が明るく、下に行くほど暗くなる地層グラデーション */
+.space-map-canvas {
+  position: relative;
+  width: 100%;
+  height: 3000px;
+  background:
+    /* 地層の微細な粒子・堆積感 */
+    radial-gradient(circle at 20% 15%, rgba(255, 246, 230, 0.16) 0%, transparent 45%),
+    radial-gradient(circle at 65% 48%, rgba(165, 102, 54, 0.14) 0%, transparent 50%),
+    radial-gradient(circle at 35% 82%, rgba(10, 4, 1, 0.45) 0%, transparent 55%),
+    /* メインの上（明）→下（暗）地層グラデーション */
+    linear-gradient(
+      180deg,
+      #f2d3a8 0%,
+      #e2b682 11%,
+      #cc965f 23%,
+      #b37a45 35%,
+      #965e32 47%,
+      #7a4722 59%,
+      #5c3317 70%,
+      #41210e 81%,
+      #281307 91%,
+      #130803 100%
+    );
+}
+
+/* 地表付近の明るい光のにじみ */
+.stratum-surface-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 260px;
+  background: radial-gradient(
+    ellipse 90% 100% at 42% 0%,
+    rgba(255, 250, 235, 0.62) 0%,
+    rgba(255, 234, 195, 0.25) 55%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* SVG波状地層オーバーレイ */
+.stratum-waves-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* 左側の深度メモリ */
+.stratum-depth-scale {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 26px;
+  width: 110px;
+  border-left: 2px dashed rgba(255, 240, 220, 0.24);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.depth-tick {
+  position: absolute;
+  left: 0;
+  padding-left: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 243, 226, 0.78);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+}
+
+.depth-tick::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 50%;
+  width: 7px;
+  height: 2px;
+  background: rgba(255, 240, 220, 0.55);
+}
+
+/* 各層（第1層・第2層・第3層）のセクション（直線ボーダーを廃止し自然につなげる） */
+.stratum-layer {
+  position: relative;
+  height: 1000px;
+  box-sizing: border-box;
+  padding: 120px 410px 32px 130px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  z-index: 1;
+}
+
+.layer-header-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  align-self: flex-start;
+  background: rgba(38, 22, 12, 0.38);
+  border: 1px solid rgba(255, 238, 216, 0.35);
+  border-radius: 999px;
+  padding: 6px 16px 6px 8px;
+  backdrop-filter: blur(4px);
+}
+
+.layer-1 .layer-header-tag {
+  background: rgba(92, 54, 26, 0.42);
+  border-color: rgba(255, 244, 224, 0.55);
+}
+
+.layer-depth-pill {
+  background: #f6e4cc;
+  color: #462b17;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 11px;
+  border-radius: 999px;
+}
+
+.layer-2 .layer-depth-pill {
+  background: #e4bfa0;
+  color: #3b2210;
+}
+
+.layer-3 .layer-depth-pill {
+  background: #b58d6d;
+  color: #211106;
+}
+
+.layer-desc {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff5e6;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* 地層内の小石・鉱石アクセント */
+.stratum-pebbles {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  pointer-events: none;
+}
+
+.pebble {
+  position: absolute;
+  display: block;
+  border-radius: 48% 52% 43% 57% / 54% 45% 55% 46%;
+  opacity: 0.38;
+}
+
+.pebble.p1 {
+  width: 28px;
+  height: 16px;
+  top: 28%;
+  left: 18%;
+  background: #9e6a3c;
+  box-shadow: 120px 65px 0 -3px rgba(255, 242, 220, 0.35);
+}
+
+.pebble.p2 {
+  width: 42px;
+  height: 22px;
+  top: 58%;
+  right: 22%;
+  background: #8a582e;
+}
+
+.pebble.p3 {
+  width: 18px;
+  height: 12px;
+  top: 76%;
+  left: 42%;
+  background: #f7dfc0;
+}
+
+.pebble.p4 {
+  width: 36px;
+  height: 20px;
+  top: 25%;
+  right: 28%;
+  background: #522d15;
+}
+
+.pebble.p5 {
+  width: 24px;
+  height: 15px;
+  top: 55%;
+  left: 25%;
+  background: #d9a577;
+  opacity: 0.25;
+}
+
+.pebble.p6 {
+  width: 46px;
+  height: 24px;
+  top: 74%;
+  right: 16%;
+  background: #3d200d;
+}
+
+.pebble.p7 {
+  width: 34px;
+  height: 18px;
+  top: 30%;
+  left: 30%;
+  background: #140903;
+  opacity: 0.55;
+}
+
+.pebble.p8 {
+  width: 22px;
+  height: 14px;
+  top: 56%;
+  right: 32%;
+  background: #8f6848;
+  opacity: 0.22;
+}
+
+.pebble.p9 {
+  width: 50px;
+  height: 24px;
+  top: 78%;
+  left: 52%;
+  background: #0d0502;
+  opacity: 0.6;
 }
 
 .space-right-panel {
+  position: relative;
+  z-index: 15;
+  width: 340px;
+  max-height: calc(100dvh - 84px);
+  overflow-y: auto;
+  scrollbar-width: none;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  pointer-events: auto;
+  padding-bottom: 8px;
+}
+
+.space-right-panel::-webkit-scrollbar {
+  display: none;
 }
 
 .panel-card {
@@ -1195,11 +1923,42 @@ body {
 }
 
 @media (max-width: 950px) {
-  .space-view {
-    grid-template-columns: 1fr;
+  .home-screen.space-mode {
+    height: auto;
+    overflow: visible;
   }
 
-  .space-center-placeholder {
-    min-height: 220px;
+  .space-mode .home-main {
+    height: auto;
+    overflow: visible;
+    padding: 16px;
+  }
+
+  .space-view {
+    flex-direction: column;
+    gap: 18px;
+    pointer-events: auto;
+  }
+
+  .space-map-wrapper {
+    position: relative;
+    width: 100%;
+    height: 500px;
+    border-radius: 24px;
+  }
+
+  .space-map-hud {
+    top: 16px;
+    left: 16px;
+  }
+
+  .stratum-layer {
+    padding: 90px 28px 28px 110px;
+  }
+
+  .space-right-panel {
+    width: 100%;
+    max-height: none;
+    overflow: visible;
   }
 }
