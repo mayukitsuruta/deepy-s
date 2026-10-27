@@ -403,27 +403,9 @@ body {
 }
 
 .home-intro {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 35px;
-}
-
-.intro-title,
-.intro-description {
-  flex: 1;
-  background: #f4d5b1;
-  color: #4c3020;
-  border-radius: 45% 35% 40% 30% / 20% 30% 25% 35%;
-  padding: 25px;
-}
-
-.intro-title h2 {
-  font-size: 23px;
-  line-height: 1.7;
-}
-
-.intro-description p {
-  font-size: 14px;
+  margin: 4px 0 28px;
+  color: #fff6ea;
+  font-size: 16px;
   line-height: 1.8;
 }
 
@@ -577,10 +559,6 @@ body {
 
   .home-main {
     padding: 20px 15px;
-  }
-
-  .home-intro {
-    flex-direction: column;
   }
 
   .character-list {
