@@ -1,7 +1,12 @@
 import { db, auth } from "./firebase.js";
-
-import { signInAnonymously } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
-
+import {
+  createUserWithEmailAndPassword,
+  EmailAuthProvider,
+  linkWithCredential,
+  signInAnonymously,
+  signInWithEmailAndPassword,
+  signOut,
+} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 import {
   doc,
   getDoc,
@@ -16,19 +21,8 @@ import {
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
-import { signOut } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
-
-import {
-  EmailAuthProvider,
-  linkWithCredential,
-} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
-
-import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
-
 console.log("DEEPY’sのFirebase接続準備ができました！");
 console.log("Firestore:", db);
-
-import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 
 // 画面を取得
 const firstView = document.getElementById("first-view");
@@ -114,6 +108,7 @@ startButton.addEventListener("click", () => {
   storyIndex = 0;
   updateStory();
   showScreen(storyScreen);
+  restoreAuth();
 });
 
 // ストーリーを進める
@@ -131,30 +126,162 @@ showScreen(firstView);
 
 // 「ゲストとして遊ぶ」をクリック（1ブラウザ＝1ゲスト：既存データがあればそのまま復帰）
 let pendingGuestDocData = null;
+const PROFILE_CACHE_KEY = "deepys-profile";
+let authRestore = null;
+let guestUserPromise = null;
+let profilePrefetch = null;
+let profilePrefetchUid = null;
+let sessionVersion = 0;
 
-guestButton.addEventListener("click", async () => {
-  guestButton.disabled = true;
+function readProfileCache(uid) {
   try {
-    const user = auth.currentUser || (await signInAnonymously(auth)).user;
-    currentUserId = user.uid;
-
-    const userRef = doc(db, "users", user.uid);
-    const userSnapshot = await getDoc(userRef);
-    pendingGuestDocData = userSnapshot.exists() ? userSnapshot.data() : null;
-
-    if (pendingGuestDocData && pendingGuestDocData.nickname) {
-      openRegister.hidden = !user.isAnonymous;
-      // オンライン状態の更新は enterHomeWithUser -> startOnlinePresence 内で非同期に行われるため待ち時間なしで入場
-      enterHomeWithUser(user.uid, pendingGuestDocData);
-    } else {
-      showScreen(guestScreen);
-    }
-  } catch (error) {
-    console.error("ゲストログイン確認エラー:", error);
-    showScreen(guestScreen);
-  } finally {
-    guestButton.disabled = false;
+    const parsed = JSON.parse(localStorage.getItem(PROFILE_CACHE_KEY) || "null");
+    if (!parsed || parsed.uid !== uid || !parsed.data) return null;
+    return parsed.data;
+  } catch {
+    return null;
   }
+}
+
+function writeProfileCache(uid, data) {
+  if (!uid || !data) return;
+  const plain = {};
+  Object.entries(data).forEach(([key, value]) => {
+    if (value == null || ["string", "number", "boolean"].includes(typeof value)) {
+      plain[key] = value;
+      return;
+    }
+    if (Array.isArray(value) && value.every((item) => typeof item === "string")) {
+      plain[key] = value;
+    }
+  });
+  try {
+    localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({ uid, data: plain }));
+  } catch (error) {
+    console.warn("プロフィールの端末保存に失敗:", error);
+  }
+}
+
+function clearProfileCache() {
+  try {
+    localStorage.removeItem(PROFILE_CACHE_KEY);
+  } catch {
+    // 端末に保存できない環境では次回も通信で復元する
+  }
+}
+
+function prefetchProfile(user) {
+  if (!user) return Promise.resolve(null);
+  if (profilePrefetch && profilePrefetchUid === user.uid) return profilePrefetch;
+
+  const cached = readProfileCache(user.uid);
+  if (cached) pendingGuestDocData = cached;
+
+  profilePrefetchUid = user.uid;
+  const version = sessionVersion;
+  profilePrefetch = getDoc(doc(db, "users", user.uid))
+    .then((snapshot) => {
+      if (version !== sessionVersion || auth.currentUser?.uid !== user.uid) {
+        return pendingGuestDocData;
+      }
+      if (snapshot.exists()) {
+        pendingGuestDocData = snapshot.data();
+        writeProfileCache(user.uid, pendingGuestDocData);
+      }
+      if (pendingGuestDocData && currentUserId === user.uid && !homeScreen.hidden) {
+        renderUserData(pendingGuestDocData);
+      }
+      return pendingGuestDocData;
+    })
+    .catch((error) => {
+      console.warn("プロフィールの先読みに失敗:", error);
+      return pendingGuestDocData;
+    });
+  return profilePrefetch;
+}
+
+// 物語を読んでいる間に、前回のログイン状態とプロフィールを先に取っておく
+function restoreAuth() {
+  if (!authRestore) {
+    const version = sessionVersion;
+    authRestore = auth
+      .authStateReady()
+      .then(() => {
+        if (version !== sessionVersion) return null;
+        const user = auth.currentUser;
+        if (!user) return null;
+        currentUserId = user.uid;
+        return prefetchProfile(user);
+      })
+      .catch((error) => {
+        console.warn("ログイン状態の復元に失敗:", error);
+        authRestore = null;
+        return null;
+      });
+  }
+  return authRestore;
+}
+
+function ensureGuestUser() {
+  if (auth.currentUser) return Promise.resolve(auth.currentUser);
+  if (!guestUserPromise) {
+    const version = sessionVersion;
+    guestUserPromise = auth
+      .authStateReady()
+      .then(async () => {
+        if (version !== sessionVersion) return auth.currentUser;
+        if (auth.currentUser) return auth.currentUser;
+        const credential = await signInAnonymously(auth);
+        if (version === sessionVersion) currentUserId = credential.user.uid;
+        return credential.user;
+      })
+      .catch((error) => {
+        guestUserPromise = null;
+        throw error;
+      });
+  }
+  return guestUserPromise;
+}
+
+restoreAuth();
+
+function rememberAndEnter(user, userData) {
+  pendingGuestDocData = userData;
+  writeProfileCache(user.uid, userData);
+  openRegister.hidden = !user.isAnonymous;
+  enterHomeWithUser(user.uid, userData);
+}
+
+guestButton.addEventListener("click", () => {
+  const user = auth.currentUser;
+  const known = pendingGuestDocData || (user && readProfileCache(user.uid));
+
+  if (user && known?.nickname) {
+    rememberAndEnter(user, known);
+    prefetchProfile(user);
+    return;
+  }
+
+  // 通信完了を待たずに名前入力へ進む。戻ってきた人は先読みが終わり次第ホームへ
+  showScreen(guestScreen);
+  guestName.focus();
+
+  ensureGuestUser()
+    .then((signedIn) => prefetchProfile(signedIn))
+    .then(() => {
+      const active = auth.currentUser;
+      if (
+        active &&
+        pendingGuestDocData?.nickname &&
+        !guestScreen.hidden &&
+        !guestName.value.trim()
+      ) {
+        rememberAndEnter(active, pendingGuestDocData);
+      }
+    })
+    .catch((error) => {
+      console.error("ゲストログイン確認エラー:", error);
+    });
 });
 
 // 「もどる」をクリック
@@ -177,50 +304,40 @@ guestForm.addEventListener("submit", async (event) => {
   submitButton.disabled = true;
 
   try {
-    // すでに匿名ログイン済みならそのまま再利用（通信を省略）
-    const user = auth.currentUser || (await signInAnonymously(auth)).user;
+    // 名前入力中に始めておいたログインを使う。未完了ならここだけ待つ
+    const user = await ensureGuestUser();
+    if (!pendingGuestDocData) await prefetchProfile(user);
     const userRef = doc(db, "users", user.uid);
+    const isNew = !pendingGuestDocData;
+    const userData = {
+      ...(pendingGuestDocData || {}),
+      nickname,
+      avatar: pendingGuestDocData?.avatar || "pink",
+      friendshipPoints: pendingGuestDocData?.friendshipPoints ?? 0,
+      bio:
+        pendingGuestDocData?.bio ||
+        "地底でのんびり暮らしてます。よろしくお願いします！",
+      tags: pendingGuestDocData?.tags || ["デザイン", "カフェ巡り", "音楽"],
+      houseLocation: pendingGuestDocData?.houseLocation || "第3層・右下エリア",
+      isOnline: true,
+      lastActiveMs: Date.now(),
+    };
 
-    let userData;
-    let savePromise;
-    // 直前の確認結果を再利用して2回目の getDoc 通信を省略
-    if (!pendingGuestDocData) {
-      userData = {
-        nickname: nickname,
-        avatar: "pink",
-        friendshipPoints: 0,
-        bio: "地底でのんびり暮らしてます。よろしくお願いします！",
-        tags: ["デザイン", "カフェ巡り", "音楽"],
-        houseLocation: "第3層・右下エリア",
-        isOnline: true,
-        lastActiveMs: Date.now(),
-        createdAt: serverTimestamp(),
-      };
-      savePromise = setDoc(userRef, userData);
+    rememberAndEnter(user, userData);
+
+    if (isNew) {
+      await setDoc(userRef, { ...userData, createdAt: serverTimestamp() });
     } else {
-      userData = {
-        ...pendingGuestDocData,
-        nickname: nickname,
-        isOnline: true,
-        lastActiveMs: Date.now(),
-      };
-      savePromise = setDoc(
+      await setDoc(
         userRef,
         {
-          nickname: nickname,
+          nickname,
           isOnline: true,
-          lastActiveMs: Date.now(),
+          lastActiveMs: userData.lastActiveMs,
         },
         { merge: true },
       );
     }
-
-    pendingGuestDocData = userData;
-    openRegister.hidden = !user.isAnonymous;
-    enterHomeWithUser(user.uid, userData);
-    alert("地底生活へようこそ、" + nickname + "！");
-
-    await savePromise;
   } catch (error) {
     console.error("ゲスト登録エラー:", error);
     alert("登録に失敗しました。コンソールを確認してね。");
@@ -229,7 +346,7 @@ guestForm.addEventListener("submit", async (event) => {
   }
 });
 
-logoutButton.addEventListener("click", async () => {
+logoutButton.addEventListener("click", () => {
   const confirmed = confirm(
     "地底生活を終了しますか？\n" +
       "ゲストのまま終了すると、別の端末では続きを遊べません。",
@@ -237,26 +354,28 @@ logoutButton.addEventListener("click", async () => {
 
   if (!confirmed) return;
 
-  try {
-    stopCamera();
-    await sendPresenceHeartbeat(false);
-    // Firebaseからログアウト
-    await signOut(auth);
-    currentUserId = null;
-    pendingGuestDocData = null;
+  stopCamera();
+  const presence = sendPresenceHeartbeat(false);
+  sessionVersion += 1;
+  currentUserId = null;
+  pendingGuestDocData = null;
+  guestUserPromise = null;
+  profilePrefetch = null;
+  profilePrefetchUid = null;
+  authRestore = null;
+  clearProfileCache();
+  guestName.value = "";
+  homeNickname.textContent = "ゲストさん";
+  showScreen(firstView);
 
-    // 入力欄を空にする
-    guestName.value = "";
-    homeNickname.textContent = "ゲストさん";
-
-    // 次の来場者のために最初の画面へ
-    showScreen(firstView);
-
-    alert("地底生活を終了しました！");
-  } catch (error) {
-    console.error("ログアウトエラー:", error);
-    alert("ログアウトに失敗しました。");
-  }
+  presence
+    .catch((error) => {
+      console.warn("オンライン状態の更新に失敗:", error);
+    })
+    .then(() => signOut(auth))
+    .catch((error) => {
+      console.error("ログアウトエラー:", error);
+    });
 });
 
 let registerMode = "guest";
@@ -326,6 +445,7 @@ registerForm.addEventListener("submit", async (event) => {
       const credential = EmailAuthProvider.credential(email, password);
 
       await linkWithCredential(user, credential);
+      user = auth.currentUser;
     } else {
       // 最初から新規登録
       if (!nickname) {
@@ -339,32 +459,35 @@ registerForm.addEventListener("submit", async (event) => {
       );
 
       user = userCredential.user;
-
-      // Firestoreにユーザー情報を保存
-      await setDoc(doc(db, "users", user.uid), {
-        nickname: nickname,
-        friendshipPoints: 0,
-        createdAt: serverTimestamp(),
-      });
     }
 
-    // Firestoreから登録情報を取得
-    const userSnapshot = await getDoc(doc(db, "users", user.uid));
-    const userData = userSnapshot.data();
+    const userData =
+      registerMode === "guest"
+        ? { ...currentUserData, isOnline: true, lastActiveMs: Date.now() }
+        : {
+            nickname,
+            avatar: "pink",
+            friendshipPoints: 0,
+            bio: "地底でのんびり暮らしてます。よろしくお願いします！",
+            tags: ["デザイン", "カフェ巡り", "音楽"],
+            houseLocation: "第3層・右下エリア",
+            isOnline: true,
+            lastActiveMs: Date.now(),
+          };
 
-    homeNickname.textContent = userData.nickname || "ゲストさん";
-    document.getElementById("friendship-value").textContent =
-      userData.friendshipPoints ?? 0;
-
-    openRegister.hidden = true;
+    if (registerMode === "new") {
+      setDoc(doc(db, "users", user.uid), {
+        ...userData,
+        createdAt: serverTimestamp(),
+      }).catch((error) => {
+        console.error("ユーザー情報の保存エラー:", error);
+      });
+    }
 
     registerModal.hidden = true;
     registerForm.reset();
     registerMessage.textContent = "";
-
-    enterHomeWithUser(user.uid, userData);
-
-    alert("地底住民登録が完了したよ！");
+    rememberAndEnter(user, userData);
   } catch (error) {
     console.error("登録エラー:", error);
 
@@ -383,10 +506,19 @@ registerForm.addEventListener("submit", async (event) => {
   }
 });
 
-// ログイン画面を表示
+// ログイン画面を表示。前回のセッションが残っていれば、入力を待たずにホームへ
 loginButton.addEventListener("click", () => {
+  const user = auth.currentUser;
+  const known = pendingGuestDocData || (user && readProfileCache(user.uid));
+  if (user && !user.isAnonymous && known?.nickname) {
+    rememberAndEnter(user, known);
+    prefetchProfile(user);
+    return;
+  }
+
   signinMessage.textContent = "";
   showScreen(signinScreen);
+  document.getElementById("signin-email").focus();
 });
 
 // もどるボタン
@@ -414,32 +546,26 @@ signinForm.addEventListener("submit", async (event) => {
     );
 
     const user = userCredential.user;
-
-    // Firestoreからユーザー情報を取得
-    const userRef = doc(db, "users", user.uid);
-    const userSnapshot = await getDoc(userRef);
-
-    if (!userSnapshot.exists()) {
-      signinMessage.textContent = "ユーザー情報が見つかりません。";
-      return;
-    }
-
-    const userData = userSnapshot.data();
-
-    // ホーム画面にデータを反映
-    homeNickname.textContent = userData.nickname || "ゲストさん";
-
-    const friendshipValue = document.getElementById("friendship-value");
-    friendshipValue.textContent = userData.friendshipPoints ?? 0;
-
-    // 登録済みなのでアカウント登録ボタンを隠す
-    openRegister.hidden = true;
+    guestUserPromise = null;
+    const cached = readProfileCache(user.uid);
 
     signinForm.reset();
     signinMessage.textContent = "";
 
-    // ホーム画面へ
-    enterHomeWithUser(user.uid, userData);
+    if (cached?.nickname) {
+      rememberAndEnter(user, cached);
+      prefetchProfile(user);
+      return;
+    }
+
+    const userSnapshot = await getDoc(doc(db, "users", user.uid));
+    if (!userSnapshot.exists()) {
+      signinMessage.textContent = "ユーザー情報が見つかりません。";
+      showScreen(signinScreen);
+      return;
+    }
+
+    rememberAndEnter(user, userSnapshot.data());
   } catch (error) {
     console.error("ログインエラー:", error);
     signinMessage.textContent =
@@ -456,6 +582,16 @@ const navItems = document.querySelectorAll(".home-nav .nav-item");
 const homeViewContent = document.getElementById("home-view-content");
 const spaceViewContent = document.getElementById("space-view-content");
 const cameraViewContent = document.getElementById("camera-view-content");
+const storyViewContent = document.getElementById("story-view-content");
+const zukanViewContent = document.getElementById("zukan-view-content");
+
+document.querySelectorAll(".zukan-portrait img").forEach((img) => {
+  const markMissing = () => {
+    img.parentElement.classList.add("is-missing");
+  };
+  img.addEventListener("error", markMissing);
+  if (img.complete && img.naturalWidth === 0) markMissing();
+});
 const topbarTitleArea = document.getElementById("topbar-title-area");
 const topbarAvatar = document.getElementById("topbar-avatar");
 const onlineCountEl = document.getElementById("online-count");
@@ -521,45 +657,329 @@ const ONLINE_TIMEOUT_MS = 90 * 1000;
 function switchUndergroundView(viewName) {
   homeScreen.classList.toggle("camera-mode", viewName === "camera");
   homeScreen.classList.toggle("space-mode", viewName === "space");
+  homeScreen.classList.toggle("story-mode", viewName === "story");
   navItems.forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.view === viewName);
+    btn.classList.toggle(
+      "active",
+      btn.dataset.view === viewName || (viewName === "story" && btn.dataset.view === "home"),
+    );
   });
 
+  homeViewContent.hidden = viewName !== "home";
+  spaceViewContent.hidden = viewName !== "space";
+  cameraViewContent.hidden = viewName !== "camera";
+  if (storyViewContent) storyViewContent.hidden = viewName !== "story";
+  if (zukanViewContent) zukanViewContent.hidden = viewName !== "zukan";
+
   if (viewName === "space") {
-    homeViewContent.hidden = true;
-    spaceViewContent.hidden = false;
-    cameraViewContent.hidden = true;
-    if (topbarTitleArea) {
-      topbarTitleArea.textContent = "";
-    }
+    if (topbarTitleArea) topbarTitleArea.textContent = "";
     requestAnimationFrame(() => {
       updateMapScrollbar();
     });
   } else if (viewName === "camera") {
-    homeViewContent.hidden = true;
-    spaceViewContent.hidden = true;
-    cameraViewContent.hidden = false;
     if (topbarTitleArea) topbarTitleArea.textContent = "地底の思い出を写真に残そう。";
-  } else {
-    homeViewContent.hidden = false;
-    spaceViewContent.hidden = true;
-    cameraViewContent.hidden = true;
-    if (topbarTitleArea) {
-      topbarTitleArea.textContent = "";
-    }
+  } else if (topbarTitleArea) {
+    topbarTitleArea.textContent = "";
   }
+
+  if (viewName === "home") updateHitopyPortrait();
 }
 
 navItems.forEach((btn) => {
   btn.addEventListener("click", () => {
     const view = btn.dataset.view;
-    if (view === "home" || view === "space" || view === "camera") {
+    if (view === "home" || view === "space" || view === "camera" || view === "zukan") {
       switchUndergroundView(view);
       if (view !== "camera") stopCamera();
     } else {
       alert("この画面は現在準備中です！");
     }
   });
+});
+
+const chippyStoryLines = [
+  "やあ！　上層まで来てくれたんだね。ぼくはCHIPPY。",
+  "仕事は土吸収員。じゃまな土をこのホースですーって吸い込んで、家や道を作ってるんだ。",
+  "今日の依頼は、道の土にまぎれたクリスタルを見つけること。誰かが落とした、キラキラなんだ。",
+  "土のかたまりが三つあるけど、見た目はどれも同じ。花や果実が埋まってることもあるよ。",
+  "土をクリックすると、ぼくがすーって吸い込む。クリスタルが出てきたら、クリアだ！",
+  "準備はいいかな。ゲームスタートを押して、いっしょに探そう。",
+];
+
+const chippyItemArt = {
+  crystal: "./images/chippy-crystal.png",
+  flower: "./images/chippy-flower.png",
+  fruit: "./images/chippy-fruit.png",
+};
+
+const chippyDialogueText = document.getElementById("chippy-dialogue-text");
+const chippyDialogueNext = document.getElementById("chippy-dialogue-next");
+const chippyDialogue = document.getElementById("chippy-dialogue");
+const chippyStoryBack = document.getElementById("chippy-story-back");
+const chippyStoryPrev = document.getElementById("chippy-story-prev");
+const chippyGame = document.getElementById("chippy-game");
+const chippyGameStart = document.getElementById("chippy-game-start");
+const chippyClearPanel = document.getElementById("chippy-clear-panel");
+const chippyReplay = document.getElementById("chippy-replay");
+const chippyFinish = document.getElementById("chippy-finish");
+const chippyFinishMessage = document.getElementById("chippy-finish-message");
+const chippyFinishHome = document.getElementById("chippy-finish-home");
+let chippyStoryIndex = 0;
+let chippyGameStarted = false;
+let chippyCleared = false;
+let chippyShowingClear = false;
+
+function chippyClearStorageKey() {
+  return `deepys-chippy-cleared:${currentUserId || "local"}`;
+}
+
+function isChippyStoryCleared() {
+  if (currentUserData?.chippyCleared) return true;
+  try {
+    return localStorage.getItem(chippyClearStorageKey()) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function updateHitopyPortrait() {
+  const portrait = document.getElementById("hitopy-portrait");
+  const card = portrait?.closest(".hitopy");
+  if (!portrait || !card) return;
+  const revealed = isChippyStoryCleared();
+  portrait.classList.toggle("is-silhouette", !revealed);
+  card.classList.toggle("is-revealed", revealed);
+}
+
+function awardChippyFriendship() {
+  if (isChippyStoryCleared()) return;
+
+  const nextPoints = Math.min(100, Number(currentUserData.friendshipPoints ?? 0) + 25);
+  renderUserData({ friendshipPoints: nextPoints, chippyCleared: true });
+  updateHitopyPortrait();
+
+  try {
+    localStorage.setItem(chippyClearStorageKey(), "1");
+  } catch {
+    // 保存できない場合も、この画面の表示は更新済み
+  }
+
+  if (!currentUserId) return;
+  writeProfileCache(currentUserId, currentUserData);
+  setDoc(
+    doc(db, "users", currentUserId),
+    { friendshipPoints: nextPoints, chippyCleared: true },
+    { merge: true },
+  ).catch((error) => {
+    console.error("友情ポイントの保存エラー:", error);
+  });
+}
+
+function shuffleChippyItems(items) {
+  const copy = [...items];
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
+  }
+  return copy;
+}
+
+function resetChippyGame() {
+  chippyGameStarted = false;
+  chippyCleared = false;
+  storyViewContent?.classList.remove("is-playing");
+  if (chippyGame) {
+    chippyGame.hidden = true;
+    chippyGame.replaceChildren();
+  }
+  if (chippyFinish) chippyFinish.hidden = true;
+}
+
+function updateChippyPrev() {
+  const inDialogue = !chippyGameStarted && !chippyShowingClear;
+  chippyStoryPrev.hidden = !inDialogue;
+  chippyStoryPrev.disabled = chippyStoryIndex <= 0;
+}
+
+function renderChippyStory() {
+  const isLast = chippyStoryIndex >= chippyStoryLines.length - 1;
+  const showStart = isLast && !chippyGameStarted;
+  chippyDialogueText.textContent = chippyStoryLines[chippyStoryIndex];
+  chippyGameStart.hidden = !showStart;
+  chippyDialogueNext.hidden = showStart;
+  chippyDialogueNext.textContent = "click";
+  chippyDialogueNext.classList.toggle("is-more", !isLast && !showStart);
+  updateChippyPrev();
+}
+
+function showChippyFinish(message) {
+  chippyFinishMessage.textContent = message;
+  chippyDialogue.hidden = true;
+  chippyFinish.hidden = false;
+  chippyFinishHome.focus();
+}
+
+function sayChippy(message, hint) {
+  chippyDialogueText.textContent = message;
+  chippyDialogueNext.hidden = false;
+  chippyDialogueNext.textContent = hint;
+  chippyDialogueNext.classList.remove("is-more");
+  updateChippyPrev();
+}
+
+function showChippyClearScreen() {
+  chippyShowingClear = true;
+  resetChippyGame();
+  chippyDialogue.hidden = true;
+  chippyClearPanel.hidden = false;
+  storyViewContent.classList.add("is-cleared");
+  updateChippyPrev();
+  switchUndergroundView("story");
+}
+
+function startChippyStory() {
+  chippyStoryIndex = 0;
+  chippyShowingClear = false;
+  chippyDialogue.hidden = false;
+  chippyClearPanel.hidden = true;
+  storyViewContent.classList.remove("is-cleared");
+  resetChippyGame();
+  renderChippyStory();
+  switchUndergroundView("story");
+}
+
+function openChippyStory() {
+  if (isChippyStoryCleared()) {
+    showChippyClearScreen();
+    return;
+  }
+  startChippyStory();
+}
+
+function advanceChippyStory() {
+  if (chippyShowingClear || chippyGameStarted) return;
+  if (chippyStoryIndex >= chippyStoryLines.length - 1) return;
+  chippyStoryIndex += 1;
+  renderChippyStory();
+}
+
+function rewindChippyStory() {
+  if (chippyShowingClear || chippyGameStarted || chippyStoryIndex <= 0) return;
+  chippyStoryIndex -= 1;
+  renderChippyStory();
+}
+
+function absorbChippyMound(mound) {
+  if (mound.classList.contains("is-open")) return;
+  mound.classList.add("is-open");
+  mound.disabled = true;
+
+  const item = mound.dataset.item;
+  if (item === "crystal") {
+    chippyCleared = true;
+    mound.classList.add("is-clear");
+    mound.setAttribute("aria-label", "クリスタル");
+    const alreadyCleared = isChippyStoryCleared();
+    awardChippyFriendship();
+    showChippyFinish(
+      alreadyCleared
+        ? "ありがとう！　またクリスタルを見つけてくれたね。友情ポイントは、このまえ渡してあるよ。"
+        : "ありがとう！　探してたクリスタルを見つけてくれて、ほんとうに助かったよ。友情ポイントを25%あげるね。",
+    );
+    return;
+  }
+
+  mound.setAttribute("aria-label", item === "flower" ? "花" : "果実");
+  if (!chippyCleared) {
+    sayChippy("残念、これじゃないみたいだ。", "ほかの土も吸ってみよう");
+  }
+}
+
+function startChippyGame() {
+  chippyGameStarted = true;
+  chippyCleared = false;
+  chippyGameStart.hidden = true;
+  storyViewContent.classList.add("is-playing");
+  chippyGame.replaceChildren();
+
+  shuffleChippyItems(["crystal", "flower", "fruit"]).forEach((item) => {
+    const mound = document.createElement("button");
+    mound.type = "button";
+    mound.className = "chippy-mound";
+    mound.dataset.item = item;
+    mound.setAttribute("aria-label", "土のかたまり");
+
+    const itemImage = document.createElement("img");
+    itemImage.className = "chippy-mound-item";
+    itemImage.src = chippyItemArt[item];
+    itemImage.alt = "";
+
+    const soilImage = document.createElement("img");
+    soilImage.className = "chippy-mound-soil";
+    soilImage.src = "./images/chippy-soil.png";
+    soilImage.alt = "";
+
+    mound.append(itemImage, soilImage);
+    mound.addEventListener("click", (event) => {
+      event.stopPropagation();
+      absorbChippyMound(mound);
+    });
+    chippyGame.append(mound);
+  });
+
+  chippyGame.hidden = false;
+  sayChippy("三つのうちのひとつに、クリスタルが埋まってる。土をクリックして吸ってみて！", "土を吸おう");
+}
+
+document.querySelectorAll(".character-button[data-character='chippy']").forEach((button) => {
+  button.addEventListener("click", openChippyStory);
+});
+
+storyViewContent?.addEventListener("click", (event) => {
+  if (event.target.closest("#chippy-story-back, #chippy-story-prev, #chippy-game-start, #chippy-replay, #chippy-finish-home, .chippy-mound, .chippy-clear-panel, .chippy-finish")) {
+    return;
+  }
+  advanceChippyStory();
+});
+
+chippyStoryBack?.addEventListener("click", () => {
+  switchUndergroundView("home");
+});
+
+chippyStoryPrev?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  rewindChippyStory();
+});
+
+chippyReplay?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  startChippyStory();
+});
+
+chippyFinishHome?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  switchUndergroundView("home");
+});
+
+chippyGameStart?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  startChippyGame();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (!storyViewContent || storyViewContent.hidden) return;
+  if (event.key !== "Enter" && event.key !== " ") return;
+  if (event.target.closest?.("#chippy-story-back, #chippy-story-prev, #chippy-game-start, #chippy-replay, #chippy-finish-home, .chippy-mound")) return;
+  event.preventDefault();
+  if (!chippyFinish.hidden) {
+    switchUndergroundView("home");
+    return;
+  }
+  if (!chippyGameStart.hidden) {
+    startChippyGame();
+    return;
+  }
+  advanceChippyStory();
 });
 
 // フレーム付きカメラ（画像はこの画面内でのみ扱い、Firebaseには保存しない）
@@ -1027,6 +1447,7 @@ profileEditForm.addEventListener("submit", async (event) => {
   };
 
   renderUserData(updatedFields);
+  writeProfileCache(currentUserId, currentUserData);
   profileEditForm.hidden = true;
 
   if (currentUserId) {

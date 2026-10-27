@@ -443,7 +443,7 @@ body {
   min-width: 0;
 }
 
-.koizumi {
+.chippy {
   background: #e9e9b2;
 }
 
@@ -460,15 +460,37 @@ body {
   color: #fff;
 }
 
-.character-image-placeholder {
-  height: 200px;
-  border: 2px dashed currentColor;
+.character-portrait {
+  height: 210px;
   border-radius: 100px 100px 20px 20px;
-  display: grid;
-  place-items: center;
-  text-align: center;
-  font-size: 14px;
-  opacity: 0.7;
+  background: rgba(255, 255, 255, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.character-portrait img {
+  height: 96%;
+  width: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.hitopy .character-portrait {
+  background: #efe6dc;
+}
+
+.hitopy .character-portrait img.is-silhouette {
+  filter: brightness(0);
+}
+
+.hitopy.is-revealed {
+  filter: none;
+}
+
+.hitopy.is-revealed .character-portrait {
+  background: #5a534e;
 }
 
 .character-info {
@@ -565,12 +587,76 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .character-image-placeholder {
+  .character-portrait {
     height: 250px;
   }
 
-  .home-screen.camera-mode {
+  .home-screen.camera-mode,
+  .home-screen.story-mode {
     flex-direction: column;
+  }
+
+  .story-mode .home-sidebar {
+    width: 100%;
+    min-height: 0;
+    flex: 0 0 auto;
+    gap: 0;
+    padding: 6px 8px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(226, 193, 158, 0.18);
+  }
+
+  .story-mode .sidebar-logo,
+  .story-mode .sidebar-footer,
+  .story-mode .logout-button {
+    display: none;
+  }
+
+  .story-mode .home-nav {
+    flex: 0 0 auto;
+    flex-direction: row;
+    gap: 4px;
+    overflow-x: auto;
+  }
+
+  .story-mode .nav-item {
+    width: auto;
+    flex: 0 0 auto;
+    gap: 6px;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .story-mode .home-main {
+    height: auto;
+    flex: 1;
+    padding: 8px;
+  }
+
+  .chippy-story {
+    min-height: 72vh;
+  }
+
+  .chippy-story-character,
+  .chippy-story.is-playing .chippy-story-character {
+    height: 48%;
+    max-width: 42%;
+  }
+
+  .chippy-game {
+    left: 4%;
+    width: 92%;
+    top: 6%;
+    height: 46%;
+  }
+
+  .chippy-clear-panel {
+    left: 4%;
+    width: 92%;
+  }
+
+  .chippy-dialogue-text {
+    font-size: 16px;
   }
 
   .camera-mode .home-sidebar {
@@ -832,8 +918,431 @@ body {
    ========================================= */
 #home-view-content[hidden],
 #space-view-content[hidden],
-#camera-view-content[hidden] {
+#camera-view-content[hidden],
+#story-view-content[hidden],
+#zukan-view-content[hidden] {
   display: none !important;
+}
+
+.zukan-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  max-height: calc(100dvh - 120px);
+  gap: 14px;
+}
+
+.zukan-title {
+  margin: 0;
+  color: #fff6ea;
+  font-size: 24px;
+  letter-spacing: 0.08em;
+}
+
+.zukan-scroll {
+  display: grid;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(230px, 280px);
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+  min-height: 0;
+  flex: 1;
+}
+
+.zukan-card {
+  background: #fff8ee;
+  color: #4b3028;
+  border-radius: 28px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.zukan-card.is-unset {
+  background: #efe4d6;
+}
+
+.zukan-portrait {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.72);
+  overflow: hidden;
+}
+
+.zukan-portrait img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.zukan-portrait.is-missing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8c725c;
+  font-size: 14px;
+}
+
+.zukan-portrait.is-missing img {
+  display: none;
+}
+
+.zukan-portrait.is-missing::after {
+  content: "画像はあとから";
+}
+
+.zukan-portrait-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #c8b39d;
+  color: #8c725c;
+  font-size: 42px;
+}
+
+.zukan-card h3 {
+  margin: 12px 0 4px;
+  text-align: center;
+  letter-spacing: 0.12em;
+  font-size: 22px;
+}
+
+.zukan-role {
+  margin: 0 0 6px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.zukan-card p:last-child {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* CHIPPYの暮らし：背景の上で会話を進める */
+.home-screen.story-mode {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.story-mode .home-main {
+  min-height: 0;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.story-mode .home-header {
+  display: none;
+}
+
+.chippy-story {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border-radius: 28px;
+  overflow: hidden;
+  background: #24160f url("../images/chippy-bg.png") center / cover no-repeat;
+  cursor: pointer;
+}
+
+.chippy-story-back {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 4;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: rgba(255, 248, 238, 0.92);
+  color: #4b3028;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.chippy-story-character {
+  position: absolute;
+  right: 2%;
+  bottom: 0;
+  z-index: 1;
+  height: 92%;
+  width: auto;
+  max-width: 58%;
+  object-fit: contain;
+  object-position: right bottom;
+  pointer-events: none;
+  filter: drop-shadow(0 16px 18px rgba(28, 14, 6, 0.35));
+}
+
+.chippy-dialogue {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 16px;
+  z-index: 3;
+  margin: 0;
+  padding: 18px 22px 14px;
+  border-radius: 22px;
+  background: rgba(255, 248, 238, 0.94);
+  color: #4b3028;
+  box-shadow: 0 10px 28px rgba(28, 14, 6, 0.28);
+}
+
+.chippy-dialogue-name {
+  display: inline-block;
+  margin: 0 0 8px;
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: #d7d48a;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.chippy-dialogue-text {
+  margin: 0;
+  min-height: 4.8em;
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.chippy-dialogue-next {
+  margin: 0;
+  text-align: right;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+.chippy-dialogue-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.chippy-story-prev {
+  border: 0;
+  background: transparent;
+  color: #4b3028;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.chippy-story-prev:disabled {
+  opacity: 0.35;
+  cursor: default;
+  text-decoration: none;
+}
+
+.chippy-story-prev[hidden] {
+  display: none !important;
+}
+
+.chippy-dialogue-next.is-more::after {
+  content: " ▼";
+}
+
+.chippy-dialogue-next[hidden],
+.chippy-game-start[hidden],
+.chippy-game[hidden],
+.chippy-clear-panel[hidden],
+.chippy-finish[hidden],
+#chippy-dialogue[hidden] {
+  display: none !important;
+}
+
+.chippy-game-start {
+  display: block;
+  margin: 12px auto 0;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 26px;
+  background: #ff9138;
+  color: #3b2518;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.chippy-game-start:hover {
+  background: #ffb067;
+}
+
+.chippy-story.is-playing .chippy-story-character {
+  height: 72%;
+  max-width: 42%;
+}
+
+.chippy-game {
+  position: absolute;
+  z-index: 2;
+  left: 4%;
+  width: 58%;
+  top: 18%;
+  height: 42%;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+}
+
+.chippy-mound {
+  position: relative;
+  width: 34%;
+  max-width: 220px;
+  aspect-ratio: 1;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.chippy-mound:nth-child(2) {
+  transform: translateY(-10%);
+}
+
+.chippy-mound-item,
+.chippy-mound-soil {
+  position: absolute;
+  left: 50%;
+  top: 54%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.chippy-mound-soil {
+  width: 138%;
+  height: 138%;
+  transition: transform 0.45s ease, opacity 0.4s ease;
+}
+
+.chippy-mound.is-open .chippy-mound-soil {
+  transform: translate(-50%, -78%) scale(0.12);
+  opacity: 0;
+}
+
+.chippy-mound.is-open {
+  cursor: default;
+}
+
+.chippy-mound.is-clear .chippy-mound-item {
+  filter: drop-shadow(0 0 16px rgba(255, 236, 150, 0.95));
+}
+
+.chippy-finish {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 24px;
+  background: rgba(42, 22, 12, 0.38);
+  text-align: center;
+}
+
+.chippy-finish p {
+  margin: 0;
+  max-width: 520px;
+  padding: 16px 22px;
+  border-radius: 20px;
+  background: rgba(255, 248, 238, 0.96);
+  color: #4b3028;
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+#chippy-finish-home {
+  min-width: 220px;
+  border: 0;
+  border-radius: 999px;
+  padding: 18px 56px;
+  background: #ff9138;
+  color: #3b2518;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(40, 18, 6, 0.35);
+}
+
+#chippy-finish-home:hover {
+  background: #ffb067;
+}
+
+.chippy-clear-panel {
+  position: absolute;
+  z-index: 3;
+  left: 6%;
+  bottom: 12%;
+  width: min(460px, 54%);
+  padding: 28px 24px;
+  border-radius: 28px;
+  background: rgba(255, 248, 238, 0.96);
+  color: #4b3028;
+  text-align: center;
+  box-shadow: 0 10px 28px rgba(28, 14, 6, 0.28);
+}
+
+.chippy-clear-kicker {
+  display: inline-block;
+  margin: 0;
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: #d7d48a;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.chippy-clear-panel h2 {
+  margin: 12px 0 8px;
+  font-size: 28px;
+}
+
+.chippy-clear-panel p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+#chippy-replay {
+  margin-top: 18px;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 22px;
+  background: #ff9138;
+  color: #3b2518;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+#chippy-replay:hover {
+  background: #ffb067;
 }
 
 /* カメラ・フレーム撮影 */

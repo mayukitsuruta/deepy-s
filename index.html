@@ -5,6 +5,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DEEPY’s - 地底人との暮らし</title>
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://identitytoolkit.googleapis.com" />
+  <link rel="preconnect" href="https://firestore.googleapis.com" />
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js" />
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js" />
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js" />
   <link rel="stylesheet" href="./css/style.css" />
 </head>
 
@@ -88,6 +94,15 @@
             </svg>
           </span>
           <span>ホーム</span>
+        </button>
+        <button class="nav-item" data-view="zukan" type="button">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M5 4.2A2.2 2.2 0 0 1 7.2 2H19v15H7.2A2.2 2.2 0 0 0 5 19.2V4.2Z" />
+              <path d="M8 6.2h7v1.6H8V6.2Zm0 3.2h7v1.6H8V9.4Z" fill="#3b2518" />
+            </svg>
+          </span>
+          <span>地底人図鑑</span>
         </button>
         <button class="nav-item" data-view="space" type="button">
           <span class="nav-icon" aria-hidden="true">
@@ -207,25 +222,29 @@
 
         <!-- キャラクターカード -->
         <div class="character-list">
-          <article class="character-card koizumi">
-            <div class="character-image-placeholder">KOIZUMIのイラスト</div>
+          <article class="character-card chippy">
+            <div class="character-portrait">
+              <img src="./images/green.png" alt="CHIPPY" />
+            </div>
             <div class="character-info">
-              <h3>KOIZUMI</h3>
+              <h3>CHIPPY</h3>
               <p class="character-subtitle">〜 土を掘る人 〜</p>
               <p class="character-description">
                 地底で家を作るために、土を除去する仕事をしているよ。
                 力持ちでまっすぐな性格。
               </p>
-              <p class="character-detail">職業：土壌整備者</p>
+              <p class="character-detail">職業：土吸収員</p>
               <p class="character-detail">住んでいる地層：上層</p>
-              <button class="character-button" data-character="koizumi">
+              <button class="character-button" data-character="chippy">
                 この子の暮らしをのぞく →
               </button>
             </div>
           </article>
 
           <article class="character-card kotone">
-            <div class="character-image-placeholder">KOTONEのイラスト</div>
+            <div class="character-portrait">
+              <img src="./images/pink.png" alt="KOTONE" />
+            </div>
             <div class="character-info">
               <h3>KOTONE</h3>
               <p class="character-subtitle">〜 音を集める人 〜</p>
@@ -241,7 +260,9 @@
           </article>
 
           <article class="character-card nasupy">
-            <div class="character-image-placeholder">NASUPYのイラスト</div>
+            <div class="character-portrait">
+              <img src="./images/purple.png" alt="NASUPY" />
+            </div>
             <div class="character-info">
               <h3>NASUPY</h3>
               <p class="character-subtitle">〜 植物のお医者さん 〜</p>
@@ -257,7 +278,9 @@
           </article>
 
           <article class="character-card hitopy locked">
-            <div class="character-image-placeholder">？</div>
+            <div class="character-portrait">
+              <img id="hitopy-portrait" class="is-silhouette" src="./images/white.png" alt="HITOPY" />
+            </div>
             <div class="character-info">
               <h3>HITOPY</h3>
               <p class="character-subtitle">〜 建築家 〜</p>
@@ -273,6 +296,95 @@
         </div>
 
         <p class="home-message">まずは気になる子を選んでみてね！</p>
+      </div>
+
+      <div id="zukan-view-content" class="zukan-view" hidden>
+        <h2 class="zukan-title">地底人図鑑</h2>
+        <div class="zukan-scroll">
+          <article class="zukan-card">
+            <div class="zukan-portrait">
+              <img src="./images/green.png" alt="CHIPPY" />
+            </div>
+            <h3>CHIPPY</h3>
+            <p class="zukan-role">土吸収員・上層</p>
+            <p>地底で家を作るために、土を除去する仕事をしているよ。力持ちでまっすぐな性格。</p>
+          </article>
+
+          <article class="zukan-card">
+            <div class="zukan-portrait">
+              <img src="./images/pink.png" alt="KOTONE" />
+            </div>
+            <h3>KOTONE</h3>
+            <p class="zukan-role">音の採集家・中層</p>
+            <p>地底に響くいろんな音を集めているよ。歌うことや音楽が大好き。</p>
+          </article>
+
+          <article class="zukan-card">
+            <div class="zukan-portrait">
+              <img src="./images/purple.png" alt="NASUPY" />
+            </div>
+            <h3>NASUPY</h3>
+            <p class="zukan-role">植物の医者・深層</p>
+            <p>地底の植物たちの健康を守るお医者さん。植物と話せるよ。</p>
+          </article>
+
+          <article class="zukan-card">
+            <div class="zukan-portrait">
+              <img src="./images/white.png" alt="HITOPY" />
+            </div>
+            <h3>HITOPY</h3>
+            <p class="zukan-role">建築家</p>
+            <p>地底に素敵な家を建てるのが夢。みんなの暮らしをつなぐ建築家。</p>
+          </article>
+
+          <article class="zukan-card">
+            <div class="zukan-portrait">
+              <img src="./images/deepy.png" alt="DEEPY" />
+            </div>
+            <h3>DEEPY</h3>
+            <p class="zukan-role">地底の案内人</p>
+            <p>地上から来た人を、地底の暮らしへ案内するよ。ガイドブックをいつも持っている。</p>
+          </article>
+
+          <article class="zukan-card is-unset">
+            <div class="zukan-portrait zukan-portrait-empty" aria-hidden="true">？</div>
+            <h3>？？？</h3>
+            <p class="zukan-role">まだ会っていない地底人</p>
+            <p>画像と設定は、あとから追加するよ。</p>
+          </article>
+
+          <article class="zukan-card is-unset">
+            <div class="zukan-portrait zukan-portrait-empty" aria-hidden="true">？</div>
+            <h3>？？？</h3>
+            <p class="zukan-role">まだ会っていない地底人</p>
+            <p>画像と設定は、あとから追加するよ。</p>
+          </article>
+        </div>
+      </div>
+
+      <div id="story-view-content" class="chippy-story" hidden>
+        <button id="chippy-story-back" class="chippy-story-back" type="button">ホームにもどる</button>
+        <img class="chippy-story-character" src="./images/green.png" alt="CHIPPY" />
+        <div id="chippy-game" class="chippy-game" hidden></div>
+        <div class="chippy-dialogue" id="chippy-dialogue">
+          <p class="chippy-dialogue-name">CHIPPY</p>
+          <p class="chippy-dialogue-text" id="chippy-dialogue-text" aria-live="polite"></p>
+          <div class="chippy-dialogue-footer">
+            <button id="chippy-story-prev" class="chippy-story-prev" type="button">前に戻る</button>
+            <p class="chippy-dialogue-next" id="chippy-dialogue-next">click</p>
+          </div>
+          <button id="chippy-game-start" class="chippy-game-start" type="button" hidden>ゲームスタート</button>
+        </div>
+        <div id="chippy-finish" class="chippy-finish" hidden>
+          <p id="chippy-finish-message"></p>
+          <button id="chippy-finish-home" type="button">クリア</button>
+        </div>
+        <section id="chippy-clear-panel" class="chippy-clear-panel" hidden>
+          <p class="chippy-clear-kicker">CHIPPY</p>
+          <h2>このストーリーはクリア！</h2>
+          <p>友情ポイントを25%もらったよ。</p>
+          <button id="chippy-replay" type="button">もう一度<br />暮らしを見てみる？</button>
+        </section>
       </div>
 
       <!-- 交流スペース画面コンテンツ -->
