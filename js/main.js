@@ -185,7 +185,7 @@ function prefetchProfile(user) {
         return pendingGuestDocData;
       }
       if (snapshot.exists()) {
-        pendingGuestDocData = snapshot.data();
+        pendingGuestDocData = withSavedFriendship(snapshot.data(), user.uid);
         writeProfileCache(user.uid, pendingGuestDocData);
       }
       if (pendingGuestDocData && currentUserId === user.uid && !homeScreen.hidden) {
@@ -584,14 +584,7 @@ const spaceViewContent = document.getElementById("space-view-content");
 const cameraViewContent = document.getElementById("camera-view-content");
 const storyViewContent = document.getElementById("story-view-content");
 const zukanViewContent = document.getElementById("zukan-view-content");
-
-document.querySelectorAll(".zukan-portrait img").forEach((img) => {
-  const markMissing = () => {
-    img.parentElement.classList.add("is-missing");
-  };
-  img.addEventListener("error", markMissing);
-  if (img.complete && img.naturalWidth === 0) markMissing();
-});
+const zukanNote = document.getElementById("zukan-note");
 const topbarTitleArea = document.getElementById("topbar-title-area");
 const topbarAvatar = document.getElementById("topbar-avatar");
 const onlineCountEl = document.getElementById("online-count");
@@ -670,6 +663,7 @@ function switchUndergroundView(viewName) {
   cameraViewContent.hidden = viewName !== "camera";
   if (storyViewContent) storyViewContent.hidden = viewName !== "story";
   if (zukanViewContent) zukanViewContent.hidden = viewName !== "zukan";
+  if (viewName === "zukan") renderZukan();
 
   if (viewName === "space") {
     if (topbarTitleArea) topbarTitleArea.textContent = "";
@@ -682,7 +676,10 @@ function switchUndergroundView(viewName) {
     topbarTitleArea.textContent = "";
   }
 
-  if (viewName === "home") updateHitopyPortrait();
+  if (viewName === "home") {
+    updateHitopyPortrait();
+    syncFriendshipPill();
+  }
 }
 
 navItems.forEach((btn) => {
@@ -733,6 +730,259 @@ function chippyClearStorageKey() {
   return `deepys-chippy-cleared:${currentUserId || "local"}`;
 }
 
+function friendshipStorageKey(uid = currentUserId) {
+  return `deepys-friendship:${uid || "local"}`;
+}
+
+function readStoredFriendship(uid = currentUserId) {
+  try {
+    const value = Number(localStorage.getItem(friendshipStorageKey(uid)));
+    return Number.isFinite(value) ? value : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function writeStoredFriendship(points, uid = currentUserId) {
+  try {
+    localStorage.setItem(friendshipStorageKey(uid), String(points));
+  } catch {
+    // 端末に保存できない場合も、画面上の数字は更新する
+  }
+}
+
+function resolvedFriendshipPoints(points, uid = currentUserId) {
+  const parsed = Number(points ?? 0);
+  const safe = Number.isFinite(parsed) ? parsed : 0;
+  return Math.min(100, Math.max(0, safe, readStoredFriendship(uid)));
+}
+
+function withSavedFriendship(data, uid = currentUserId) {
+  return {
+    ...(data || {}),
+    friendshipPoints: resolvedFriendshipPoints(data?.friendshipPoints, uid),
+  };
+}
+
+function syncFriendshipPill() {
+  const points = resolvedFriendshipPoints(currentUserData.friendshipPoints);
+  currentUserData.friendshipPoints = points;
+  if (friendshipValueEl) friendshipValueEl.textContent = String(points);
+  if (openZukanId) renderZukan();
+}
+
+const ZUKAN_UNLOCK_POINTS = 25;
+let openZukanId = null;
+
+const zukanEntries = [
+  {
+    id: "chippy",
+    name: "CHIPPY",
+    image: "./images/green.png",
+    occupation: "土吸収員",
+    habitat: "上層",
+    likes: "きれいな鉱物。とくにクリスタル",
+    found: "上層の道ぞい",
+    note: "地底で家を作るために、土を除去する仕事をしている。力持ちで、まっすぐな性格。",
+    tool: "土を吸い込むホース",
+    surprise: "落とし物を見つけると、道作りの手を止めて探してしまう。",
+    secret: "道の土にまぎれていたクリスタルは、誰かが落としたものだった。",
+  },
+  {
+    id: "kotone",
+    name: "KOTONE",
+    image: "./images/pink.png",
+    occupation: "音の採集家",
+    habitat: "中層",
+    likes: "歌と、地底に響く音",
+    found: "音の多い中層",
+    note: "地底に響くいろんな音を集めている。歌うことや音楽が大好き。",
+    tool: "音を集めるための道具",
+    surprise: "にぎやかな音だけでなく、とても静かな音も集めている。",
+    secret: "集めた音を、夜になるとひとりで歌い返している。",
+  },
+  {
+    id: "nasupy",
+    name: "NASUPY",
+    image: "./images/purple.png",
+    occupation: "植物の医者",
+    habitat: "深層",
+    likes: "地底の植物",
+    found: "深層の植え込み",
+    note: "地底の植物たちの健康を守るお医者さん。植物と話せる。",
+    tool: "虫めがね",
+    surprise: "診た植物に、ひとつずつ名前をつけてしまう。",
+    secret: "植物の具合は、声の小ささでわかってしまう。",
+  },
+  {
+    id: "hitopy",
+    name: "HITOPY",
+    image: "./images/white.png",
+    occupation: "建築家",
+    habitat: "？？？",
+    likes: "これから建てる家の設計",
+    found: "日付はまだうっていない",
+    note: "地底に素敵な家を建てるのが夢。みんなの暮らしをつなぐ建築家。",
+    tool: "ポケットに入った道具",
+    surprise: "完成した家より、まだ建っていない家の話が好き。",
+    secret: "住む地層は、自分でもまだ決めていない。",
+  },
+  {
+    id: "deepy",
+    name: "DEEPY",
+    image: "./images/deepy.png",
+    occupation: "地底の案内人",
+    habitat: "地上と地底のあいだ",
+    likes: "ガイドブックに書き足すこと",
+    found: "地底に着いた日",
+    note: "地上から来た人を、地底の暮らしへ案内する。ガイドブックをいつも持っている。",
+    tool: "青いガイドブック",
+    surprise: "案内の途中で、自分も知らない道を見つけることがある。",
+    secret: "ガイドブックのうしろには、まだ白いページが残っている。",
+  },
+  {
+    id: "unknown-1",
+    name: "？？？",
+    unknown: true,
+    note: "このページは白紙。画像とキャラ設定が決まったら、ここに書き足すよ。",
+  },
+  {
+    id: "unknown-2",
+    name: "？？？",
+    unknown: true,
+    note: "このページは白紙。画像とキャラ設定が決まったら、ここに書き足すよ。",
+  },
+];
+
+function zukanSecretsOpen() {
+  return resolvedFriendshipPoints(currentUserData.friendshipPoints) >= ZUKAN_UNLOCK_POINTS;
+}
+
+function renderZukan() {
+  if (!zukanNote) return;
+  if (openZukanId && zukanEntries.some((entry) => entry.id === openZukanId)) {
+    renderZukanFile(openZukanId);
+    return;
+  }
+  openZukanId = null;
+  renderZukanIndex();
+}
+
+function renderZukanIndex() {
+  zukanNote.replaceChildren();
+  const header = document.createElement("header");
+  header.innerHTML = `
+    <p class="field-note-kicker">調査員の記録</p>
+    <h2>地底調査ノート</h2>
+    <p class="field-note-lead">名前を選ぶと、その子の調査ページが開くよ。</p>
+  `;
+  zukanNote.append(header);
+
+  zukanEntries.forEach((entry, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "field-entry";
+    button.innerHTML = `
+      <span class="field-entry-no">${String(index + 1).padStart(2, "0")}</span>
+      <span class="field-thumb">${
+        entry.image
+          ? `<img src="${entry.image}" alt="" />`
+          : `<span class="field-thumb-empty">？</span>`
+      }</span>
+      <span class="field-entry-copy">
+        <span class="field-entry-name">${entry.name}</span>
+        <span class="field-entry-meta">${
+          entry.unknown ? "まだ見つけていない" : `${entry.occupation}・${entry.habitat}`
+        }</span>
+      </span>
+      <span class="field-entry-open">開く</span>
+    `;
+    button.addEventListener("click", () => {
+      openZukanId = entry.id;
+      renderZukanFile(entry.id);
+      zukanNote.scrollTop = 0;
+    });
+    zukanNote.append(button);
+  });
+}
+
+function renderZukanFile(entryId) {
+  const entry = zukanEntries.find((item) => item.id === entryId);
+  if (!entry || !zukanNote) return;
+  const open = zukanSecretsOpen();
+  zukanNote.replaceChildren();
+
+  const back = document.createElement("button");
+  back.type = "button";
+  back.className = "field-back";
+  back.textContent = "ノートにもどる";
+  back.addEventListener("click", () => {
+    openZukanId = null;
+    renderZukanIndex();
+  });
+
+  const page = document.createElement("article");
+  page.className = "field-file";
+  if (entry.unknown) {
+    page.innerHTML = `
+      <div class="field-photo field-photo-empty" aria-hidden="true">？</div>
+      <div>
+        <p class="field-file-kicker">未発見</p>
+        <h2>${entry.name}</h2>
+        <p>${entry.note}</p>
+      </div>
+    `;
+  } else {
+    const secret = open
+      ? `
+        <section class="field-secret">
+          <p class="field-stamp">開封済み</p>
+          <h3>秘密ファイル</h3>
+          <div class="field-secret-block">
+            <p class="field-secret-label">仕事道具</p>
+            <p>${entry.tool}</p>
+          </div>
+          <div class="field-secret-block">
+            <p class="field-secret-label">意外な一面</p>
+            <p>${entry.surprise}</p>
+          </div>
+          <div class="field-secret-block">
+            <p class="field-secret-label">秘密の情報</p>
+            <p>${entry.secret}</p>
+          </div>
+        </section>
+      `
+      : `
+        <section class="field-secret">
+          <h3>秘密ファイル</h3>
+          <div class="field-sealed">
+            <p class="field-stamp">未開封</p>
+            <p>友情ポイントが25%になると、仕事道具・意外な一面・秘密の情報が読めるよ。</p>
+          </div>
+        </section>
+      `;
+    page.innerHTML = `
+      <div class="field-photo">
+        <img src="${entry.image}" alt="${entry.name}" />
+      </div>
+      <div>
+        <p class="field-file-kicker">調査ページ</p>
+        <h2>${entry.name}</h2>
+        <dl class="field-facts">
+          <dt>職業</dt><dd>${entry.occupation}</dd>
+          <dt>生息地</dt><dd>${entry.habitat}</dd>
+          <dt>好きなもの</dt><dd>${entry.likes}</dd>
+          <dt>発見日</dt><dd>${entry.found}</dd>
+        </dl>
+        <p>${entry.note}</p>
+        ${secret}
+      </div>
+    `;
+  }
+
+  zukanNote.append(back, page);
+}
+
 function isChippyStoryCleared() {
   if (currentUserData?.chippyCleared) return true;
   try {
@@ -755,7 +1005,9 @@ function awardChippyFriendship() {
   if (isChippyStoryCleared()) return;
 
   const nextPoints = Math.min(100, Number(currentUserData.friendshipPoints ?? 0) + 25);
+  writeStoredFriendship(nextPoints);
   renderUserData({ friendshipPoints: nextPoints, chippyCleared: true });
+  syncFriendshipPill();
   updateHitopyPortrait();
 
   try {
@@ -933,6 +1185,15 @@ function startChippyGame() {
 
 document.querySelectorAll(".character-button[data-character='chippy']").forEach((button) => {
   button.addEventListener("click", openChippyStory);
+});
+
+document.querySelectorAll(".character-card").forEach((card) => {
+  const button = card.querySelector(".character-button:not(:disabled)");
+  if (!button) return;
+  card.addEventListener("click", (event) => {
+    if (event.target.closest(".character-button")) return;
+    button.click();
+  });
 });
 
 storyViewContent?.addEventListener("click", (event) => {
@@ -1165,7 +1426,7 @@ retakePhotoButton?.addEventListener("click", () => {
 
 // ユーザー情報を右上バー・私の家・プロフィールに反映
 function renderUserData(data) {
-  currentUserData = { ...currentUserData, ...data };
+  currentUserData = withSavedFriendship({ ...currentUserData, ...data });
 
   const avatarKey = AVATAR_PALETTE[currentUserData.avatar]
     ? currentUserData.avatar
@@ -1175,10 +1436,10 @@ function renderUserData(data) {
   if (topbarAvatar) {
     topbarAvatar.innerHTML = getAvatarSvg(avatarKey, 28);
   }
-  homeNickname.textContent = `${currentUserData.nickname || "ゲスト"}さん`;
-  if (friendshipValueEl) {
-    friendshipValueEl.textContent = currentUserData.friendshipPoints ?? 0;
+  if (homeNickname) {
+    homeNickname.textContent = `${currentUserData.nickname || "ゲスト"}さん`;
   }
+  syncFriendshipPill();
 
   // ① 私の家カード
   if (houseLocationText) {

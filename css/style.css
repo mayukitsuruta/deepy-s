@@ -204,31 +204,11 @@ body {
   margin-bottom: 8px;
 }
 
-.logo-main {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.logo-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff6ea;
-}
-
-.logo-text {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  color: #fff6ea;
-}
-
-.logo-sub {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: #dec7b0;
+.sidebar-logo-image {
+  display: block;
+  width: min(100%, 190px);
+  height: auto;
+  margin: 0 auto;
 }
 
 .home-nav {
@@ -423,6 +403,33 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  transition: transform 0.15s ease;
+}
+
+.character-card:has(.character-button:not(:disabled)) {
+  cursor: pointer;
+}
+
+.character-card:has(.character-button:not(:disabled)):hover {
+  transform: translateY(-6px);
+}
+
+.character-button {
+  margin-top: auto;
+  border: 1px solid currentColor;
+  border-radius: 30px;
+  padding: 10px 5px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.character-button:hover:not(:disabled),
+.character-card:hover .character-button:not(:disabled) {
+  background: #4b3028;
+  color: #fff6ea;
 }
 
 .chippy {
@@ -502,21 +509,6 @@ body {
 
 .character-detail {
   font-size: 12px;
-}
-
-.character-button {
-  margin-top: auto;
-  border: 1px solid currentColor;
-  border-radius: 30px;
-  padding: 10px 5px;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.character-button:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.5);
 }
 
 .character-button:disabled {
@@ -908,106 +900,281 @@ body {
   flex: 1;
   min-height: 0;
   max-height: calc(100dvh - 120px);
-  gap: 14px;
 }
 
-.zukan-title {
-  margin: 0;
-  color: #fff6ea;
-  font-size: 24px;
-  letter-spacing: 0.08em;
-}
-
-.zukan-scroll {
-  display: grid;
-  grid-template-rows: repeat(2, minmax(0, 1fr));
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(230px, 280px);
-  gap: 16px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-bottom: 8px;
-  min-height: 0;
-  flex: 1;
-}
-
-.zukan-card {
-  background: #fff8ee;
-  color: #4b3028;
-  border-radius: 28px;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  min-width: 0;
-  box-sizing: border-box;
-}
-
-.zukan-card.is-unset {
-  background: #efe4d6;
-}
-
-.zukan-portrait {
+.field-note {
   position: relative;
   flex: 1;
   min-height: 0;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.72);
-  overflow: hidden;
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 22px 22px 28px 34px;
+  border-radius: 6px 18px 16px 8px;
+  background-color: #f4e7d0;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 31px,
+    rgba(176, 129, 86, 0.28) 32px
+  );
+  color: #3d291c;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
 }
 
-.zukan-portrait img {
+.field-note::before {
+  content: "";
   position: absolute;
-  inset: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 16px;
+  background: linear-gradient(#e7b89a, #d7a184);
+  border-right: 2px solid rgba(176, 72, 62, 0.7);
+}
+
+.field-note-kicker,
+.field-file-kicker {
+  margin: 0 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+}
+
+.field-note h2,
+.field-file h2 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: 0.06em;
+}
+
+.field-note-lead,
+.field-note p,
+.field-file p {
+  margin: 8px 0 0;
+  line-height: 1.7;
+}
+
+.field-entry {
+  display: grid;
+  grid-template-columns: 42px 64px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px 6px 10px;
+  border: 0;
+  border-bottom: 1px dashed rgba(90, 58, 36, 0.35);
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.field-entry:hover,
+.field-entry:focus-visible {
+  background: rgba(255, 248, 230, 0.92);
+  outline: none;
+}
+
+.field-entry:hover .field-thumb,
+.field-entry:focus-visible .field-thumb {
+  transform: rotate(0deg) scale(1.08);
+}
+
+.field-entry:hover .field-entry-name,
+.field-entry:focus-visible .field-entry-name {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.field-entry-no {
+  font-size: 13px;
+  color: #8a5a42;
+}
+
+.field-thumb,
+.field-photo {
+  background: #fffdf8;
+  box-shadow: 0 6px 0 rgba(90, 58, 36, 0.08);
+}
+
+.field-thumb {
+  height: 64px;
+  overflow: hidden;
+  transform: rotate(-2deg);
+  transition: transform 0.15s ease;
+}
+
+.field-thumb img,
+.field-photo img {
   width: 100%;
   height: 100%;
   object-fit: contain;
   object-position: center bottom;
 }
 
-.zukan-portrait.is-missing {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #8c725c;
-  font-size: 14px;
-}
-
-.zukan-portrait.is-missing img {
-  display: none;
-}
-
-.zukan-portrait.is-missing::after {
-  content: "画像はあとから";
-}
-
-.zukan-portrait-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px dashed #c8b39d;
-  color: #8c725c;
-  font-size: 42px;
-}
-
-.zukan-card h3 {
-  margin: 12px 0 4px;
-  text-align: center;
-  letter-spacing: 0.12em;
+.field-thumb-empty {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: #a18468;
   font-size: 22px;
 }
 
-.zukan-role {
-  margin: 0 0 6px;
-  text-align: center;
+.field-entry-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.field-entry-name {
+  font-size: 18px;
+  letter-spacing: 0.08em;
+}
+
+.field-entry-meta {
+  margin-top: 2px;
   font-size: 13px;
 }
 
-.zukan-card p:last-child {
-  margin: 0;
+.field-entry-open {
+  color: #8a3b32;
   font-size: 13px;
-  line-height: 1.6;
+  letter-spacing: 0.08em;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.field-entry:hover .field-entry-open,
+.field-entry:focus-visible .field-entry-open {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.field-back {
+  border: 0;
+  background: transparent;
+  color: #8a3b32;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.field-file {
+  display: grid;
+  grid-template-columns: minmax(160px, 240px) minmax(0, 1fr);
+  gap: 18px 22px;
+  align-items: start;
+}
+
+.field-photo {
+  position: relative;
+  min-height: 220px;
+  padding: 12px 12px 22px;
+  transform: rotate(-1.5deg);
+}
+
+.field-photo::before,
+.field-photo::after {
+  content: "";
+  position: absolute;
+  width: 54px;
+  height: 16px;
+  background: rgba(232, 214, 150, 0.85);
+}
+
+.field-photo::before {
+  top: 8px;
+  left: -8px;
+  transform: rotate(-12deg);
+}
+
+.field-photo::after {
+  right: -6px;
+  bottom: 16px;
+  transform: rotate(8deg);
+}
+
+.field-photo img {
+  height: 230px;
+}
+
+.field-photo-empty {
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  color: #a18468;
+  font-size: 42px;
+}
+
+.field-stamp {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 2px 8px;
+  border: 2px solid #b94a3a;
+  color: #b94a3a;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  transform: rotate(-6deg);
+}
+
+.field-facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 12px;
+  margin: 14px 0 0;
+}
+
+.field-facts dt {
+  font-size: 13px;
+  color: #8a5a42;
+}
+
+.field-facts dd {
+  margin: 0;
+}
+
+.field-secret {
+  margin-top: 18px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(90, 58, 36, 0.25);
+}
+
+.field-secret h3 {
+  margin: 8px 0 0;
+  font-size: 18px;
+}
+
+.field-secret-block + .field-secret-block {
+  margin-top: 12px;
+}
+
+.field-secret-label {
+  display: inline-block;
+  margin: 0;
+  padding: 0 6px;
+  background: #f7d78a;
+  font-size: 13px;
+}
+
+.field-sealed {
+  margin-top: 10px;
+  padding: 12px;
+  background: rgba(255, 248, 236, 0.72);
+}
+
+@media (max-width: 720px) {
+  .field-file {
+    grid-template-columns: 1fr;
+  }
+
+  .field-photo {
+    max-width: 240px;
+  }
 }
 
 /* CHIPPYの暮らし：背景の上で会話を進める */
