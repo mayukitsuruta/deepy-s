@@ -1,4 +1,4 @@
-import { db, auth } from "./firebase.js";
+import { db, auth } from "./firebase.js?v=20261029-delete-account";
 import {
   createUserWithEmailAndPassword,
   EmailAuthProvider,
@@ -14,7 +14,9 @@ import {
   deleteDoc,
   collection,
   addDoc,
+  getDocs,
   query,
+  where,
   orderBy,
   limit,
   onSnapshot,
@@ -62,6 +64,11 @@ const stories = [
 const logoutButton = document.getElementById("logout-button");
 
 const openRegister = document.getElementById("open-register");
+const deleteAccountButton = document.getElementById("delete-account");
+const deleteAccountModal = document.getElementById("delete-account-modal");
+const confirmDeleteAccount = document.getElementById("confirm-delete-account");
+const cancelDeleteAccount = document.getElementById("cancel-delete-account");
+const deleteAccountMessage = document.getElementById("delete-account-message");
 const closeRegister = document.getElementById("close-register");
 const registerModal = document.getElementById("register-modal");
 const registerForm = document.getElementById("register-form");
@@ -108,7 +115,6 @@ startButton.addEventListener("click", () => {
   storyIndex = 0;
   updateStory();
   showScreen(storyScreen);
-  restoreAuth();
 });
 
 // ストーリーを進める
@@ -127,7 +133,6 @@ showScreen(firstView);
 // 「ゲストとして遊ぶ」をクリック（1ブラウザ＝1ゲスト：既存データがあればそのまま復帰）
 let pendingGuestDocData = null;
 const PROFILE_CACHE_KEY = "deepys-profile";
-let authRestore = null;
 let guestUserPromise = null;
 let profilePrefetch = null;
 let profilePrefetchUid = null;
@@ -146,7 +151,7 @@ function readProfileCache(uid) {
 }
 
 function writeProfileCache(uid, data) {
-  if (!uid || !data) return;
+  if (!uid || !data || auth.currentUser?.isAnonymous) return;
   const plain = {};
   Object.entries(data).forEach(([key, value]) => {
     if (
@@ -173,9 +178,43 @@ function writeProfileCache(uid, data) {
   }
 }
 
+function clearAccountStorage(uid) {
+  clearProfileCache();
+  if (!uid) return;
+  try {
+    const keys = [];
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (key && key.startsWith("deepys-") && key.endsWith(`:${uid}`)) {
+        keys.push(key);
+      }
+    }
+    keys.forEach((key) => localStorage.removeItem(key));
+  } catch {
+    // 端末の保存を消せない場合も、サーバー上のアカウントは消す
+  }
+}
+
+function showAccountActions(user) {
+  const registered = Boolean(user && !user.isAnonymous);
+  openRegister.hidden = registered;
+  deleteAccountButton.hidden = !registered;
+}
+
 function clearProfileCache() {
   try {
-    localStorage.removeItem(PROFILE_CACHE_KEY);
+    const keys = [];
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (!key) continue;
+      if (
+        key === PROFILE_CACHE_KEY ||
+        (key.startsWith("deepys-") && key.endsWith(":local"))
+      ) {
+        keys.push(key);
+      }
+    }
+    keys.forEach((key) => localStorage.removeItem(key));
   } catch {
     // 端末に保存できない環境では次回も通信で復元する
   }
@@ -198,7 +237,7 @@ function prefetchProfile(user) {
       }
       if (snapshot.exists()) {
         pendingGuestDocData = withSavedFriendship(snapshot.data(), user.uid);
-        writeProfileCache(user.uid, pendingGuestDocData);
+        if (!user.isAnonymous) writeProfileCache(user.uid, pendingGuestDocData);
       }
       if (
         pendingGuestDocData &&
@@ -216,37 +255,43 @@ function prefetchProfile(user) {
   return profilePrefetch;
 }
 
-// 物語を読んでいる間に、前回のログイン状態とプロフィールを先に取っておく
-function restoreAuth() {
-  if (!authRestore) {
-    const version = sessionVersion;
-    authRestore = auth
-      .authStateReady()
-      .then(() => {
-        if (version !== sessionVersion) return null;
-        const user = auth.currentUser;
-        if (!user) return null;
-        currentUserId = user.uid;
-        return prefetchProfile(user);
-      })
-      .catch((error) => {
-        console.warn("ログイン状態の復元に失敗:", error);
-        authRestore = null;
-        return null;
-      });
+// ページを開き直した時点では、前の人のログインを残さない
+clearProfileCache();
+const startupLogout = auth.authStateReady().then(async () => {
+  clearProfileCache();
+  const user = auth.currentUser;
+  if (!user) return;
+  const staleUid = user.uid;
+
+  if (user.isAnonymous) {
+    try {
+      await deleteDoc(doc(db, "users", staleUid));
+    } catch (error) {
+      console.warn("ゲスト情報の削除に失敗:", error);
+    }
   }
-  return authRestore;
-}
+
+  if (auth.currentUser?.uid !== staleUid) return;
+  currentUserId = null;
+  pendingGuestDocData = null;
+  try {
+    await signOut(auth);
+  } catch (error) {
+    console.warn("前回ログインの終了に失敗:", error);
+  }
+});
 
 function ensureGuestUser() {
-  if (auth.currentUser) return Promise.resolve(auth.currentUser);
+  if (auth.currentUser?.isAnonymous) return Promise.resolve(auth.currentUser);
   if (!guestUserPromise) {
     const version = sessionVersion;
-    guestUserPromise = auth
-      .authStateReady()
+    guestUserPromise = startupLogout
       .then(async () => {
         if (version !== sessionVersion) return auth.currentUser;
-        if (auth.currentUser) return auth.currentUser;
+        if (auth.currentUser && !auth.currentUser.isAnonymous) {
+          await signOut(auth);
+        }
+        if (auth.currentUser?.isAnonymous) return auth.currentUser;
         const credential = await signInAnonymously(auth);
         if (version === sessionVersion) currentUserId = credential.user.uid;
         return credential.user;
@@ -259,54 +304,23 @@ function ensureGuestUser() {
   return guestUserPromise;
 }
 
-restoreAuth();
-
 function rememberAndEnter(user, userData, persist = true) {
   pendingGuestDocData = userData;
-  if (persist) writeProfileCache(user.uid, userData);
-  openRegister.hidden = !user.isAnonymous;
+  if (persist && user && !user.isAnonymous) writeProfileCache(user.uid, userData);
+  showAccountActions(user);
   enterHomeWithUser(user.uid, userData);
 }
 
-function knownProfile(user) {
-  if (!user || user.isAnonymous) return null;
-  if (pendingGuestDocData?.nickname && profilePrefetchUid === user.uid) {
-    return pendingGuestDocData;
-  }
-  const cached = readProfileCache(user.uid);
-  return cached?.nickname ? cached : null;
-}
-
 guestButton.addEventListener("click", () => {
-  const user = auth.currentUser;
-  const known = pendingGuestDocData || (user && readProfileCache(user.uid));
-
-  if (user && known?.nickname) {
-    rememberAndEnter(user, known);
-    prefetchProfile(user);
-    return;
-  }
-
-  // 通信完了を待たずに名前入力へ進む。戻ってきた人は先読みが終わり次第ホームへ
+  // ゲストは毎回はじめに戻る。前の人の名前や進み具合は引き継がない
+  guestName.value = "";
+  resetPlayMemory();
   showScreen(guestScreen);
   guestName.focus();
 
-  ensureGuestUser()
-    .then((signedIn) => prefetchProfile(signedIn))
-    .then(() => {
-      const active = auth.currentUser;
-      if (
-        active &&
-        pendingGuestDocData?.nickname &&
-        !guestScreen.hidden &&
-        !guestName.value.trim()
-      ) {
-        rememberAndEnter(active, pendingGuestDocData);
-      }
-    })
-    .catch((error) => {
-      console.error("ゲストログイン確認エラー:", error);
-    });
+  ensureGuestUser().catch((error) => {
+    console.error("ゲストログイン確認エラー:", error);
+  });
 });
 
 // 「もどる」をクリック
@@ -330,39 +344,21 @@ guestForm.addEventListener("submit", async (event) => {
 
   try {
     // 名前入力中に始めておいたログインを使う。未完了ならここだけ待つ
+    // ゲスト情報はアカウント登録まで保存しない
     const user = await ensureGuestUser();
-    if (!pendingGuestDocData) await prefetchProfile(user);
-    const userRef = doc(db, "users", user.uid);
-    const isNew = !pendingGuestDocData;
     const userData = {
-      ...(pendingGuestDocData || {}),
       nickname,
-      avatar: pendingGuestDocData?.avatar || "pink",
-      friendshipPoints: pendingGuestDocData?.friendshipPoints ?? 0,
-      bio:
-        pendingGuestDocData?.bio ||
-        "地底でのんびり暮らしてます。よろしくお願いします！",
-      tags: pendingGuestDocData?.tags || ["デザイン", "カフェ巡り", "音楽"],
-      houseLocation: pendingGuestDocData?.houseLocation || "第3層・右下エリア",
+      avatar: "pink",
+      friendshipPoints: 0,
+      bio: "地底でのんびり暮らしてます。よろしくお願いします！",
+      tags: ["デザイン", "カフェ巡り", "音楽"],
+      houseLocation: "第3層・右下エリア",
       isOnline: true,
       lastActiveMs: Date.now(),
     };
 
-    rememberAndEnter(user, userData);
-
-    if (isNew) {
-      await setDoc(userRef, { ...userData, createdAt: serverTimestamp() });
-    } else {
-      await setDoc(
-        userRef,
-        {
-          nickname,
-          isOnline: true,
-          lastActiveMs: userData.lastActiveMs,
-        },
-        { merge: true },
-      );
-    }
+    currentUserData = createBlankUserData();
+    rememberAndEnter(user, userData, false);
   } catch (error) {
     console.error("ゲスト登録エラー:", error);
     alert("登録に失敗しました。コンソールを確認してね。");
@@ -374,33 +370,115 @@ guestForm.addEventListener("submit", async (event) => {
 logoutButton.addEventListener("click", () => {
   const confirmed = confirm(
     "地底生活を終了しますか？\n" +
-      "ゲストのまま終了すると、別の端末では続きを遊べません。",
+      "ゲストのまま終了すると、進み具合は保存されません。",
   );
 
   if (!confirmed) return;
 
   stopCamera();
-  const presence = sendPresenceHeartbeat(false);
+  const user = auth.currentUser;
+  const registered = Boolean(user && !user.isAnonymous);
+  const presence = registered ? sendPresenceHeartbeat(false) : Promise.resolve();
   sessionVersion += 1;
-  currentUserId = null;
-  pendingGuestDocData = null;
-  guestUserPromise = null;
-  profilePrefetch = null;
-  profilePrefetchUid = null;
-  authRestore = null;
   clearProfileCache();
+  resetPlayMemory();
   guestName.value = "";
   homeNickname.textContent = "ゲストさん";
   showScreen(firstView);
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  }
 
-  presence
-    .catch((error) => {
-      console.warn("オンライン状態の更新に失敗:", error);
-    })
-    .then(() => signOut(auth))
-    .catch((error) => {
-      console.error("ログアウトエラー:", error);
-    });
+  const ending = !user
+    ? Promise.resolve()
+    : user.isAnonymous
+      ? deleteDoc(doc(db, "users", user.uid))
+          .catch((error) => {
+            console.warn("ゲスト情報の削除に失敗:", error);
+          })
+          .then(() => user.delete())
+      : presence
+          .catch((error) => {
+            console.warn("オンライン状態の更新に失敗:", error);
+          })
+          .then(() => signOut(auth));
+
+  ending.catch((error) => {
+    console.error("ログアウトエラー:", error);
+    return signOut(auth).catch(() => {});
+  });
+});
+
+function closeDeleteAccountModal() {
+  if (confirmDeleteAccount.disabled) return;
+  deleteAccountModal.hidden = true;
+  deleteAccountMessage.textContent = "";
+}
+
+deleteAccountButton.addEventListener("click", () => {
+  const user = auth.currentUser;
+  if (!user || user.isAnonymous) return;
+  deleteAccountMessage.textContent = "";
+  deleteAccountModal.hidden = false;
+  cancelDeleteAccount.focus();
+});
+
+cancelDeleteAccount.addEventListener("click", closeDeleteAccountModal);
+
+deleteAccountModal.addEventListener("click", (event) => {
+  if (event.target === deleteAccountModal) closeDeleteAccountModal();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" || deleteAccountModal.hidden) return;
+  closeDeleteAccountModal();
+});
+
+confirmDeleteAccount.addEventListener("click", async () => {
+  const user = auth.currentUser;
+  if (!user || user.isAnonymous) return;
+
+  confirmDeleteAccount.disabled = true;
+  cancelDeleteAccount.disabled = true;
+  deleteAccountMessage.textContent = "消しています...";
+
+  const uid = user.uid;
+  try {
+    try {
+      const postsQuery = query(collection(db, "posts"), where("uid", "==", uid));
+      const posts = await getDocs(postsQuery);
+      await Promise.all(posts.docs.map((snapshot) => deleteDoc(snapshot.ref)));
+    } catch (error) {
+      console.warn("投稿の削除に失敗:", error);
+    }
+
+    await deleteDoc(doc(db, "users", uid));
+    clearAccountStorage(uid);
+    await user.delete();
+
+    stopCamera();
+    sessionVersion += 1;
+    resetPlayMemory();
+    guestName.value = "";
+    homeNickname.textContent = "ゲストさん";
+    deleteAccountModal.hidden = true;
+    deleteAccountMessage.textContent = "";
+    showScreen(firstView);
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
+    }
+  } catch (error) {
+    console.error("アカウント削除エラー:", error);
+    deleteAccountMessage.textContent =
+      error.code === "auth/requires-recent-login"
+        ? "もう一度ログインしてから、アカウントを消してね。"
+        : "消せませんでした。もう一度試してね。";
+  } finally {
+    confirmDeleteAccount.disabled = false;
+    cancelDeleteAccount.disabled = false;
+  }
 });
 
 let registerMode = "guest";
@@ -457,6 +535,7 @@ registerForm.addEventListener("submit", async (event) => {
   registerMessage.textContent = "登録中...";
 
   try {
+    await startupLogout;
     let user;
 
     if (registerMode === "guest") {
@@ -500,14 +579,14 @@ registerForm.addEventListener("submit", async (event) => {
             lastActiveMs: Date.now(),
           };
 
-    if (registerMode === "new") {
-      setDoc(doc(db, "users", user.uid), {
+    await setDoc(
+      doc(db, "users", user.uid),
+      {
         ...userData,
         createdAt: serverTimestamp(),
-      }).catch((error) => {
-        console.error("ユーザー情報の保存エラー:", error);
-      });
-    }
+      },
+      { merge: true },
+    );
 
     registerModal.hidden = true;
     registerForm.reset();
@@ -531,37 +610,11 @@ registerForm.addEventListener("submit", async (event) => {
   }
 });
 
-// ログイン画面を表示。前回のセッションが残っていれば、入力を待たずにホームへ
+// 続きから遊ぶときは、毎回メールアドレスとパスワードを入れる
 loginButton.addEventListener("click", () => {
-  const enterKnownUser = (user) => {
-    const known = knownProfile(user);
-    if (!known) return false;
-    rememberAndEnter(user, known);
-    prefetchProfile(user);
-    return true;
-  };
-
-  if (enterKnownUser(auth.currentUser)) return;
-
   signinMessage.textContent = "";
   showScreen(signinScreen);
   document.getElementById("signin-email").focus();
-
-  // セッション復元がまだなら、入力画面を出したまま裏で待つ
-  restoreAuth()
-    .then((profile) => {
-      if (signinScreen.hidden) return profile;
-      const user = auth.currentUser;
-      if (enterKnownUser(user)) return profile;
-      if (!user || user.isAnonymous) return profile;
-      return prefetchProfile(user);
-    })
-    .then(() => {
-      if (!signinScreen.hidden) enterKnownUser(auth.currentUser);
-    })
-    .catch((error) => {
-      console.warn("ログイン状態の確認に失敗:", error);
-    });
 });
 
 // もどるボタン
@@ -581,6 +634,7 @@ signinForm.addEventListener("submit", async (event) => {
   signinMessage.textContent = "ログイン中...";
 
   try {
+    await startupLogout;
     // Firebase Authenticationでログイン
     const userCredential = await signInWithEmailAndPassword(
       auth,
@@ -677,14 +731,28 @@ function getAvatarSvg(avatarKey = "pink", size = 24) {
 }
 
 let currentUserId = null;
-let currentUserData = {
-  nickname: "ゲスト",
-  avatar: "pink",
-  friendshipPoints: 0,
-  bio: "地底でのんびり暮らしてます。よろしくお願いします！",
-  tags: ["デザイン", "カフェ巡り", "音楽"],
-  houseLocation: "第3層・右下エリア",
-};
+
+function createBlankUserData() {
+  return {
+    nickname: "ゲスト",
+    avatar: "pink",
+    friendshipPoints: 0,
+    bio: "地底でのんびり暮らしてます。よろしくお願いします！",
+    tags: ["デザイン", "カフェ巡り", "音楽"],
+    houseLocation: "第3層・右下エリア",
+  };
+}
+
+function resetPlayMemory() {
+  currentUserId = null;
+  pendingGuestDocData = null;
+  guestUserPromise = null;
+  profilePrefetch = null;
+  profilePrefetchUid = null;
+  currentUserData = createBlankUserData();
+}
+
+let currentUserData = createBlankUserData();
 let unsubscribeBoard = null;
 let unsubscribeOnlineUsers = null;
 let heartbeatTimer = null;
@@ -798,6 +866,7 @@ function friendshipStorageKey(uid = currentUserId) {
 }
 
 function readStoredFriendship(uid = currentUserId) {
+  if (!auth.currentUser || auth.currentUser.isAnonymous) return 0;
   try {
     const value = Number(localStorage.getItem(friendshipStorageKey(uid)));
     return Number.isFinite(value) ? value : 0;
@@ -806,7 +875,14 @@ function readStoredFriendship(uid = currentUserId) {
   }
 }
 
+function progressCanBeSaved() {
+  return Boolean(
+    currentUserId && auth.currentUser && !auth.currentUser.isAnonymous,
+  );
+}
+
 function writeStoredFriendship(points, uid = currentUserId) {
+  if (!progressCanBeSaved()) return;
   try {
     localStorage.setItem(friendshipStorageKey(uid), String(points));
   } catch {
@@ -1067,6 +1143,7 @@ function renderZukanFile(entryId) {
 
 function isChippyStoryCleared() {
   if (currentUserData?.chippyCleared) return true;
+  if (!progressCanBeSaved()) return false;
   try {
     return localStorage.getItem(chippyClearStorageKey()) === "1";
   } catch {
@@ -1086,11 +1163,6 @@ function updateHitopyPortrait() {
 function awardChippyFriendship() {
   if (isChippyStoryCleared()) return;
 
-  try {
-    localStorage.setItem(chippyClearStorageKey(), "1");
-  } catch {
-    // 保存できない場合も、この画面の表示は更新済み
-  }
   currentUserData.chippyCleared = true;
 
   const nextPoints = Math.min(
@@ -1100,12 +1172,16 @@ function awardChippyFriendship() {
       storyFriendshipFloor(),
     ),
   );
-  writeStoredFriendship(nextPoints);
   renderUserData({ friendshipPoints: nextPoints, chippyCleared: true });
   syncFriendshipPill();
   updateHitopyPortrait();
 
-  if (!currentUserId) return;
+  if (!progressCanBeSaved()) return;
+  try {
+    localStorage.setItem(chippyClearStorageKey(), "1");
+  } catch {
+    // 保存できない場合も、この画面の表示は更新済み
+  }
   writeProfileCache(currentUserId, currentUserData);
   setDoc(
     doc(db, "users", currentUserId),
@@ -1417,6 +1493,7 @@ function simpyClearStorageKey() {
 
 function isSimpyStoryCleared() {
   if (currentUserData?.simpyCleared) return true;
+  if (!progressCanBeSaved()) return false;
   try {
     return localStorage.getItem(simpyClearStorageKey()) === "1";
   } catch {
@@ -1596,11 +1673,6 @@ function flashSimpyJudge(text, kind) {
 function awardSimpyFriendship() {
   const already = isSimpyStoryCleared();
   if (!already) {
-    try {
-      localStorage.setItem(simpyClearStorageKey(), "1");
-    } catch {
-      // 保存できない場合も、この画面の表示は更新済み
-    }
     currentUserData.simpyCleared = true;
   }
 
@@ -1617,11 +1689,15 @@ function awardSimpyFriendship() {
         ),
       );
 
-  writeStoredFriendship(nextPoints);
   renderUserData({ friendshipPoints: nextPoints, simpyCleared: true });
   syncFriendshipPill();
 
-  if (!already && currentUserId) {
+  if (!already && progressCanBeSaved()) {
+    try {
+      localStorage.setItem(simpyClearStorageKey(), "1");
+    } catch {
+      // 保存できない場合も、この画面の表示は更新済み
+    }
     writeProfileCache(currentUserId, currentUserData);
     setDoc(
       doc(db, "users", currentUserId),
@@ -2290,7 +2366,7 @@ function recalculateOnlineCount() {
 }
 
 async function sendPresenceHeartbeat(isOnline = true) {
-  if (!currentUserId) return;
+  if (!progressCanBeSaved()) return;
   try {
     const userRef = doc(db, "users", currentUserId);
     await setDoc(
@@ -2333,8 +2409,42 @@ function startOnlinePresence() {
   }
 }
 
+function endBrowserSession() {
+  const user = auth.currentUser;
+  const uid = currentUserId;
+  const registered = Boolean(user && !user.isAnonymous && uid);
+  clearProfileCache();
+
+  if (registered) {
+    setDoc(
+      doc(db, "users", uid),
+      { isOnline: false, lastActiveMs: Date.now() },
+      { merge: true },
+    ).catch(() => {});
+    signOut(auth).catch(() => {});
+  } else if (user?.isAnonymous) {
+    deleteDoc(doc(db, "users", user.uid)).catch(() => {});
+    user.delete().catch(() => {});
+  }
+
+  sessionVersion += 1;
+  resetPlayMemory();
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  }
+}
+
 window.addEventListener("pagehide", () => {
-  sendPresenceHeartbeat(false);
+  endBrowserSession();
+});
+
+window.addEventListener("pageshow", (event) => {
+  if (!event.persisted) return;
+  endBrowserSession();
+  guestName.value = "";
+  if (homeNickname) homeNickname.textContent = "ゲストさん";
+  showScreen(firstView);
 });
 
 // 相対時間のフォーマット
@@ -2503,17 +2613,17 @@ profileEditForm.addEventListener("submit", async (event) => {
   };
 
   renderUserData(updatedFields);
-  writeProfileCache(currentUserId, currentUserData);
   profileEditForm.hidden = true;
 
-  if (currentUserId) {
-    try {
-      const userRef = doc(db, "users", currentUserId);
-      await setDoc(userRef, updatedFields, { merge: true });
-    } catch (error) {
-      console.error("プロフィール保存エラー:", error);
-      alert("プロフィールの保存に失敗しました。");
-    }
+  if (!progressCanBeSaved()) return;
+
+  writeProfileCache(currentUserId, currentUserData);
+  try {
+    const userRef = doc(db, "users", currentUserId);
+    await setDoc(userRef, updatedFields, { merge: true });
+  } catch (error) {
+    console.error("プロフィール保存エラー:", error);
+    alert("プロフィールの保存に失敗しました。");
   }
 });
 

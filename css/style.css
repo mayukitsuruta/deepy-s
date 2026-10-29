@@ -761,6 +761,66 @@ body {
   display: none !important;
 }
 
+#delete-account {
+  border: 1px solid #d7a090;
+  background: transparent;
+  color: #ffd9cf;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#delete-account:hover {
+  background: rgba(255, 214, 204, 0.14);
+}
+
+#delete-account[hidden] {
+  display: none !important;
+}
+
+.delete-account-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+#confirm-delete-account,
+#cancel-delete-account {
+  min-width: 120px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#confirm-delete-account {
+  border: none;
+  background: #a85a45;
+  color: #fff8f4;
+}
+
+#cancel-delete-account {
+  border: 2px solid #9d6d49;
+  background: #fff;
+  color: #513524;
+}
+
+#confirm-delete-account:disabled,
+#cancel-delete-account:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+#delete-account-message {
+  min-height: 1.4em;
+  margin-top: 15px;
+  font-size: 14px;
+}
+
 /* ポップアップの背景 */
 .modal {
   position: fixed;
