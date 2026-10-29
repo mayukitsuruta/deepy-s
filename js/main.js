@@ -708,6 +708,7 @@ function switchUndergroundView(viewName) {
   spaceViewContent.hidden = viewName !== "space";
   cameraViewContent.hidden = viewName !== "camera";
   const showingStory = viewName === "story";
+  if (!(showingStory && activeStoryId === "simpy")) pauseSimpyPerformance();
   if (storyViewContent) {
     storyViewContent.hidden = !(showingStory && activeStoryId === "chippy");
   }
@@ -822,8 +823,22 @@ function withSavedFriendship(data, uid = currentUserId) {
   };
 }
 
+function storyFriendshipFloor() {
+  let points = 0;
+  if (isChippyStoryCleared()) points += 25;
+  if (isSimpyStoryCleared()) points += 25;
+  return Math.min(100, points);
+}
+
 function syncFriendshipPill() {
-  const points = resolvedFriendshipPoints(currentUserData.friendshipPoints);
+  const points = Math.min(
+    100,
+    Math.max(
+      resolvedFriendshipPoints(currentUserData.friendshipPoints),
+      storyFriendshipFloor(),
+    ),
+  );
+  if (points !== readStoredFriendship()) writeStoredFriendship(points);
   currentUserData.friendshipPoints = points;
   if (friendshipValueEl) friendshipValueEl.textContent = String(points);
   if (openZukanId) renderZukan();
@@ -1067,20 +1082,24 @@ function updateHitopyPortrait() {
 function awardChippyFriendship() {
   if (isChippyStoryCleared()) return;
 
-  const nextPoints = Math.min(
-    100,
-    Number(currentUserData.friendshipPoints ?? 0) + 25,
-  );
-  writeStoredFriendship(nextPoints);
-  renderUserData({ friendshipPoints: nextPoints, chippyCleared: true });
-  syncFriendshipPill();
-  updateHitopyPortrait();
-
   try {
     localStorage.setItem(chippyClearStorageKey(), "1");
   } catch {
     // 保存できない場合も、この画面の表示は更新済み
   }
+  currentUserData.chippyCleared = true;
+
+  const nextPoints = Math.min(
+    100,
+    Math.max(
+      resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
+      storyFriendshipFloor(),
+    ),
+  );
+  writeStoredFriendship(nextPoints);
+  renderUserData({ friendshipPoints: nextPoints, chippyCleared: true });
+  syncFriendshipPill();
+  updateHitopyPortrait();
 
   if (!currentUserId) return;
   writeProfileCache(currentUserId, currentUserData);
@@ -1330,12 +1349,28 @@ const simpyStoryLines = [
   "職業は音の採集家。地底に響く音を、このシンバルでそっと拾ってるの。",
   "鈴の音、古い楽器、だれかの歌声。にぎやかな音だけじゃなく、とても静かな音も集めてる。",
   "夜になると、集めた音をひとりで歌い返すの。今日は、あなたにも聴いてほしくて。",
-  "このほらあなは、音がいちばんよく響く場所。真ん中の舞台で、いっしょに遊ぼう。",
-  "準備はいいかな。ゲームスタートを押して、音のつづきを聴きにいこう。",
+  "上から音符が落ちてくるよ。下の光る輪に重なったら、クリックして集めて。",
+  "地底の変な音もまざってる。それを押すと減点。いい音が続くとコンボになって、音が重なって一曲になるの。",
+  "準備はいいかな。ゲームスタートを押して、いっしょに曲を完成させよう。",
 ];
 
-const simpyGamePendingLine =
-  "遊びの続きは、まだ楽譜にしてる途中なんだ。できあがったら、またここに来てね。";
+const SIMPY_SONG = [523.25, 587.33, 659.25, 698.46, 783.99, 698.46, 659.25, 523.25];
+const SIMPY_CHART = [
+  { good: true, lane: 1 },
+  { good: true, lane: 0 },
+  { good: false, lane: 2 },
+  { good: true, lane: 2 },
+  { good: true, lane: 1 },
+  { good: false, lane: 0 },
+  { good: true, lane: 0 },
+  { good: true, lane: 2 },
+  { good: false, lane: 1 },
+  { good: true, lane: 1 },
+  { good: true, lane: 0 },
+];
+const SIMPY_FALL_MS = 2600;
+const SIMPY_GAP_MS = 1150;
+const SIMPY_LANE_LEFT = ["20%", "50%", "80%"];
 
 const simpyDialogueText = document.getElementById("simpy-dialogue-text");
 const simpyDialogueNext = document.getElementById("simpy-dialogue-next");
@@ -1343,70 +1378,452 @@ const simpyDialogue = document.getElementById("simpy-dialogue");
 const simpyStoryBack = document.getElementById("simpy-story-back");
 const simpyStoryPrev = document.getElementById("simpy-story-prev");
 const simpyGameStart = document.getElementById("simpy-game-start");
+const simpyGame = document.getElementById("simpy-game");
+const simpyLane = document.getElementById("simpy-lane");
+const simpyHitZone = document.getElementById("simpy-hit-zone");
+const simpyComboEl = document.getElementById("simpy-combo");
+const simpyProgressEl = document.getElementById("simpy-progress");
+const simpyPointsEl = document.getElementById("simpy-points");
+const simpyJudgeEl = document.getElementById("simpy-judge");
+const simpyFinish = document.getElementById("simpy-finish");
+const simpyFinishMessage = document.getElementById("simpy-finish-message");
+const simpyFinishHome = document.getElementById("simpy-finish-home");
+const simpyClearPanel = document.getElementById("simpy-clear-panel");
+const simpyReplay = document.getElementById("simpy-replay");
+
 let simpyStoryIndex = 0;
-let simpyAwaitingGame = false;
+let simpyGameStarted = false;
+let simpyShowingClear = false;
+let simpyRetrying = false;
+let simpyNotes = [];
+let simpyRaf = 0;
+let simpyLastFrame = 0;
+let simpyElapsed = 0;
+let simpySpawnIndex = 0;
+let simpyCollected = 0;
+let simpyCombo = 0;
+let simpyPoints = 0;
+let simpyChartSettled = false;
+let simpyAudio = null;
+let simpyLayers = [];
+
+function simpyClearStorageKey() {
+  return `deepys-simpy-cleared:${currentUserId || "local"}`;
+}
+
+function isSimpyStoryCleared() {
+  if (currentUserData?.simpyCleared) return true;
+  try {
+    return localStorage.getItem(simpyClearStorageKey()) === "1";
+  } catch {
+    return false;
+  }
+}
 
 function updateSimpyPrev() {
   if (!simpyStoryPrev) return;
-  simpyStoryPrev.hidden = false;
-  simpyStoryPrev.disabled = simpyStoryIndex <= 0 && !simpyAwaitingGame;
+  const inDialogue = !simpyGameStarted && !simpyShowingClear && !simpyRetrying;
+  simpyStoryPrev.hidden = !inDialogue;
+  simpyStoryPrev.disabled = simpyStoryIndex <= 0;
+}
+
+function saySimpy(message, hint) {
+  simpyDialogueText.textContent = message;
+  const showHint = Boolean(hint);
+  simpyDialogueNext.hidden = !showHint;
+  simpyDialogueNext.textContent = hint || "click";
+  simpyDialogueNext.classList.remove("is-more");
+  updateSimpyPrev();
 }
 
 function renderSimpyStory() {
   const isLast = simpyStoryIndex >= simpyStoryLines.length - 1;
-  const showStart = isLast && !simpyAwaitingGame;
-  simpyDialogueText.textContent = simpyAwaitingGame
-    ? simpyGamePendingLine
-    : simpyStoryLines[simpyStoryIndex];
+  const showStart = isLast && !simpyGameStarted && !simpyRetrying;
+  simpyDialogueText.textContent = simpyStoryLines[simpyStoryIndex];
   simpyGameStart.hidden = !showStart;
-  simpyDialogueNext.hidden = showStart || simpyAwaitingGame;
+  simpyGameStart.textContent = "ゲームスタート";
+  simpyDialogueNext.hidden = showStart;
   simpyDialogueNext.textContent = "click";
-  simpyDialogueNext.classList.toggle("is-more", !isLast && !showStart && !simpyAwaitingGame);
+  simpyDialogueNext.classList.toggle("is-more", !isLast && !showStart);
   updateSimpyPrev();
+}
+
+function pauseSimpyPerformance() {
+  if (simpyRaf) cancelAnimationFrame(simpyRaf);
+  simpyRaf = 0;
+  simpyNotes.forEach((note) => note.el.remove());
+  simpyNotes = [];
+  simpyLayers = [];
+}
+
+function resetSimpyStage() {
+  pauseSimpyPerformance();
+  simpyGameStarted = false;
+  simpyRetrying = false;
+  simpyChartSettled = false;
+  simpyCollected = 0;
+  simpyCombo = 0;
+  simpyPoints = 0;
+  simpySpawnIndex = 0;
+  simpyElapsed = 0;
+  simpyStoryView?.classList.remove("is-playing");
+  if (simpyGame) simpyGame.hidden = true;
+  if (simpyFinish) simpyFinish.hidden = true;
+  if (simpyJudgeEl) simpyJudgeEl.textContent = "";
 }
 
 function startSimpyStory() {
   activeStoryId = "simpy";
   simpyStoryIndex = 0;
-  simpyAwaitingGame = false;
+  simpyShowingClear = false;
   if (simpyDialogue) simpyDialogue.hidden = false;
+  if (simpyClearPanel) simpyClearPanel.hidden = true;
+  simpyStoryView?.classList.remove("is-cleared");
+  resetSimpyStage();
   renderSimpyStory();
   switchUndergroundView("story");
 }
 
+function showSimpyClearScreen() {
+  activeStoryId = "simpy";
+  simpyShowingClear = true;
+  resetSimpyStage();
+  if (simpyDialogue) simpyDialogue.hidden = true;
+  if (simpyClearPanel) simpyClearPanel.hidden = false;
+  simpyStoryView?.classList.add("is-cleared");
+  updateSimpyPrev();
+  switchUndergroundView("story");
+}
+
+function openSimpyStory() {
+  if (isSimpyStoryCleared()) {
+    showSimpyClearScreen();
+    return;
+  }
+  startSimpyStory();
+}
+
 function advanceSimpyStory() {
-  if (simpyAwaitingGame) return;
+  if (simpyShowingClear || simpyGameStarted || simpyRetrying) return;
   if (simpyStoryIndex >= simpyStoryLines.length - 1) return;
   simpyStoryIndex += 1;
   renderSimpyStory();
 }
 
 function rewindSimpyStory() {
-  if (simpyAwaitingGame) {
-    simpyAwaitingGame = false;
-    renderSimpyStory();
-    return;
-  }
+  if (simpyShowingClear || simpyGameStarted || simpyRetrying) return;
   if (simpyStoryIndex <= 0) return;
   simpyStoryIndex -= 1;
   renderSimpyStory();
 }
 
-function holdSimpyGame() {
-  simpyAwaitingGame = true;
-  renderSimpyStory();
+function simpyAudioContext() {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return null;
+  if (!simpyAudio) simpyAudio = new AudioCtx();
+  if (simpyAudio.state === "suspended") simpyAudio.resume();
+  return simpyAudio;
+}
+
+function simpyTone(freq, when, duration, gainValue, type) {
+  const ctx = simpyAudioContext();
+  if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, when);
+  gain.gain.setValueAtTime(gainValue, when);
+  gain.gain.exponentialRampToValueAtTime(0.001, when + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(when);
+  osc.stop(when + duration + 0.02);
+}
+
+function playSimpySuccess(index) {
+  const ctx = simpyAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const freq = SIMPY_SONG[index];
+  simpyTone(freq, now, 0.62, 0.1, "triangle");
+  simpyLayers.forEach((layer) => {
+    simpyTone(layer, now, 0.48, 0.032, "sine");
+  });
+  simpyLayers.push(freq);
+}
+
+function playSimpyWeird() {
+  const ctx = simpyAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  simpyTone(146, now, 0.22, 0.06, "sawtooth");
+  simpyTone(155, now + 0.03, 0.18, 0.04, "square");
+}
+
+function playSimpySong() {
+  const ctx = simpyAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  SIMPY_SONG.forEach((freq, index) => {
+    const start = now + index * 0.28;
+    simpyTone(freq, start, 0.5, 0.1, "triangle");
+    if (index > 0) simpyTone(SIMPY_SONG[index - 1], start, 0.34, 0.04, "sine");
+  });
+}
+
+function renderSimpyHud() {
+  if (simpyComboEl) simpyComboEl.textContent = `COMBO ${simpyCombo}`;
+  if (simpyProgressEl) {
+    simpyProgressEl.textContent = `${simpyCollected} / ${SIMPY_SONG.length}`;
+  }
+  if (simpyPointsEl) simpyPointsEl.textContent = `${simpyPoints}点`;
+  simpyComboEl?.classList.toggle("is-hot", simpyCombo >= 2);
+}
+
+function flashSimpyJudge(text, kind) {
+  if (!simpyJudgeEl) return;
+  simpyJudgeEl.textContent = text;
+  simpyJudgeEl.dataset.kind = kind;
+  simpyJudgeEl.classList.remove("is-pop");
+  void simpyJudgeEl.offsetWidth;
+  simpyJudgeEl.classList.add("is-pop");
+}
+
+function awardSimpyFriendship() {
+  const already = isSimpyStoryCleared();
+  if (!already) {
+    try {
+      localStorage.setItem(simpyClearStorageKey(), "1");
+    } catch {
+      // 保存できない場合も、この画面の表示は更新済み
+    }
+    currentUserData.simpyCleared = true;
+  }
+
+  const nextPoints = already
+    ? Math.max(
+        resolvedFriendshipPoints(currentUserData.friendshipPoints),
+        storyFriendshipFloor(),
+      )
+    : Math.min(
+        100,
+        Math.max(
+          resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
+          storyFriendshipFloor(),
+        ),
+      );
+
+  writeStoredFriendship(nextPoints);
+  renderUserData({ friendshipPoints: nextPoints, simpyCleared: true });
+  syncFriendshipPill();
+
+  if (!already && currentUserId) {
+    writeProfileCache(currentUserId, currentUserData);
+    setDoc(
+      doc(db, "users", currentUserId),
+      { friendshipPoints: nextPoints, simpyCleared: true },
+      { merge: true },
+    ).catch((error) => {
+      console.error("友情ポイントの保存エラー:", error);
+    });
+  }
+
+  return { already, points: nextPoints };
+}
+
+function showSimpyFinish(message) {
+  pauseSimpyPerformance();
+  simpyGameStarted = false;
+  simpyRetrying = false;
+  if (simpyGame) simpyGame.hidden = true;
+  if (simpyDialogue) simpyDialogue.hidden = true;
+  if (simpyFinishMessage) simpyFinishMessage.textContent = message;
+  if (simpyFinish) simpyFinish.hidden = false;
+  simpyFinishHome?.focus();
+}
+
+function noteInHitZone(noteEl) {
+  if (!simpyHitZone) return false;
+  const noteBox = noteEl.getBoundingClientRect();
+  const zoneBox = simpyHitZone.getBoundingClientRect();
+  const center = noteBox.top + noteBox.height / 2;
+  return center >= zoneBox.top - 30 && center <= zoneBox.bottom + 16;
+}
+
+function removeSimpyNote(note) {
+  note.done = true;
+  note.el.remove();
+  simpyNotes = simpyNotes.filter((item) => item !== note);
+}
+
+function breakSimpyCombo() {
+  simpyCombo = 0;
+  simpyLayers = [];
+  renderSimpyHud();
+}
+
+function resolveSimpyNote(note, result) {
+  if (note.done || simpyChartSettled) return;
+  removeSimpyNote(note);
+
+  if (result === "hit") {
+    playSimpySuccess(simpyCollected);
+    simpyCollected += 1;
+    simpyCombo += 1;
+    simpyPoints += 100 + (simpyCombo - 1) * 20;
+    flashSimpyJudge(simpyCombo >= 2 ? `${simpyCombo} COMBO` : "いい音！", "good");
+    if (simpyCombo === 4) {
+      saySimpy("いい調子。音が重なってきたよ。", "");
+    }
+    renderSimpyHud();
+    return;
+  }
+
+  if (result === "bad") {
+    playSimpyWeird();
+    breakSimpyCombo();
+    simpyPoints = Math.max(0, simpyPoints - 50);
+    flashSimpyJudge("−50", "bad");
+    saySimpy("それは変な音！　押さない方がよかったね。", "");
+    renderSimpyHud();
+    return;
+  }
+
+  breakSimpyCombo();
+  flashSimpyJudge(result === "early" ? "はやい" : "ミス", "miss");
+  if (result === "miss") {
+    saySimpy("今のは取りこぼしちゃった。次の輪で集めよう。", "");
+  }
+  renderSimpyHud();
+}
+
+function spawnSimpyNote(spec) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = spec.good ? "simpy-note is-good" : "simpy-note is-bad";
+  button.dataset.kind = spec.good ? "good" : "bad";
+  button.setAttribute("aria-label", spec.good ? "音符" : "変な音");
+  button.style.left = SIMPY_LANE_LEFT[spec.lane];
+  button.innerHTML = spec.good
+    ? '<span class="simpy-note-mark" aria-hidden="true">♪</span>'
+    : '<span class="simpy-note-face"><span class="simpy-note-mark" aria-hidden="true">✕</span><small>変な音</small></span>';
+  const note = { el: button, good: spec.good, y: -76, done: false };
+  button.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (!note.good) {
+      resolveSimpyNote(note, "bad");
+      return;
+    }
+    if (noteInHitZone(button)) {
+      resolveSimpyNote(note, "hit");
+      return;
+    }
+    const noteBox = button.getBoundingClientRect();
+    const zoneBox = simpyHitZone.getBoundingClientRect();
+    if (noteBox.bottom < zoneBox.top - 36) return;
+    resolveSimpyNote(note, "early");
+  });
+  simpyLane.append(button);
+  simpyNotes.push(note);
+}
+
+function settleSimpyChart() {
+  if (simpyChartSettled) return;
+  if (simpySpawnIndex < SIMPY_CHART.length || simpyNotes.length > 0) return;
+  simpyChartSettled = true;
+  if (simpyRaf) cancelAnimationFrame(simpyRaf);
+  simpyRaf = 0;
+
+  if (simpyCollected >= SIMPY_SONG.length) {
+    playSimpySong();
+    const { already, points } = awardSimpyFriendship();
+    showSimpyFinish(
+      already
+        ? "また一曲、完成したね。友情ポイントは、このまえ渡してあるよ。"
+        : `聴いて、一曲になったよ。友情ポイントを25%あげるね。ホームの右上は、いま${points}%だよ。`,
+    );
+    return;
+  }
+
+  simpyGameStarted = false;
+  simpyRetrying = true;
+  simpyGameStart.hidden = false;
+  simpyGameStart.textContent = "もう一度";
+  saySimpy("音が途中で途切れちゃった。変な音は避けて、いい音だけ集めよう。", "");
+  updateSimpyPrev();
+}
+
+function stepSimpyGame(now) {
+  if (!simpyGameStarted) return;
+  const dt = Math.min(34, simpyLastFrame ? now - simpyLastFrame : 16);
+  simpyLastFrame = now;
+  simpyElapsed += dt;
+
+  const travel = Math.max(240, (simpyLane?.clientHeight || 320) - 8);
+  while (
+    simpySpawnIndex < SIMPY_CHART.length &&
+    simpyElapsed >= 280 + simpySpawnIndex * SIMPY_GAP_MS
+  ) {
+    spawnSimpyNote(SIMPY_CHART[simpySpawnIndex]);
+    simpySpawnIndex += 1;
+  }
+
+  simpyNotes.forEach((note) => {
+    if (note.done) return;
+    note.y += (travel / SIMPY_FALL_MS) * dt;
+    note.el.style.transform = `translate(-50%, ${note.y}px)`;
+    if (!simpyHitZone) return;
+    const noteBox = note.el.getBoundingClientRect();
+    const zoneBox = simpyHitZone.getBoundingClientRect();
+    const center = noteBox.top + noteBox.height / 2;
+    if (center <= zoneBox.bottom + 10) return;
+    if (note.good) resolveSimpyNote(note, "miss");
+    else {
+      removeSimpyNote(note);
+      flashSimpyJudge("よけた", "safe");
+    }
+  });
+
+  settleSimpyChart();
+  if (simpyGameStarted) simpyRaf = requestAnimationFrame(stepSimpyGame);
+}
+
+function startSimpyGame() {
+  simpyAudioContext();
+  pauseSimpyPerformance();
+  simpyGameStarted = true;
+  simpyRetrying = false;
+  simpyShowingClear = false;
+  simpyChartSettled = false;
+  simpyCollected = 0;
+  simpyCombo = 0;
+  simpyPoints = 0;
+  simpyLayers = [];
+  simpySpawnIndex = 0;
+  simpyElapsed = 0;
+  simpyLastFrame = 0;
+  simpyGameStart.hidden = true;
+  simpyDialogueNext.hidden = true;
+  if (simpyDialogue) simpyDialogue.hidden = false;
+  if (simpyFinish) simpyFinish.hidden = true;
+  simpyStoryView?.classList.add("is-playing");
+  simpyStoryView?.classList.remove("is-cleared");
+  if (simpyGame) simpyGame.hidden = false;
+  renderSimpyHud();
+  saySimpy("光る輪に重なった音符をクリックして。変な音は押さないで！", "");
+  simpyRaf = requestAnimationFrame(stepSimpyGame);
 }
 
 document
   .querySelectorAll(".character-button[data-character='simpy']")
   .forEach((button) => {
-    button.addEventListener("click", startSimpyStory);
+    button.addEventListener("click", openSimpyStory);
   });
 
 simpyStoryView?.addEventListener("click", (event) => {
   if (
     event.target.closest(
-      "#simpy-story-back, #simpy-story-prev, #simpy-game-start",
+      "#simpy-story-back, #simpy-story-prev, #simpy-game-start, #simpy-replay, #simpy-finish-home, .simpy-note, .simpy-clear-panel, #simpy-finish",
     )
   ) {
     return;
@@ -1425,7 +1842,17 @@ simpyStoryPrev?.addEventListener("click", (event) => {
 
 simpyGameStart?.addEventListener("click", (event) => {
   event.stopPropagation();
-  holdSimpyGame();
+  startSimpyGame();
+});
+
+simpyReplay?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  startSimpyStory();
+});
+
+simpyFinishHome?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  switchUndergroundView("home");
 });
 
 document.addEventListener("keydown", (event) => {
@@ -1433,14 +1860,18 @@ document.addEventListener("keydown", (event) => {
   if (event.key !== "Enter" && event.key !== " ") return;
   if (
     event.target.closest?.(
-      "#simpy-story-back, #simpy-story-prev, #simpy-game-start",
+      "#simpy-story-back, #simpy-story-prev, #simpy-game-start, #simpy-replay, #simpy-finish-home, .simpy-note",
     )
   ) {
     return;
   }
   event.preventDefault();
+  if (simpyFinish && !simpyFinish.hidden) {
+    switchUndergroundView("home");
+    return;
+  }
   if (!simpyGameStart.hidden) {
-    holdSimpyGame();
+    startSimpyGame();
     return;
   }
   advanceSimpyStory();

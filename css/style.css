@@ -1537,6 +1537,220 @@ body {
   background: #ffb067;
 }
 
+.simpy-clear-panel .chippy-clear-kicker {
+  background: #ffd0cc;
+}
+
+#simpy-game[hidden],
+#simpy-finish[hidden],
+#simpy-clear-panel[hidden],
+#simpy-dialogue[hidden] {
+  display: none !important;
+}
+
+.simpy-story.is-playing {
+  cursor: default;
+}
+
+.simpy-story.is-playing .simpy-story-character {
+  height: 70%;
+  max-width: 34%;
+  bottom: 0;
+}
+
+.simpy-game {
+  position: absolute;
+  z-index: 2;
+  left: 4%;
+  width: 54%;
+  top: 62px;
+  height: calc(58% - 28px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.simpy-hud {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  pointer-events: none;
+}
+
+.simpy-hud p {
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 248, 238, 0.92);
+  color: #5a3b2a;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+#simpy-combo.is-hot {
+  background: #ff9138;
+  color: #3b2518;
+}
+
+.simpy-lane {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 28px;
+}
+
+.simpy-hit-zone {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: 10px;
+  height: 86px;
+  pointer-events: none;
+  border: 3px solid rgba(255, 214, 120, 0.98);
+  border-radius: 999px;
+  background: rgba(255, 236, 170, 0.2);
+  box-shadow:
+    0 0 22px rgba(255, 206, 90, 0.5),
+    inset 0 0 16px rgba(255, 248, 214, 0.55);
+}
+
+.simpy-note {
+  position: absolute;
+  top: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  width: 68px;
+  height: 68px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+  border-radius: 50%;
+  pointer-events: auto;
+  cursor: pointer;
+  transform: translate(-50%, -76px);
+}
+
+.simpy-note.is-good {
+  border: 3px solid #e2b15a;
+  background: radial-gradient(circle at 40% 35%, #fff8e8, #ffd98a 72%);
+  color: #8a5a16;
+  box-shadow: 0 8px 16px rgba(90, 50, 10, 0.18);
+}
+
+.simpy-note.is-bad {
+  width: 74px;
+  height: 74px;
+  border: 3px dashed #6d4a62;
+  border-radius: 18px;
+  background: radial-gradient(circle at 40% 35%, #d7c4cf, #8d6d86 74%);
+  color: #3d2438;
+}
+
+.simpy-note-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: simpy-wobble 0.28s ease-in-out infinite;
+}
+
+.simpy-note-mark {
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.simpy-note small {
+  margin-top: 1px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.simpy-judge {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  color: #fff8ea;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-shadow: 0 2px 8px rgba(70, 30, 10, 0.45);
+  pointer-events: none;
+  opacity: 0;
+}
+
+.simpy-judge.is-pop {
+  animation: simpy-judge-pop 0.45s ease;
+}
+
+.simpy-judge[data-kind="bad"] {
+  color: #ffd0e0;
+}
+
+.simpy-judge[data-kind="good"],
+.simpy-judge[data-kind="safe"] {
+  color: #fff4c8;
+}
+
+@keyframes simpy-wobble {
+  0%,
+  100% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(8deg);
+  }
+}
+
+@keyframes simpy-judge-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -30%) scale(0.8);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -80%) scale(1);
+  }
+}
+
+@media (max-width: 650px) {
+  .simpy-story.is-playing .simpy-story-character {
+    height: 36%;
+    max-width: 30%;
+    bottom: 20%;
+  }
+
+  .simpy-game {
+    left: 3%;
+    width: 68%;
+    top: 4%;
+    height: 52%;
+  }
+
+  .simpy-note,
+  .simpy-note.is-bad {
+    width: 58px;
+    height: 58px;
+  }
+
+  .simpy-hit-zone {
+    height: 64px;
+  }
+}
+
 /* カメラ・フレーム撮影 */
 .home-screen.camera-mode {
   height: 100vh;

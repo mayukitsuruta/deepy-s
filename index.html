@@ -11,7 +11,7 @@
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js" />
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js" />
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js" />
-  <link rel="stylesheet" href="./css/style.css?v=20261029-simpy-story2" />
+  <link rel="stylesheet" href="./css/style.css?v=20261029-simpy-rhythm2" />
 </head>
 
 <body>
@@ -312,6 +312,27 @@
           </div>
           <button id="simpy-game-start" class="chippy-game-start" type="button" hidden>ゲームスタート</button>
         </div>
+        <div id="simpy-game" class="simpy-game" hidden>
+          <div class="simpy-hud">
+            <p id="simpy-combo">COMBO 0</p>
+            <p id="simpy-progress">0 / 8</p>
+            <p id="simpy-points">0点</p>
+          </div>
+          <div class="simpy-lane" id="simpy-lane">
+            <div class="simpy-hit-zone" id="simpy-hit-zone" aria-hidden="true"></div>
+          </div>
+          <p class="simpy-judge" id="simpy-judge" aria-live="polite"></p>
+        </div>
+        <div id="simpy-finish" class="chippy-finish" hidden>
+          <p id="simpy-finish-message"></p>
+          <button id="simpy-finish-home" type="button">クリア</button>
+        </div>
+        <section id="simpy-clear-panel" class="chippy-clear-panel simpy-clear-panel" hidden>
+          <p class="chippy-clear-kicker">SIMPY</p>
+          <h2>このストーリーはクリア！</h2>
+          <p>友情ポイントを25%もらったよ。</p>
+          <button id="simpy-replay" type="button">もう一度<br />暮らしを見てみる？</button>
+        </section>
       </div>
 
       <!-- 交流スペース画面コンテンツ -->
@@ -706,7 +727,7 @@
     </div>
   </section>
 
-  <script type="module" src="./js/main.js?v=20261029-simpy-story"></script>
+  <script type="module" src="./js/main.js?v=20261029-simpy-rhythm2"></script>
 </body>
 
 </html>
