@@ -2,7 +2,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebas
 import { getFirestore } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
 // ① Authenticationを追加
-import { getAuth } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
+// IndexedDBの復元待ちで画面が止まるのを避けるため、localStorageに保存する
+import {
+  browserLocalPersistence,
+  initializeAuth,
+} from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 
 // Firebaseの設定
 const firebaseConfig = {
@@ -22,4 +26,6 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
 // ② Authenticationを使えるようにする
-export const auth = getAuth(app);
+export const auth = initializeAuth(app, {
+  persistence: browserLocalPersistence,
+});

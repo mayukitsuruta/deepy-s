@@ -436,7 +436,7 @@ body {
   background: #e9e9b2;
 }
 
-.kotone {
+.simpy {
   background: #ffd4d0;
 }
 
@@ -603,14 +603,22 @@ body {
     padding: 8px;
   }
 
-  .chippy-story {
+  .chippy-story,
+  .simpy-story {
     min-height: 72vh;
   }
 
   .chippy-story-character,
-  .chippy-story.is-playing .chippy-story-character {
+  .chippy-story.is-playing .chippy-story-character,
+  .simpy-story-character {
     height: 48%;
     max-width: 42%;
+  }
+
+  .simpy-story .simpy-story-character {
+    height: 68%;
+    max-width: 62%;
+    bottom: 16%;
   }
 
   .chippy-game {
@@ -775,7 +783,22 @@ body {
   text-align: left;
 }
 
+#register-email-area {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#register-form label {
+  display: block;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
 #register-form input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
   padding: 12px;
   border: 2px solid #b99576;
   border-radius: 10px;
@@ -783,7 +806,9 @@ body {
 }
 
 #register-submit {
-  margin-top: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 4px;
   padding: 14px;
   border: none;
   border-radius: 30px;
@@ -791,6 +816,7 @@ body {
   color: #23170f;
   font-size: 17px;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 #register-submit:disabled {
@@ -890,6 +916,7 @@ body {
 #space-view-content[hidden],
 #camera-view-content[hidden],
 #story-view-content[hidden],
+#simpy-story-view[hidden],
 #zukan-view-content[hidden] {
   display: none !important;
 }
@@ -1197,14 +1224,22 @@ body {
   display: none;
 }
 
-.chippy-story {
+.chippy-story,
+.simpy-story {
   position: relative;
   flex: 1;
   min-height: 0;
   border-radius: 28px;
   overflow: hidden;
-  background: #24160f url("../images/chippy-bg.png") center / cover no-repeat;
   cursor: pointer;
+}
+
+.chippy-story {
+  background: #24160f url("../images/chippy-bg.png") center / cover no-repeat;
+}
+
+.simpy-story {
+  background: #f4e3a4 url("../images/simpy-bg.png") center / cover no-repeat;
 }
 
 .chippy-story-back {
@@ -1235,6 +1270,14 @@ body {
   filter: drop-shadow(0 16px 18px rgba(28, 14, 6, 0.35));
 }
 
+.simpy-story-character {
+  right: 0;
+  left: auto;
+  height: 88%;
+  max-width: 46%;
+  object-position: right bottom;
+}
+
 .chippy-dialogue {
   position: absolute;
   left: 20px;
@@ -1258,6 +1301,10 @@ body {
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.12em;
+}
+
+.simpy-dialogue-name {
+  background: #ffd0cc;
 }
 
 .chippy-dialogue-text {

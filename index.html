@@ -11,7 +11,7 @@
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js" />
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js" />
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js" />
-  <link rel="stylesheet" href="./css/style.css" />
+  <link rel="stylesheet" href="./css/style.css?v=20261029-simpy-story2" />
 </head>
 
 <body>
@@ -214,19 +214,19 @@
             </div>
           </article>
 
-          <article class="character-card kotone">
+          <article class="character-card simpy">
             <div class="character-portrait">
-              <img src="./images/pink.png" alt="KOTONE" />
+              <img src="./images/pink.png" alt="SIMPY" />
             </div>
             <div class="character-info">
-              <h3>KOTONE</h3>
+              <h3>SIMPY</h3>
               <p class="character-subtitle">〜 音を集める人 〜</p>
               <p class="character-description">
                 地底に響くいろんな音を集めているよ。 歌うことや音楽が大好き。
               </p>
               <p class="character-detail">職業：音の採集家</p>
               <p class="character-detail">住んでいる地層：中層</p>
-              <button class="character-button" data-character="kotone">
+              <button class="character-button" data-character="simpy">
                 この子の暮らしをのぞく →
               </button>
             </div>
@@ -298,6 +298,20 @@
           <p>友情ポイントを25%もらったよ。</p>
           <button id="chippy-replay" type="button">もう一度<br />暮らしを見てみる？</button>
         </section>
+      </div>
+
+      <div id="simpy-story-view" class="chippy-story simpy-story" hidden>
+        <button id="simpy-story-back" class="chippy-story-back" type="button">ホームにもどる</button>
+        <img class="chippy-story-character simpy-story-character" src="./images/pink.png" alt="SIMPY" />
+        <div class="chippy-dialogue" id="simpy-dialogue">
+          <p class="chippy-dialogue-name simpy-dialogue-name">SIMPY</p>
+          <p class="chippy-dialogue-text" id="simpy-dialogue-text" aria-live="polite"></p>
+          <div class="chippy-dialogue-footer">
+            <button id="simpy-story-prev" class="chippy-story-prev" type="button">前に戻る</button>
+            <p class="chippy-dialogue-next" id="simpy-dialogue-next">click</p>
+          </div>
+          <button id="simpy-game-start" class="chippy-game-start" type="button" hidden>ゲームスタート</button>
+        </div>
       </div>
 
       <!-- 交流スペース画面コンテンツ -->
@@ -663,6 +677,7 @@
           <input id="register-password" type="password" autocomplete="new-password" minlength="6" required />
 
           <button type="submit" id="register-submit">アカウント登録する</button>
+        </div>
       </form>
 
       <p id="register-message" role="status"></p>
@@ -691,7 +706,7 @@
     </div>
   </section>
 
-  <script type="module" src="./js/main.js"></script>
+  <script type="module" src="./js/main.js?v=20261029-simpy-story"></script>
 </body>
 
 </html>

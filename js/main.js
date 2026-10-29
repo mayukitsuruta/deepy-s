@@ -135,7 +135,9 @@ let sessionVersion = 0;
 
 function readProfileCache(uid) {
   try {
-    const parsed = JSON.parse(localStorage.getItem(PROFILE_CACHE_KEY) || "null");
+    const parsed = JSON.parse(
+      localStorage.getItem(PROFILE_CACHE_KEY) || "null",
+    );
     if (!parsed || parsed.uid !== uid || !parsed.data) return null;
     return parsed.data;
   } catch {
@@ -147,16 +149,25 @@ function writeProfileCache(uid, data) {
   if (!uid || !data) return;
   const plain = {};
   Object.entries(data).forEach(([key, value]) => {
-    if (value == null || ["string", "number", "boolean"].includes(typeof value)) {
+    if (
+      value == null ||
+      ["string", "number", "boolean"].includes(typeof value)
+    ) {
       plain[key] = value;
       return;
     }
-    if (Array.isArray(value) && value.every((item) => typeof item === "string")) {
+    if (
+      Array.isArray(value) &&
+      value.every((item) => typeof item === "string")
+    ) {
       plain[key] = value;
     }
   });
   try {
-    localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({ uid, data: plain }));
+    localStorage.setItem(
+      PROFILE_CACHE_KEY,
+      JSON.stringify({ uid, data: plain }),
+    );
   } catch (error) {
     console.warn("プロフィールの端末保存に失敗:", error);
   }
@@ -172,7 +183,8 @@ function clearProfileCache() {
 
 function prefetchProfile(user) {
   if (!user) return Promise.resolve(null);
-  if (profilePrefetch && profilePrefetchUid === user.uid) return profilePrefetch;
+  if (profilePrefetch && profilePrefetchUid === user.uid)
+    return profilePrefetch;
 
   const cached = readProfileCache(user.uid);
   if (cached) pendingGuestDocData = cached;
@@ -188,7 +200,11 @@ function prefetchProfile(user) {
         pendingGuestDocData = withSavedFriendship(snapshot.data(), user.uid);
         writeProfileCache(user.uid, pendingGuestDocData);
       }
-      if (pendingGuestDocData && currentUserId === user.uid && !homeScreen.hidden) {
+      if (
+        pendingGuestDocData &&
+        currentUserId === user.uid &&
+        !homeScreen.hidden
+      ) {
         renderUserData(pendingGuestDocData);
       }
       return pendingGuestDocData;
@@ -245,11 +261,20 @@ function ensureGuestUser() {
 
 restoreAuth();
 
-function rememberAndEnter(user, userData) {
+function rememberAndEnter(user, userData, persist = true) {
   pendingGuestDocData = userData;
-  writeProfileCache(user.uid, userData);
+  if (persist) writeProfileCache(user.uid, userData);
   openRegister.hidden = !user.isAnonymous;
   enterHomeWithUser(user.uid, userData);
+}
+
+function knownProfile(user) {
+  if (!user || user.isAnonymous) return null;
+  if (pendingGuestDocData?.nickname && profilePrefetchUid === user.uid) {
+    return pendingGuestDocData;
+  }
+  const cached = readProfileCache(user.uid);
+  return cached?.nickname ? cached : null;
 }
 
 guestButton.addEventListener("click", () => {
@@ -508,17 +533,35 @@ registerForm.addEventListener("submit", async (event) => {
 
 // ログイン画面を表示。前回のセッションが残っていれば、入力を待たずにホームへ
 loginButton.addEventListener("click", () => {
-  const user = auth.currentUser;
-  const known = pendingGuestDocData || (user && readProfileCache(user.uid));
-  if (user && !user.isAnonymous && known?.nickname) {
+  const enterKnownUser = (user) => {
+    const known = knownProfile(user);
+    if (!known) return false;
     rememberAndEnter(user, known);
     prefetchProfile(user);
-    return;
-  }
+    return true;
+  };
+
+  if (enterKnownUser(auth.currentUser)) return;
 
   signinMessage.textContent = "";
   showScreen(signinScreen);
   document.getElementById("signin-email").focus();
+
+  // セッション復元がまだなら、入力画面を出したまま裏で待つ
+  restoreAuth()
+    .then((profile) => {
+      if (signinScreen.hidden) return profile;
+      const user = auth.currentUser;
+      if (enterKnownUser(user)) return profile;
+      if (!user || user.isAnonymous) return profile;
+      return prefetchProfile(user);
+    })
+    .then(() => {
+      if (!signinScreen.hidden) enterKnownUser(auth.currentUser);
+    })
+    .catch((error) => {
+      console.warn("ログイン状態の確認に失敗:", error);
+    });
 });
 
 // もどるボタン
@@ -547,25 +590,25 @@ signinForm.addEventListener("submit", async (event) => {
 
     const user = userCredential.user;
     guestUserPromise = null;
+    profilePrefetch = null;
+    profilePrefetchUid = null;
     const cached = readProfileCache(user.uid);
+    const initial = cached?.nickname
+      ? cached
+      : {
+          nickname: email.split("@")[0] || "ゲスト",
+          avatar: "pink",
+          friendshipPoints: 0,
+          bio: "地底でのんびり暮らしてます。よろしくお願いします！",
+          tags: ["デザイン", "カフェ巡り", "音楽"],
+          houseLocation: "第3層・右下エリア",
+        };
 
     signinForm.reset();
     signinMessage.textContent = "";
-
-    if (cached?.nickname) {
-      rememberAndEnter(user, cached);
-      prefetchProfile(user);
-      return;
-    }
-
-    const userSnapshot = await getDoc(doc(db, "users", user.uid));
-    if (!userSnapshot.exists()) {
-      signinMessage.textContent = "ユーザー情報が見つかりません。";
-      showScreen(signinScreen);
-      return;
-    }
-
-    rememberAndEnter(user, userSnapshot.data());
+    // プロフィールの取得を待たずにホームを開く
+    rememberAndEnter(user, initial, Boolean(cached?.nickname));
+    prefetchProfile(user);
   } catch (error) {
     console.error("ログインエラー:", error);
     signinMessage.textContent =
@@ -583,6 +626,8 @@ const homeViewContent = document.getElementById("home-view-content");
 const spaceViewContent = document.getElementById("space-view-content");
 const cameraViewContent = document.getElementById("camera-view-content");
 const storyViewContent = document.getElementById("story-view-content");
+const simpyStoryView = document.getElementById("simpy-story-view");
+let activeStoryId = "chippy";
 const zukanViewContent = document.getElementById("zukan-view-content");
 const zukanNote = document.getElementById("zukan-note");
 const topbarTitleArea = document.getElementById("topbar-title-area");
@@ -654,14 +699,21 @@ function switchUndergroundView(viewName) {
   navItems.forEach((btn) => {
     btn.classList.toggle(
       "active",
-      btn.dataset.view === viewName || (viewName === "story" && btn.dataset.view === "home"),
+      btn.dataset.view === viewName ||
+        (viewName === "story" && btn.dataset.view === "home"),
     );
   });
 
   homeViewContent.hidden = viewName !== "home";
   spaceViewContent.hidden = viewName !== "space";
   cameraViewContent.hidden = viewName !== "camera";
-  if (storyViewContent) storyViewContent.hidden = viewName !== "story";
+  const showingStory = viewName === "story";
+  if (storyViewContent) {
+    storyViewContent.hidden = !(showingStory && activeStoryId === "chippy");
+  }
+  if (simpyStoryView) {
+    simpyStoryView.hidden = !(showingStory && activeStoryId === "simpy");
+  }
   if (zukanViewContent) zukanViewContent.hidden = viewName !== "zukan";
   if (viewName === "zukan") renderZukan();
 
@@ -671,7 +723,8 @@ function switchUndergroundView(viewName) {
       updateMapScrollbar();
     });
   } else if (viewName === "camera") {
-    if (topbarTitleArea) topbarTitleArea.textContent = "地底の思い出を写真に残そう。";
+    if (topbarTitleArea)
+      topbarTitleArea.textContent = "地底の思い出を写真に残そう。";
   } else if (topbarTitleArea) {
     topbarTitleArea.textContent = "";
   }
@@ -685,7 +738,12 @@ function switchUndergroundView(viewName) {
 navItems.forEach((btn) => {
   btn.addEventListener("click", () => {
     const view = btn.dataset.view;
-    if (view === "home" || view === "space" || view === "camera" || view === "zukan") {
+    if (
+      view === "home" ||
+      view === "space" ||
+      view === "camera" ||
+      view === "zukan"
+    ) {
       switchUndergroundView(view);
       if (view !== "camera") stopCamera();
     } else {
@@ -789,12 +847,12 @@ const zukanEntries = [
     secret: "道の土にまぎれていたクリスタルは、誰かが落としたものだった。",
   },
   {
-    id: "kotone",
-    name: "KOTONE",
+    id: "simpy",
+    name: "SIMPY",
     image: "./images/pink.png",
     occupation: "音の採集家",
     habitat: "中層",
-    likes: "歌と、地底に響く音",
+    likes: "不思議な音、鈴、音楽、静かな場所、古い楽器",
     found: "音の多い中層",
     note: "地底に響くいろんな音を集めている。歌うことや音楽が大好き。",
     tool: "音を集めるための道具",
@@ -807,7 +865,7 @@ const zukanEntries = [
     image: "./images/purple.png",
     occupation: "植物の医者",
     habitat: "深層",
-    likes: "地底の植物",
+    likes: "植物、激辛調理",
     found: "深層の植え込み",
     note: "地底の植物たちの健康を守るお医者さん。植物と話せる。",
     tool: "虫めがね",
@@ -820,7 +878,7 @@ const zukanEntries = [
     image: "./images/white.png",
     occupation: "建築家",
     habitat: "？？？",
-    likes: "これから建てる家の設計",
+    likes: "海、海洋生物",
     found: "日付はまだうっていない",
     note: "地底に素敵な家を建てるのが夢。みんなの暮らしをつなぐ建築家。",
     tool: "ポケットに入った道具",
@@ -833,7 +891,7 @@ const zukanEntries = [
     image: "./images/deepy.png",
     occupation: "地底の案内人",
     habitat: "地上と地底のあいだ",
-    likes: "ガイドブックに書き足すこと",
+    likes: "地上に関する本、文化",
     found: "地底に着いた日",
     note: "地上から来た人を、地底の暮らしへ案内する。ガイドブックをいつも持っている。",
     tool: "青いガイドブック",
@@ -855,7 +913,10 @@ const zukanEntries = [
 ];
 
 function zukanSecretsOpen() {
-  return resolvedFriendshipPoints(currentUserData.friendshipPoints) >= ZUKAN_UNLOCK_POINTS;
+  return (
+    resolvedFriendshipPoints(currentUserData.friendshipPoints) >=
+    ZUKAN_UNLOCK_POINTS
+  );
 }
 
 function renderZukan() {
@@ -892,7 +953,9 @@ function renderZukanIndex() {
       <span class="field-entry-copy">
         <span class="field-entry-name">${entry.name}</span>
         <span class="field-entry-meta">${
-          entry.unknown ? "まだ見つけていない" : `${entry.occupation}・${entry.habitat}`
+          entry.unknown
+            ? "まだ見つけていない"
+            : `${entry.occupation}・${entry.habitat}`
         }</span>
       </span>
       <span class="field-entry-open">開く</span>
@@ -1004,7 +1067,10 @@ function updateHitopyPortrait() {
 function awardChippyFriendship() {
   if (isChippyStoryCleared()) return;
 
-  const nextPoints = Math.min(100, Number(currentUserData.friendshipPoints ?? 0) + 25);
+  const nextPoints = Math.min(
+    100,
+    Number(currentUserData.friendshipPoints ?? 0) + 25,
+  );
   writeStoredFriendship(nextPoints);
   renderUserData({ friendshipPoints: nextPoints, chippyCleared: true });
   syncFriendshipPill();
@@ -1080,6 +1146,7 @@ function sayChippy(message, hint) {
 }
 
 function showChippyClearScreen() {
+  activeStoryId = "chippy";
   chippyShowingClear = true;
   resetChippyGame();
   chippyDialogue.hidden = true;
@@ -1090,6 +1157,7 @@ function showChippyClearScreen() {
 }
 
 function startChippyStory() {
+  activeStoryId = "chippy";
   chippyStoryIndex = 0;
   chippyShowingClear = false;
   chippyDialogue.hidden = false;
@@ -1180,12 +1248,17 @@ function startChippyGame() {
   });
 
   chippyGame.hidden = false;
-  sayChippy("三つのうちのひとつに、クリスタルが埋まってる。土をクリックして吸ってみて！", "土を吸おう");
+  sayChippy(
+    "三つのうちのひとつに、クリスタルが埋まってる。土をクリックして吸ってみて！",
+    "土を吸おう",
+  );
 }
 
-document.querySelectorAll(".character-button[data-character='chippy']").forEach((button) => {
-  button.addEventListener("click", openChippyStory);
-});
+document
+  .querySelectorAll(".character-button[data-character='chippy']")
+  .forEach((button) => {
+    button.addEventListener("click", openChippyStory);
+  });
 
 document.querySelectorAll(".character-card").forEach((card) => {
   const button = card.querySelector(".character-button:not(:disabled)");
@@ -1197,7 +1270,11 @@ document.querySelectorAll(".character-card").forEach((card) => {
 });
 
 storyViewContent?.addEventListener("click", (event) => {
-  if (event.target.closest("#chippy-story-back, #chippy-story-prev, #chippy-game-start, #chippy-replay, #chippy-finish-home, .chippy-mound, .chippy-clear-panel, .chippy-finish")) {
+  if (
+    event.target.closest(
+      "#chippy-story-back, #chippy-story-prev, #chippy-game-start, #chippy-replay, #chippy-finish-home, .chippy-mound, .chippy-clear-panel, .chippy-finish",
+    )
+  ) {
     return;
   }
   advanceChippyStory();
@@ -1230,7 +1307,12 @@ chippyGameStart?.addEventListener("click", (event) => {
 document.addEventListener("keydown", (event) => {
   if (!storyViewContent || storyViewContent.hidden) return;
   if (event.key !== "Enter" && event.key !== " ") return;
-  if (event.target.closest?.("#chippy-story-back, #chippy-story-prev, #chippy-game-start, #chippy-replay, #chippy-finish-home, .chippy-mound")) return;
+  if (
+    event.target.closest?.(
+      "#chippy-story-back, #chippy-story-prev, #chippy-game-start, #chippy-replay, #chippy-finish-home, .chippy-mound",
+    )
+  )
+    return;
   event.preventDefault();
   if (!chippyFinish.hidden) {
     switchUndergroundView("home");
@@ -1241,6 +1323,127 @@ document.addEventListener("keydown", (event) => {
     return;
   }
   advanceChippyStory();
+});
+
+const simpyStoryLines = [
+  "中層まで来てくれたんだね。わたしはSIMPY。",
+  "職業は音の採集家。地底に響く音を、このシンバルでそっと拾ってるの。",
+  "鈴の音、古い楽器、だれかの歌声。にぎやかな音だけじゃなく、とても静かな音も集めてる。",
+  "夜になると、集めた音をひとりで歌い返すの。今日は、あなたにも聴いてほしくて。",
+  "このほらあなは、音がいちばんよく響く場所。真ん中の舞台で、いっしょに遊ぼう。",
+  "準備はいいかな。ゲームスタートを押して、音のつづきを聴きにいこう。",
+];
+
+const simpyGamePendingLine =
+  "遊びの続きは、まだ楽譜にしてる途中なんだ。できあがったら、またここに来てね。";
+
+const simpyDialogueText = document.getElementById("simpy-dialogue-text");
+const simpyDialogueNext = document.getElementById("simpy-dialogue-next");
+const simpyDialogue = document.getElementById("simpy-dialogue");
+const simpyStoryBack = document.getElementById("simpy-story-back");
+const simpyStoryPrev = document.getElementById("simpy-story-prev");
+const simpyGameStart = document.getElementById("simpy-game-start");
+let simpyStoryIndex = 0;
+let simpyAwaitingGame = false;
+
+function updateSimpyPrev() {
+  if (!simpyStoryPrev) return;
+  simpyStoryPrev.hidden = false;
+  simpyStoryPrev.disabled = simpyStoryIndex <= 0 && !simpyAwaitingGame;
+}
+
+function renderSimpyStory() {
+  const isLast = simpyStoryIndex >= simpyStoryLines.length - 1;
+  const showStart = isLast && !simpyAwaitingGame;
+  simpyDialogueText.textContent = simpyAwaitingGame
+    ? simpyGamePendingLine
+    : simpyStoryLines[simpyStoryIndex];
+  simpyGameStart.hidden = !showStart;
+  simpyDialogueNext.hidden = showStart || simpyAwaitingGame;
+  simpyDialogueNext.textContent = "click";
+  simpyDialogueNext.classList.toggle("is-more", !isLast && !showStart && !simpyAwaitingGame);
+  updateSimpyPrev();
+}
+
+function startSimpyStory() {
+  activeStoryId = "simpy";
+  simpyStoryIndex = 0;
+  simpyAwaitingGame = false;
+  if (simpyDialogue) simpyDialogue.hidden = false;
+  renderSimpyStory();
+  switchUndergroundView("story");
+}
+
+function advanceSimpyStory() {
+  if (simpyAwaitingGame) return;
+  if (simpyStoryIndex >= simpyStoryLines.length - 1) return;
+  simpyStoryIndex += 1;
+  renderSimpyStory();
+}
+
+function rewindSimpyStory() {
+  if (simpyAwaitingGame) {
+    simpyAwaitingGame = false;
+    renderSimpyStory();
+    return;
+  }
+  if (simpyStoryIndex <= 0) return;
+  simpyStoryIndex -= 1;
+  renderSimpyStory();
+}
+
+function holdSimpyGame() {
+  simpyAwaitingGame = true;
+  renderSimpyStory();
+}
+
+document
+  .querySelectorAll(".character-button[data-character='simpy']")
+  .forEach((button) => {
+    button.addEventListener("click", startSimpyStory);
+  });
+
+simpyStoryView?.addEventListener("click", (event) => {
+  if (
+    event.target.closest(
+      "#simpy-story-back, #simpy-story-prev, #simpy-game-start",
+    )
+  ) {
+    return;
+  }
+  advanceSimpyStory();
+});
+
+simpyStoryBack?.addEventListener("click", () => {
+  switchUndergroundView("home");
+});
+
+simpyStoryPrev?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  rewindSimpyStory();
+});
+
+simpyGameStart?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  holdSimpyGame();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (!simpyStoryView || simpyStoryView.hidden) return;
+  if (event.key !== "Enter" && event.key !== " ") return;
+  if (
+    event.target.closest?.(
+      "#simpy-story-back, #simpy-story-prev, #simpy-game-start",
+    )
+  ) {
+    return;
+  }
+  event.preventDefault();
+  if (!simpyGameStart.hidden) {
+    holdSimpyGame();
+    return;
+  }
+  advanceSimpyStory();
 });
 
 // フレーム付きカメラ（画像はこの画面内でのみ扱い、Firebaseには保存しない）
@@ -1290,12 +1493,16 @@ document.addEventListener("keydown", (event) => {
 
 startCameraButton?.addEventListener("click", async () => {
   if (window.location.protocol === "file:" || !window.isSecureContext) {
-    setCameraMessage("カメラを使うにはlocalhostまたはHTTPSでページを開いてね。index.htmlを直接開いた場合は利用できません。");
+    setCameraMessage(
+      "カメラを使うにはlocalhostまたはHTTPSでページを開いてね。index.htmlを直接開いた場合は利用できません。",
+    );
     return;
   }
 
   if (!navigator.mediaDevices?.getUserMedia) {
-    setCameraMessage("このブラウザーではカメラを利用できません。対応ブラウザーでページを開いてね。");
+    setCameraMessage(
+      "このブラウザーではカメラを利用できません。対応ブラウザーでページを開いてね。",
+    );
     return;
   }
 
@@ -1318,13 +1525,27 @@ startCameraButton?.addEventListener("click", async () => {
   } catch (error) {
     console.error("カメラを起動できませんでした:", error);
     if (error.name === "NotAllowedError" || error.name === "SecurityError") {
-      setCameraMessage("カメラの許可が必要です。アドレスバー横、またはブラウザー設定でこのサイトのカメラを許可してね。");
-    } else if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
-      setCameraMessage("カメラが見つかりません。カメラが接続されているか確認してね。");
-    } else if (error.name === "NotReadableError" || error.name === "TrackStartError") {
-      setCameraMessage("カメラを別のアプリが使用中のようです。他のアプリを閉じてからもう一度試してね。");
+      setCameraMessage(
+        "カメラの許可が必要です。アドレスバー横、またはブラウザー設定でこのサイトのカメラを許可してね。",
+      );
+    } else if (
+      error.name === "NotFoundError" ||
+      error.name === "DevicesNotFoundError"
+    ) {
+      setCameraMessage(
+        "カメラが見つかりません。カメラが接続されているか確認してね。",
+      );
+    } else if (
+      error.name === "NotReadableError" ||
+      error.name === "TrackStartError"
+    ) {
+      setCameraMessage(
+        "カメラを別のアプリが使用中のようです。他のアプリを閉じてからもう一度試してね。",
+      );
     } else {
-      setCameraMessage("カメラを起動できませんでした。ブラウザーとOSのカメラ許可を確認してね。");
+      setCameraMessage(
+        "カメラを起動できませんでした。ブラウザーとOSのカメラ許可を確認してね。",
+      );
     }
   } finally {
     startCameraButton.disabled = false;
@@ -1376,9 +1597,21 @@ takePhotoButton?.addEventListener("click", () => {
     sh = cameraVideo.videoWidth / targetRatio;
     sy = (cameraVideo.videoHeight - sh) / 2;
   }
-  context.drawImage(cameraVideo, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+  context.drawImage(
+    cameraVideo,
+    sx,
+    sy,
+    sw,
+    sh,
+    0,
+    0,
+    canvas.width,
+    canvas.height,
+  );
 
-  const selectedImage = document.querySelector(`[data-frame-image="${selectedFrame}"]`);
+  const selectedImage = document.querySelector(
+    `[data-frame-image="${selectedFrame}"]`,
+  );
   if (selectedImage?.complete && selectedImage.naturalWidth > 0) {
     const frameRatio = selectedImage.naturalWidth / selectedImage.naturalHeight;
     let frameSx = 0;
@@ -1551,7 +1784,9 @@ window.addEventListener("pagehide", () => {
 // 相対時間のフォーマット
 function formatRelativeTime(timestamp) {
   if (!timestamp || !timestamp.toDate) return "たった今";
-  const diffSec = Math.floor((Date.now() - timestamp.toDate().getTime()) / 1000);
+  const diffSec = Math.floor(
+    (Date.now() - timestamp.toDate().getTime()) / 1000,
+  );
   if (diffSec < 60) return "たった今";
   const diffMin = Math.floor(diffSec / 60);
   if (diffMin < 60) return `${diffMin}分前`;
@@ -1655,10 +1890,14 @@ function startBoardListener() {
 function enterHomeWithUser(uid, userData) {
   currentUserId = uid;
   renderUserData(userData || {});
-  startOnlinePresence();
-  startBoardListener();
   switchUndergroundView("home");
   showScreen(homeScreen);
+  // 画面を出してから通信を始める。人数と掲示板の取得で最初の表示を止めない
+  requestAnimationFrame(() => {
+    if (currentUserId !== uid || homeScreen.hidden) return;
+    startOnlinePresence();
+    startBoardListener();
+  });
 }
 
 // ② プロフィール：編集＆Firebase保存
@@ -1759,7 +1998,9 @@ toggleBoardMoreBtn.addEventListener("click", () => {
 // ④ 交流スペース：地層マップエリア（上下ドラッグ＆スクロール連動）
 // =========================================
 const spaceMapViewport = document.getElementById("space-map-viewport");
-const currentLayerIndicator = document.getElementById("current-layer-indicator");
+const currentLayerIndicator = document.getElementById(
+  "current-layer-indicator",
+);
 
 function updateMapScrollbar() {
   if (!spaceMapViewport || !currentLayerIndicator) return;
