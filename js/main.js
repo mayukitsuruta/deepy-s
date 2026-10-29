@@ -627,6 +627,7 @@ const spaceViewContent = document.getElementById("space-view-content");
 const cameraViewContent = document.getElementById("camera-view-content");
 const storyViewContent = document.getElementById("story-view-content");
 const simpyStoryView = document.getElementById("simpy-story-view");
+const nasupyStoryView = document.getElementById("nasupy-story-view");
 let activeStoryId = "chippy";
 const zukanViewContent = document.getElementById("zukan-view-content");
 const zukanNote = document.getElementById("zukan-note");
@@ -714,6 +715,9 @@ function switchUndergroundView(viewName) {
   }
   if (simpyStoryView) {
     simpyStoryView.hidden = !(showingStory && activeStoryId === "simpy");
+  }
+  if (nasupyStoryView) {
+    nasupyStoryView.hidden = !(showingStory && activeStoryId === "nasupy");
   }
   if (zukanViewContent) zukanViewContent.hidden = viewName !== "zukan";
   if (viewName === "zukan") renderZukan();
@@ -1875,6 +1879,127 @@ document.addEventListener("keydown", (event) => {
     return;
   }
   advanceSimpyStory();
+});
+
+const nasupyStoryLines = [
+  "深層まで降りてきてくれたんだね。ぼくはNASUPY。",
+  "仕事は植物のお医者さん。具合の悪い葉っぱや花を、この虫めがねで診ているよ。",
+  "植物とは話せるんだ。声が小さくなると、どこか具合が悪いってわかる。",
+  "診た子には、ひとつずつ名前をつけちゃう。ここは深層の、植物たちの診療室。",
+  "準備はいいかな。ゲームスタートを押して、いっしょに診てみよう。",
+];
+
+const nasupyGamePendingLine =
+  "診療のつづきは、まだカルテにしてる途中なんだ。できあがったら、また来てね。";
+
+const nasupyDialogueText = document.getElementById("nasupy-dialogue-text");
+const nasupyDialogueNext = document.getElementById("nasupy-dialogue-next");
+const nasupyStoryBack = document.getElementById("nasupy-story-back");
+const nasupyStoryPrev = document.getElementById("nasupy-story-prev");
+const nasupyGameStart = document.getElementById("nasupy-game-start");
+let nasupyStoryIndex = 0;
+let nasupyAwaitingGame = false;
+
+function updateNasupyPrev() {
+  if (!nasupyStoryPrev) return;
+  nasupyStoryPrev.hidden = false;
+  nasupyStoryPrev.disabled = nasupyStoryIndex <= 0 && !nasupyAwaitingGame;
+}
+
+function renderNasupyStory() {
+  const isLast = nasupyStoryIndex >= nasupyStoryLines.length - 1;
+  const showStart = isLast && !nasupyAwaitingGame;
+  nasupyDialogueText.textContent = nasupyAwaitingGame
+    ? nasupyGamePendingLine
+    : nasupyStoryLines[nasupyStoryIndex];
+  nasupyGameStart.hidden = !showStart;
+  nasupyDialogueNext.hidden = showStart || nasupyAwaitingGame;
+  nasupyDialogueNext.textContent = "click";
+  nasupyDialogueNext.classList.toggle(
+    "is-more",
+    !isLast && !showStart && !nasupyAwaitingGame,
+  );
+  updateNasupyPrev();
+}
+
+function startNasupyStory() {
+  activeStoryId = "nasupy";
+  nasupyStoryIndex = 0;
+  nasupyAwaitingGame = false;
+  renderNasupyStory();
+  switchUndergroundView("story");
+}
+
+function advanceNasupyStory() {
+  if (nasupyAwaitingGame) return;
+  if (nasupyStoryIndex >= nasupyStoryLines.length - 1) return;
+  nasupyStoryIndex += 1;
+  renderNasupyStory();
+}
+
+function rewindNasupyStory() {
+  if (nasupyAwaitingGame) {
+    nasupyAwaitingGame = false;
+    renderNasupyStory();
+    return;
+  }
+  if (nasupyStoryIndex <= 0) return;
+  nasupyStoryIndex -= 1;
+  renderNasupyStory();
+}
+
+function holdNasupyGame() {
+  nasupyAwaitingGame = true;
+  renderNasupyStory();
+}
+
+document
+  .querySelectorAll(".character-button[data-character='nasupy']")
+  .forEach((button) => {
+    button.addEventListener("click", startNasupyStory);
+  });
+
+nasupyStoryView?.addEventListener("click", (event) => {
+  if (
+    event.target.closest(
+      "#nasupy-story-back, #nasupy-story-prev, #nasupy-game-start",
+    )
+  ) {
+    return;
+  }
+  advanceNasupyStory();
+});
+
+nasupyStoryBack?.addEventListener("click", () => {
+  switchUndergroundView("home");
+});
+
+nasupyStoryPrev?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  rewindNasupyStory();
+});
+
+nasupyGameStart?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  holdNasupyGame();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (!nasupyStoryView || nasupyStoryView.hidden) return;
+  if (event.key !== "Enter" && event.key !== " ") return;
+  if (
+    event.target.closest?.(
+      "#nasupy-story-back, #nasupy-story-prev, #nasupy-game-start",
+    )
+  ) {
+    return;
+  }
+  event.preventDefault();
+  if (!nasupyGameStart.hidden) {
+    holdNasupyGame();
+    return;
+  }
+  advanceNasupyStory();
 });
 
 // フレーム付きカメラ（画像はこの画面内でのみ扱い、Firebaseには保存しない）

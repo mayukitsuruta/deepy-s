@@ -628,7 +628,8 @@ body {
   }
 
   .chippy-story,
-  .simpy-story {
+  .simpy-story,
+  .nasupy-story {
     min-height: 72vh;
   }
 
@@ -643,6 +644,15 @@ body {
     height: 68%;
     max-width: 62%;
     bottom: 16%;
+  }
+
+  .nasupy-story .nasupy-story-character {
+    left: 0;
+    right: auto;
+    height: 72%;
+    max-width: 92%;
+    bottom: 18%;
+    object-position: left bottom;
   }
 
   .chippy-game {
@@ -941,6 +951,7 @@ body {
 #camera-view-content[hidden],
 #story-view-content[hidden],
 #simpy-story-view[hidden],
+#nasupy-story-view[hidden],
 #zukan-view-content[hidden] {
   display: none !important;
 }
@@ -1249,7 +1260,8 @@ body {
 }
 
 .chippy-story,
-.simpy-story {
+.simpy-story,
+.nasupy-story {
   position: relative;
   flex: 1;
   min-height: 0;
@@ -1264,6 +1276,10 @@ body {
 
 .simpy-story {
   background: #f4e3a4 url("../images/simpy-bg.png") center / cover no-repeat;
+}
+
+.nasupy-story {
+  background: #d5e4f6 url("../images/nasupy-bg.png") center / cover no-repeat;
 }
 
 .chippy-story-back {
@@ -1302,6 +1318,14 @@ body {
   object-position: right bottom;
 }
 
+.nasupy-story-character {
+  left: 0;
+  right: auto;
+  height: 78%;
+  max-width: 58%;
+  object-position: left bottom;
+}
+
 .chippy-dialogue {
   position: absolute;
   left: 20px;
@@ -1329,6 +1353,10 @@ body {
 
 .simpy-dialogue-name {
   background: #ffd0cc;
+}
+
+.nasupy-dialogue-name {
+  background: #e5d4f5;
 }
 
 .chippy-dialogue-text {

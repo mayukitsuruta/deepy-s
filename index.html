@@ -11,7 +11,7 @@
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js" />
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js" />
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js" />
-  <link rel="stylesheet" href="./css/style.css?v=20261029-deepy-menu" />
+  <link rel="stylesheet" href="./css/style.css?v=20261029-nasupy-story2" />
 </head>
 
 <body>
@@ -324,6 +324,20 @@
           <p>友情ポイントを25%もらったよ。</p>
           <button id="simpy-replay" type="button">もう一度<br />暮らしを見てみる？</button>
         </section>
+      </div>
+
+      <div id="nasupy-story-view" class="chippy-story nasupy-story" hidden>
+        <button id="nasupy-story-back" class="chippy-story-back" type="button">ホームにもどる</button>
+        <img class="chippy-story-character nasupy-story-character" src="./images/purple.png" alt="NASUPY" />
+        <div class="chippy-dialogue" id="nasupy-dialogue">
+          <p class="chippy-dialogue-name nasupy-dialogue-name">NASUPY</p>
+          <p class="chippy-dialogue-text" id="nasupy-dialogue-text" aria-live="polite"></p>
+          <div class="chippy-dialogue-footer">
+            <button id="nasupy-story-prev" class="chippy-story-prev" type="button">前に戻る</button>
+            <p class="chippy-dialogue-next" id="nasupy-dialogue-next">click</p>
+          </div>
+          <button id="nasupy-game-start" class="chippy-game-start" type="button" hidden>ゲームスタート</button>
+        </div>
       </div>
 
       <!-- 交流スペース画面コンテンツ -->
@@ -718,7 +732,7 @@
     </div>
   </section>
 
-  <script type="module" src="./js/main.js?v=20261029-simpy-rhythm2"></script>
+  <script type="module" src="./js/main.js?v=20261029-nasupy-story"></script>
 </body>
 
 </html>
