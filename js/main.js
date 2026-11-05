@@ -6,6 +6,7 @@ import {
   signInAnonymously,
   signInWithEmailAndPassword,
   signOut,
+  updateProfile,
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js";
 import {
   doc,
@@ -220,6 +221,39 @@ function clearProfileCache() {
   }
 }
 
+function savedNickname(data) {
+  const nickname = String(data?.nickname || "").trim();
+  return nickname;
+}
+
+async function loadAccountProfile(user) {
+  const cached = readProfileCache(user.uid);
+  let remote = null;
+  try {
+    const snapshot = await getDoc(doc(db, "users", user.uid));
+    if (snapshot.exists()) remote = snapshot.data();
+  } catch (error) {
+    console.warn("プロフィールの取得に失敗:", error);
+  }
+
+  const nickname =
+    savedNickname(remote) ||
+    String(user.displayName || "").trim() ||
+    savedNickname(cached) ||
+    "ゲスト";
+
+  if (nickname !== "ゲスト" && user.displayName !== nickname) {
+    updateProfile(user, { displayName: nickname }).catch(() => {});
+  }
+
+  return {
+    ...createBlankUserData(),
+    ...(cached || {}),
+    ...(remote || {}),
+    nickname,
+  };
+}
+
 function prefetchProfile(user) {
   if (!user) return Promise.resolve(null);
   if (profilePrefetch && profilePrefetchUid === user.uid)
@@ -236,7 +270,16 @@ function prefetchProfile(user) {
         return pendingGuestDocData;
       }
       if (snapshot.exists()) {
-        pendingGuestDocData = withSavedFriendship(snapshot.data(), user.uid);
+        const remote = snapshot.data();
+        const nickname =
+          savedNickname(remote) ||
+          savedNickname(pendingGuestDocData) ||
+          savedNickname(currentUserData) ||
+          "ゲスト";
+        pendingGuestDocData = withSavedFriendship(
+          { ...remote, nickname },
+          user.uid,
+        );
         if (!user.isAnonymous) writeProfileCache(user.uid, pendingGuestDocData);
       }
       if (
@@ -262,14 +305,6 @@ const startupLogout = auth.authStateReady().then(async () => {
   const user = auth.currentUser;
   if (!user) return;
   const staleUid = user.uid;
-
-  if (user.isAnonymous) {
-    try {
-      await deleteDoc(doc(db, "users", staleUid));
-    } catch (error) {
-      console.warn("ゲスト情報の削除に失敗:", error);
-    }
-  }
 
   if (auth.currentUser?.uid !== staleUid) return;
   currentUserId = null;
@@ -393,11 +428,7 @@ logoutButton.addEventListener("click", () => {
   const ending = !user
     ? Promise.resolve()
     : user.isAnonymous
-      ? deleteDoc(doc(db, "users", user.uid))
-          .catch((error) => {
-            console.warn("ゲスト情報の削除に失敗:", error);
-          })
-          .then(() => user.delete())
+      ? user.delete()
       : presence
           .catch((error) => {
             console.warn("オンライン状態の更新に失敗:", error);
@@ -593,6 +624,11 @@ registerForm.addEventListener("submit", async (event) => {
       },
       { merge: true },
     );
+    if (userData.nickname) {
+      await updateProfile(user, { displayName: userData.nickname }).catch(
+        () => {},
+      );
+    }
 
     registerModal.hidden = true;
     registerForm.reset();
@@ -653,22 +689,11 @@ signinForm.addEventListener("submit", async (event) => {
     guestUserPromise = null;
     profilePrefetch = null;
     profilePrefetchUid = null;
-    const cached = readProfileCache(user.uid);
-    const initial = cached?.nickname
-      ? cached
-      : {
-          nickname: email.split("@")[0] || "ゲスト",
-          avatar: "pink",
-          friendshipPoints: 0,
-          bio: "地底でのんびり暮らしてます。よろしくお願いします！",
-          tags: ["デザイン", "カフェ巡り", "音楽"],
-          houseLocation: "第3層・右下エリア",
-        };
+    const initial = await loadAccountProfile(user);
 
     signinForm.reset();
     signinMessage.textContent = "";
-    // プロフィールの取得を待たずにホームを開く
-    rememberAndEnter(user, initial, Boolean(cached?.nickname));
+    rememberAndEnter(user, initial, true);
     prefetchProfile(user);
   } catch (error) {
     console.error("ログインエラー:", error);
@@ -1563,7 +1588,6 @@ let melodySessionScore = 0;
 let melodyCloudBest = 0;
 let melodyRanking = [];
 let melodyRankError = "";
-let unsubscribeMelodyScores = null;
 let suppressMelodyClick = false;
 
 function simpyClearStorageKey() {
@@ -2184,9 +2208,9 @@ async function loadOwnMelodyBest() {
   renderMelodyScore();
   if (!currentUserId || !auth.currentUser) return;
   try {
-    const snap = await getDoc(doc(db, "simpyRhythmScores", currentUserId));
+    const snap = await getDoc(doc(db, "users", currentUserId));
     if (snap.exists()) {
-      const remote = Number(snap.data().bestScore) || 0;
+      const remote = Number(snap.data().rhythmBest) || 0;
       melodyCloudBest = Math.max(melodyCloudBest, remote);
     }
   } catch (error) {
@@ -2217,19 +2241,19 @@ async function saveMelodyBest(score) {
   }
   try {
     await setDoc(
-      doc(db, "simpyRhythmScores", currentUserId),
+      doc(db, "users", currentUserId),
       {
-        uid: currentUserId,
         nickname: currentUserData.nickname || "ゲスト",
         avatar: currentUserData.avatar || "pink",
-        bestScore: best,
-        updatedAt: serverTimestamp(),
+        rhythmBest: best,
       },
       { merge: true },
     );
     melodyCloudBest = best;
+    currentUserData.rhythmBest = best;
     if (melodySaveNote) melodySaveNote.textContent = "みんなの記録に残したよ。";
     renderMelodyScore();
+    publishRhythmRanking();
   } catch (error) {
     console.error("ミニゲーム記録の保存エラー:", error);
     if (melodySaveNote) {
@@ -2239,17 +2263,18 @@ async function saveMelodyBest(score) {
 }
 
 async function touchMelodyProfile() {
-  if (!currentUserId || !auth.currentUser) return;
-  if (!storedMelodyBest()) return;
+  if (!currentUserId || !auth.currentUser || !storedMelodyBest()) return;
   try {
     await setDoc(
-      doc(db, "simpyRhythmScores", currentUserId),
+      doc(db, "users", currentUserId),
       {
         nickname: currentUserData.nickname || "ゲスト",
         avatar: currentUserData.avatar || "pink",
+        rhythmBest: storedMelodyBest(),
       },
       { merge: true },
     );
+    publishRhythmRanking();
   } catch (error) {
     console.warn("ランキングの名前更新に失敗:", error);
   }
@@ -2285,32 +2310,32 @@ function renderMelodyRanking() {
   });
 }
 
+function publishRhythmRanking() {
+  melodyRankError = "";
+  melodyRanking = latestUsersDocs
+    .map((data) => ({
+      uid: data.id,
+      nickname: data.nickname,
+      bestScore: Number(data.rhythmBest),
+    }))
+    .filter((row) => Number.isFinite(row.bestScore) && row.bestScore > 0)
+    .sort(
+      (a, b) =>
+        b.bestScore - a.bestScore ||
+        String(a.nickname || "").localeCompare(String(b.nickname || ""), "ja"),
+    )
+    .slice(0, 8);
+  renderMelodyRanking();
+}
+
 function startMelodyRanking() {
-  if (unsubscribeMelodyScores) return;
-  const scoresQuery = query(
-    collection(db, "simpyRhythmScores"),
-    orderBy("bestScore", "desc"),
-    limit(8),
-  );
-  unsubscribeMelodyScores = onSnapshot(
-    scoresQuery,
-    (snapshot) => {
-      melodyRankError = "";
-      melodyRanking = snapshot.docs.map((item) => item.data());
-      renderMelodyRanking();
-    },
-    (error) => {
-      console.error("ミニゲーム記録の取得エラー:", error);
-      melodyRankError = "みんなの記録を読み込めなかったよ。";
-      renderMelodyRanking();
-    },
-  );
+  if (!unsubscribeOnlineUsers) startOnlinePresence();
+  publishRhythmRanking();
 }
 
 function stopMelodyRanking() {
-  if (unsubscribeMelodyScores) unsubscribeMelodyScores();
-  unsubscribeMelodyScores = null;
   melodyRanking = [];
+  melodyRankError = "";
 }
 
 function showMelodyIntro() {
@@ -3098,13 +3123,16 @@ function startOnlinePresence() {
       (snapshot) => {
         latestUsersDocs = [];
         snapshot.forEach((docSnap) => {
-          latestUsersDocs.push(docSnap.data());
+          latestUsersDocs.push({ id: docSnap.id, ...docSnap.data() });
         });
         recalculateOnlineCount();
+        publishRhythmRanking();
       },
       (error) => {
         console.warn("オンライン人数の取得に失敗:", error);
         if (onlineCountEl) onlineCountEl.textContent = "1人";
+        melodyRankError = "みんなの記録を読み込めなかったよ。";
+        renderMelodyRanking();
       },
     );
   }
@@ -3124,7 +3152,6 @@ function endBrowserSession() {
     ).catch(() => {});
     signOut(auth).catch(() => {});
   } else if (user?.isAnonymous) {
-    deleteDoc(doc(db, "users", user.uid)).catch(() => {});
     user.delete().catch(() => {});
   }
 
@@ -3322,6 +3349,11 @@ profileEditForm.addEventListener("submit", async (event) => {
   try {
     const userRef = doc(db, "users", currentUserId);
     await setDoc(userRef, updatedFields, { merge: true });
+    if (auth.currentUser && !auth.currentUser.isAnonymous) {
+      await updateProfile(auth.currentUser, { displayName: newNickname }).catch(
+        () => {},
+      );
+    }
     touchMelodyProfile();
   } catch (error) {
     console.error("プロフィール保存エラー:", error);
