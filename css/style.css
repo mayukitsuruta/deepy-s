@@ -646,6 +646,19 @@ body {
     bottom: 16%;
   }
 
+  .simpy-story.is-playing .simpy-story-character {
+    height: 32%;
+    max-width: 34%;
+    bottom: 0;
+  }
+
+  .simpy-melody {
+    left: 8px;
+    right: 8px;
+    top: 52px;
+    width: auto;
+  }
+
   .nasupy-story .nasupy-story-character {
     left: 0;
     right: auto;
@@ -1012,7 +1025,8 @@ body {
 #story-view-content[hidden],
 #simpy-story-view[hidden],
 #nasupy-story-view[hidden],
-#zukan-view-content[hidden] {
+#zukan-view-content[hidden],
+#minigame-view-content[hidden] {
   display: none !important;
 }
 
@@ -1653,10 +1667,16 @@ body {
   background: #ffd0cc;
 }
 
-#simpy-game[hidden],
-#simpy-finish[hidden],
 #simpy-clear-panel[hidden],
-#simpy-dialogue[hidden] {
+#simpy-dialogue[hidden],
+#melody-play[hidden],
+#melody-done[hidden],
+#melody-intro[hidden],
+#melody-next[hidden],
+#simpy-finish[hidden],
+#rhythm-play[hidden],
+#rhythm-done[hidden],
+#rhythm-intro[hidden] {
   display: none !important;
 }
 
@@ -1665,162 +1685,149 @@ body {
 }
 
 .simpy-story.is-playing .simpy-story-character {
-  height: 70%;
-  max-width: 34%;
-  bottom: 0;
+  height: 78%;
+  max-width: 36%;
 }
 
-.simpy-game {
+.simpy-melody {
   position: absolute;
   z-index: 2;
-  left: 4%;
-  width: 54%;
+  left: 3%;
   top: 62px;
-  height: calc(58% - 28px);
+  width: min(60%, 680px);
+  padding: 14px 14px 16px;
+  border-radius: 24px;
+  background: rgba(255, 248, 238, 0.94);
+  color: #4b3028;
+  box-shadow: 0 10px 24px rgba(28, 14, 6, 0.18);
+}
+
+.simpy-melody .melody-art,
+.simpy-melody .melody-card img {
+  height: 112px;
+}
+
+.simpy-melody .melody-staff {
+  min-height: 0;
+}
+
+.rhythm-intro,
+.rhythm-done {
+  margin-top: 8px;
+}
+
+.rhythm-done p {
+  margin: 8px 0 16px;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.7;
+}
+
+.rhythm-play {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  pointer-events: none;
+  min-height: 420px;
 }
 
-.simpy-hud {
+.rhythm-hud {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  margin: 0;
-  pointer-events: none;
 }
 
-.simpy-hud p {
+.rhythm-hud p {
   margin: 0;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(255, 248, 238, 0.92);
+  background: #fff1dc;
   color: #5a3b2a;
   font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.04em;
 }
 
-#simpy-combo.is-hot {
+#rhythm-combo.is-hot {
   background: #ff9138;
   color: #3b2518;
 }
 
-.simpy-lane {
+.rhythm-lane {
   position: relative;
   flex: 1;
-  min-height: 0;
+  min-height: 340px;
   overflow: hidden;
-  border-radius: 28px;
+  border-radius: 24px;
+  background:
+    linear-gradient(90deg, transparent 19.5%, rgba(90, 58, 40, 0.08) 19.5%, rgba(90, 58, 40, 0.08) 20.5%, transparent 20.5%),
+    linear-gradient(90deg, transparent 49.5%, rgba(90, 58, 40, 0.08) 49.5%, rgba(90, 58, 40, 0.08) 50.5%, transparent 50.5%),
+    linear-gradient(90deg, transparent 79.5%, rgba(90, 58, 40, 0.08) 79.5%, rgba(90, 58, 40, 0.08) 80.5%, transparent 80.5%),
+    #2a1c14;
 }
 
-.simpy-hit-zone {
+.rhythm-hit-zone {
   position: absolute;
   left: 6%;
   right: 6%;
-  bottom: 10px;
-  height: 86px;
-  pointer-events: none;
+  bottom: 12px;
+  height: 78px;
   border: 3px solid rgba(255, 214, 120, 0.98);
   border-radius: 999px;
   background: rgba(255, 236, 170, 0.2);
-  box-shadow:
-    0 0 22px rgba(255, 206, 90, 0.5),
-    inset 0 0 16px rgba(255, 248, 214, 0.55);
+  box-shadow: 0 0 22px rgba(255, 206, 90, 0.45);
+  pointer-events: none;
 }
 
-.simpy-note {
+.rhythm-note {
   position: absolute;
   top: 0;
   z-index: 1;
-  box-sizing: border-box;
   width: 68px;
   height: 68px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0;
   padding: 0;
   border-radius: 50%;
-  pointer-events: auto;
   cursor: pointer;
   transform: translate(-50%, -76px);
 }
 
-.simpy-note.is-good {
+.rhythm-note.is-good {
   border: 3px solid #e2b15a;
   background: radial-gradient(circle at 40% 35%, #fff8e8, #ffd98a 72%);
   color: #8a5a16;
-  box-shadow: 0 8px 16px rgba(90, 50, 10, 0.18);
+  font-size: 30px;
+  font-weight: 800;
 }
 
-.simpy-note.is-bad {
+.rhythm-note.is-bad {
   width: 74px;
   height: 74px;
   border: 3px dashed #6d4a62;
   border-radius: 18px;
   background: radial-gradient(circle at 40% 35%, #d7c4cf, #8d6d86 74%);
   color: #3d2438;
-}
-
-.simpy-note-face {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  animation: simpy-wobble 0.28s ease-in-out infinite;
-}
-
-.simpy-note-mark {
-  font-size: 30px;
+  font-size: 12px;
   font-weight: 800;
-  line-height: 1;
 }
 
-.simpy-note small {
-  margin-top: 1px;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-}
-
-.simpy-judge {
+.rhythm-judge {
   position: absolute;
   left: 50%;
-  top: 42%;
+  top: 46%;
   margin: 0;
   transform: translate(-50%, -50%);
   color: #fff8ea;
   font-size: 28px;
   font-weight: 800;
-  letter-spacing: 0.06em;
   text-shadow: 0 2px 8px rgba(70, 30, 10, 0.45);
   pointer-events: none;
   opacity: 0;
 }
 
-.simpy-judge.is-pop {
+.rhythm-judge.is-pop {
   animation: simpy-judge-pop 0.45s ease;
-}
-
-.simpy-judge[data-kind="bad"] {
-  color: #ffd0e0;
-}
-
-.simpy-judge[data-kind="good"],
-.simpy-judge[data-kind="safe"] {
-  color: #fff4c8;
-}
-
-@keyframes simpy-wobble {
-  0%,
-  100% {
-    transform: rotate(-8deg);
-  }
-  50% {
-    transform: rotate(8deg);
-  }
 }
 
 @keyframes simpy-judge-pop {
@@ -1838,28 +1845,397 @@ body {
   }
 }
 
+.minigame-view {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+  gap: 18px;
+  align-items: start;
+  width: min(100%, 1080px);
+  margin: 0 auto;
+}
+
+.minigame-stage,
+.minigame-board {
+  border-radius: 28px;
+  background: rgba(255, 248, 238, 0.96);
+  color: #4b3028;
+  box-shadow: 0 10px 28px rgba(28, 14, 6, 0.22);
+}
+
+.minigame-stage {
+  padding: 26px 24px 22px;
+}
+
+.minigame-kicker {
+  display: inline-block;
+  margin: 0;
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: #ffd0cc;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.minigame-stage h2 {
+  margin: 12px 0 8px;
+  font-size: clamp(26px, 3vw, 34px);
+}
+
+.minigame-lead,
+.melody-hint,
+.melody-save-note {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.minigame-lead {
+  color: #6d4b38;
+}
+
+.melody-status {
+  min-height: 1.6em;
+  margin: 14px 0;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.melody-intro ol {
+  margin: 0 0 18px;
+  padding-left: 1.2em;
+  line-height: 1.8;
+}
+
+.melody-round {
+  margin: 0 0 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.melody-staff {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  min-height: 180px;
+  padding: 12px;
+  border-radius: 22px;
+  background: #1b130f;
+}
+
+.melody-staff.is-wrong {
+  animation: melody-shake 0.42s ease;
+}
+
+.melody-ghost,
+.melody-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 220, 180, 0.28);
+  background: #241911;
+}
+
+.melody-ghost {
+  align-items: center;
+  justify-content: center;
+  min-height: 168px;
+  color: rgba(255, 236, 214, 0.72);
+  font-weight: 800;
+}
+
+.melody-ghost span {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.melody-ghost small {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.melody-ghost.is-active {
+  border-color: #ffd56a;
+  color: #ffe7a8;
+  box-shadow: inset 0 0 0 2px rgba(255, 213, 106, 0.35);
+}
+
+.melody-card {
+  padding: 8px 8px 10px;
+  cursor: grab;
+  user-select: none;
+}
+
+.melody-card.is-playing,
+.melody-card.is-over {
+  border-color: #ffd56a;
+  box-shadow: 0 0 0 3px rgba(255, 196, 80, 0.35);
+}
+
+.melody-card.is-dragging {
+  opacity: 0.45;
+}
+
+.melody-slot-no {
+  margin: 0 0 4px;
+  color: #f3ddc4;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.melody-art {
+  height: 168px;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.melody-card img {
+  display: block;
+  width: 100%;
+  height: 168px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.melody-card-tools {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.melody-card-tools button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff1dc;
+  color: #5a3a28;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.melody-card-tools button[data-move] {
+  flex: 0 0 36px;
+}
+
+.melody-card-tools button[data-play] {
+  flex: 1;
+}
+
+.melody-card-tools button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.melody-hint {
+  margin-top: 8px;
+  color: #7a5642;
+  font-size: 13px;
+}
+
+.melody-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.melody-primary,
+.melody-secondary {
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.melody-primary {
+  border: 0;
+  background: #ff9138;
+  color: #3b2518;
+}
+
+.melody-primary:hover,
+.melody-card-tools button:hover {
+  background: #ffb067;
+}
+
+.melody-secondary {
+  border: 1.5px solid #c9a27a;
+  background: transparent;
+  color: #6a4632;
+}
+
+.melody-primary:disabled,
+.melody-secondary:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.melody-done p {
+  margin: 8px 0 16px;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.7;
+}
+
+.minigame-board {
+  padding: 20px 18px;
+}
+
+.minigame-score-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 8px;
+  font-weight: 800;
+}
+
+.minigame-score-line strong {
+  font-size: 22px;
+}
+
+.melody-save-note {
+  min-height: 1.4em;
+  margin: 8px 0 16px;
+  color: #7a5642;
+  font-size: 13px;
+}
+
+.minigame-board h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.melody-ranking {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.melody-ranking li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(120, 78, 48, 0.14);
+  font-weight: 700;
+}
+
+.melody-ranking li.is-me {
+  color: #c45b24;
+}
+
+.melody-rank-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.melody-rank-empty {
+  color: #7a5642;
+  font-weight: 600;
+}
+
+@keyframes melody-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-7px);
+  }
+  75% {
+    transform: translateX(7px);
+  }
+}
+
+@media (max-width: 800px) {
+  .minigame-view {
+    grid-template-columns: 1fr;
+  }
+
+  .minigame-stage {
+    padding: 16px 12px;
+  }
+
+  .melody-staff {
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .melody-card {
+    padding: 6px;
+  }
+
+  .melody-art,
+  .melody-card img {
+    height: 104px;
+  }
+
+  .melody-ghost {
+    min-height: 104px;
+  }
+
+  .melody-card-tools {
+    gap: 4px;
+  }
+
+  .melody-card-tools button {
+    min-height: 34px;
+    padding: 0;
+    font-size: 12px;
+  }
+
+  .melody-card-tools button[data-move] {
+    flex-basis: 28px;
+  }
+
+  .melody-card-tools button[data-play] {
+    font-size: 0;
+  }
+
+  .melody-card-tools button[data-play]::after {
+    content: "♪";
+    font-size: 16px;
+  }
+}
+
 @media (max-width: 650px) {
-  .simpy-story.is-playing .simpy-story-character {
-    height: 36%;
-    max-width: 30%;
-    bottom: 20%;
+  .melody-staff {
+    grid-template-columns: 1fr;
   }
 
-  .simpy-game {
-    left: 3%;
-    width: 68%;
-    top: 4%;
-    height: 52%;
+  .melody-art,
+  .melody-card img {
+    height: 132px;
   }
 
-  .simpy-note,
-  .simpy-note.is-bad {
-    width: 58px;
-    height: 58px;
+  .melody-card-tools {
+    margin-top: 8px;
   }
 
-  .simpy-hit-zone {
-    height: 64px;
+  .melody-card-tools button[data-move] {
+    flex-basis: 52px;
+  }
+
+  .melody-card-tools button[data-play] {
+    font-size: 14px;
+  }
+
+  .melody-card-tools button[data-play]::after {
+    content: none;
+  }
+}
+
+@media (min-width: 651px) {
+  .home-sidebar {
+    position: sticky;
+    top: 0;
+    max-height: 100dvh;
+    overflow-y: auto;
   }
 }
 

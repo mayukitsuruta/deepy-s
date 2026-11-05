@@ -453,6 +453,12 @@ confirmDeleteAccount.addEventListener("click", async () => {
       console.warn("投稿の削除に失敗:", error);
     }
 
+    try {
+      await deleteDoc(doc(db, "simpyRhythmScores", uid));
+    } catch (error) {
+      console.warn("ミニゲーム記録の削除に失敗:", error);
+    }
+
     await deleteDoc(doc(db, "users", uid));
     clearAccountStorage(uid);
     await user.delete();
@@ -592,6 +598,7 @@ registerForm.addEventListener("submit", async (event) => {
     registerForm.reset();
     registerMessage.textContent = "";
     rememberAndEnter(user, userData);
+    touchMelodyProfile();
   } catch (error) {
     console.error("登録エラー:", error);
 
@@ -684,6 +691,7 @@ const simpyStoryView = document.getElementById("simpy-story-view");
 const nasupyStoryView = document.getElementById("nasupy-story-view");
 let activeStoryId = "chippy";
 const zukanViewContent = document.getElementById("zukan-view-content");
+const minigameViewContent = document.getElementById("minigame-view-content");
 const zukanNote = document.getElementById("zukan-note");
 const topbarTitleArea = document.getElementById("topbar-title-area");
 const topbarAvatar = document.getElementById("topbar-avatar");
@@ -750,6 +758,9 @@ function resetPlayMemory() {
   profilePrefetch = null;
   profilePrefetchUid = null;
   currentUserData = createBlankUserData();
+  stopMelodyPlayback();
+  stopRhythmGame();
+  stopMelodyRanking();
 }
 
 let currentUserData = createBlankUserData();
@@ -777,7 +788,8 @@ function switchUndergroundView(viewName) {
   spaceViewContent.hidden = viewName !== "space";
   cameraViewContent.hidden = viewName !== "camera";
   const showingStory = viewName === "story";
-  if (!(showingStory && activeStoryId === "simpy")) pauseSimpyPerformance();
+  if (!(showingStory && activeStoryId === "simpy")) stopMelodyPlayback();
+  if (viewName !== "minigame") stopRhythmGame();
   if (storyViewContent) {
     storyViewContent.hidden = !(showingStory && activeStoryId === "chippy");
   }
@@ -788,6 +800,7 @@ function switchUndergroundView(viewName) {
     nasupyStoryView.hidden = !(showingStory && activeStoryId === "nasupy");
   }
   if (zukanViewContent) zukanViewContent.hidden = viewName !== "zukan";
+  if (minigameViewContent) minigameViewContent.hidden = viewName !== "minigame";
   if (viewName === "zukan") renderZukan();
 
   if (viewName === "space") {
@@ -798,6 +811,10 @@ function switchUndergroundView(viewName) {
   } else if (viewName === "camera") {
     if (topbarTitleArea)
       topbarTitleArea.textContent = "地底の思い出を写真に残そう。";
+  } else if (viewName === "minigame") {
+    if (topbarTitleArea)
+      topbarTitleArea.textContent = "落ちてくる音を、輪に重なったら集めよう。";
+    openRhythmMinigame();
   } else if (topbarTitleArea) {
     topbarTitleArea.textContent = "";
   }
@@ -815,7 +832,8 @@ navItems.forEach((btn) => {
       view === "home" ||
       view === "space" ||
       view === "camera" ||
-      view === "zukan"
+      view === "zukan" ||
+      view === "minigame"
     ) {
       switchUndergroundView(view);
       if (view !== "camera") stopCamera();
@@ -1429,28 +1447,67 @@ const simpyStoryLines = [
   "職業は音の採集家。地底に響く音を、このシンバルでそっと拾ってるの。",
   "鈴の音、古い楽器、だれかの歌声。にぎやかな音だけじゃなく、とても静かな音も集めてる。",
   "夜になると、集めた音をひとりで歌い返すの。今日は、あなたにも聴いてほしくて。",
-  "上から音符が落ちてくるよ。下の光る輪に重なったら、クリックして集めて。",
-  "地底の変な音もまざってる。それを押すと減点。いい音が続くとコンボになって、音が重なって一曲になるの。",
-  "準備はいいかな。ゲームスタートを押して、いっしょに曲を完成させよう。",
+  "3つの小節を、最初に正しい順番で鳴らすね。よく聴いて。",
+  "そのあと小節がばらばらになるよ。クリックすると、その音だけもう一度鳴る。",
+  "聴いた順番どおりに並べられたら、一曲になる。準備はいいかな。",
 ];
 
-const SIMPY_SONG = [523.25, 587.33, 659.25, 698.46, 783.99, 698.46, 659.25, 523.25];
-const SIMPY_CHART = [
-  { good: true, lane: 1 },
-  { good: true, lane: 0 },
-  { good: false, lane: 2 },
-  { good: true, lane: 2 },
-  { good: true, lane: 1 },
-  { good: false, lane: 0 },
-  { good: true, lane: 0 },
-  { good: true, lane: 2 },
-  { good: false, lane: 1 },
-  { good: true, lane: 1 },
-  { good: true, lane: 0 },
+const MELODY_THEMES = [
+  {
+    id: "flower",
+    title: "花のしらべ",
+    wave: "triangle",
+    gain: 0.08,
+    noteDur: 0.22,
+    gap: 0.05,
+    measures: [
+      { file: "sheet-music-flower01.png", notes: [523.25, 659.25, 783.99] },
+      { file: "sheet-music-flower02.png", notes: [880, 698.46, 523.25] },
+      { file: "sheet-music-flower03.png", notes: [587.33, 783.99, 659.25] },
+    ],
+  },
+  {
+    id: "fruit",
+    title: "果実のしらべ",
+    wave: "square",
+    gain: 0.04,
+    noteDur: 0.12,
+    gap: 0.07,
+    measures: [
+      { file: "sheet-music-fruit01.png", notes: [392, 493.88, 587.33] },
+      { file: "sheet-music-fruit02.png", notes: [587.33, 587.33, 349.23] },
+      { file: "sheet-music-fruit03.png", notes: [440, 554.37, 659.25] },
+    ],
+  },
+  {
+    id: "jemstone",
+    title: "宝石のしらべ",
+    wave: "sine",
+    gain: 0.06,
+    noteDur: 0.26,
+    gap: 0.04,
+    measures: [
+      { file: "sheet-music-jemstone01.png", notes: [1318.51, 1567.98, 1975.53] },
+      { file: "sheet-music-jemstone02.png", notes: [987.77, 1174.66, 1479.98] },
+      { file: "sheet-music-jemstone03.png", notes: [1567.98, 1174.66, 987.77] },
+    ],
+  },
+  {
+    id: "water",
+    title: "水のしらべ",
+    wave: "sine",
+    gain: 0.08,
+    noteDur: 0.34,
+    gap: 0.06,
+    measures: [
+      { file: "sheet-music-water01.png", notes: [261.63, 392, 523.25] },
+      { file: "sheet-music-water02.png", notes: [220, 329.63, 440] },
+      { file: "sheet-music-water03.png", notes: [349.23, 440, 523.25] },
+    ],
+  },
 ];
-const SIMPY_FALL_MS = 2600;
-const SIMPY_GAP_MS = 1150;
-const SIMPY_LANE_LEFT = ["20%", "50%", "80%"];
+
+const MELODY_SCORE_MAX = 6000;
 
 const simpyDialogueText = document.getElementById("simpy-dialogue-text");
 const simpyDialogueNext = document.getElementById("simpy-dialogue-next");
@@ -1458,37 +1515,77 @@ const simpyDialogue = document.getElementById("simpy-dialogue");
 const simpyStoryBack = document.getElementById("simpy-story-back");
 const simpyStoryPrev = document.getElementById("simpy-story-prev");
 const simpyGameStart = document.getElementById("simpy-game-start");
-const simpyGame = document.getElementById("simpy-game");
-const simpyLane = document.getElementById("simpy-lane");
-const simpyHitZone = document.getElementById("simpy-hit-zone");
-const simpyComboEl = document.getElementById("simpy-combo");
-const simpyProgressEl = document.getElementById("simpy-progress");
-const simpyPointsEl = document.getElementById("simpy-points");
-const simpyJudgeEl = document.getElementById("simpy-judge");
+const simpyClearPanel = document.getElementById("simpy-clear-panel");
+const simpyReplay = document.getElementById("simpy-replay");
 const simpyFinish = document.getElementById("simpy-finish");
 const simpyFinishMessage = document.getElementById("simpy-finish-message");
 const simpyFinishHome = document.getElementById("simpy-finish-home");
-const simpyClearPanel = document.getElementById("simpy-clear-panel");
-const simpyReplay = document.getElementById("simpy-replay");
+const melodyPlayEl = document.getElementById("melody-play");
+const melodyStatusEl = document.getElementById("melody-status");
+const melodyRoundEl = document.getElementById("melody-round");
+const melodyStaffEl = document.getElementById("melody-staff");
+const melodyListenEl = document.getElementById("melody-listen");
+const melodySubmitEl = document.getElementById("melody-submit");
+const melodyScoreEl = document.getElementById("rhythm-score");
+const melodyBestEl = document.getElementById("rhythm-best");
+const melodySaveNote = document.getElementById("rhythm-save-note");
+const melodyRankingEl = document.getElementById("rhythm-ranking");
+const rhythmIntroEl = document.getElementById("rhythm-intro");
+const rhythmPlayEl = document.getElementById("rhythm-play");
+const rhythmDoneEl = document.getElementById("rhythm-done");
+const rhythmDoneText = document.getElementById("rhythm-done-text");
+const rhythmLaneEl = document.getElementById("rhythm-lane");
+const rhythmHitZoneEl = document.getElementById("rhythm-hit-zone");
+const rhythmComboEl = document.getElementById("rhythm-combo");
+const rhythmProgressEl = document.getElementById("rhythm-progress");
+const rhythmPointsEl = document.getElementById("rhythm-points");
+const rhythmJudgeEl = document.getElementById("rhythm-judge");
 
 let simpyStoryIndex = 0;
-let simpyGameStarted = false;
 let simpyShowingClear = false;
-let simpyRetrying = false;
-let simpyNotes = [];
-let simpyRaf = 0;
-let simpyLastFrame = 0;
-let simpyElapsed = 0;
-let simpySpawnIndex = 0;
-let simpyCollected = 0;
-let simpyCombo = 0;
-let simpyPoints = 0;
-let simpyChartSettled = false;
+let simpyMelodyPlaying = false;
 let simpyAudio = null;
-let simpyLayers = [];
+let melodyVoices = [];
+let melodyToken = 0;
+let melodyWaiters = [];
+let melodyPhase = "idle";
+let melodyQueue = [];
+let melodyRound = 0;
+let melodyTarget = [];
+let melodyOrder = [];
+let melodyRevealed = false;
+let melodyPlaying = false;
+let melodyAwaitingNext = false;
+let melodyReplays = 0;
+let melodyWrongs = 0;
+let roundStartedAt = 0;
+let melodySessionScore = 0;
+let melodyCloudBest = 0;
+let melodyRanking = [];
+let melodyRankError = "";
+let unsubscribeMelodyScores = null;
+let suppressMelodyClick = false;
 
 function simpyClearStorageKey() {
   return `deepys-simpy-cleared:${currentUserId || "local"}`;
+}
+
+function melodyBestStorageKey() {
+  return `deepys-melody-best:${currentUserId || "local"}`;
+}
+
+function readMelodyLocalBest() {
+  if (!currentUserId) return 0;
+  try {
+    const value = Number(localStorage.getItem(melodyBestStorageKey()));
+    return Number.isFinite(value) ? value : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function storedMelodyBest() {
+  return Math.max(melodyCloudBest, readMelodyLocalBest());
 }
 
 function isSimpyStoryCleared() {
@@ -1503,23 +1600,23 @@ function isSimpyStoryCleared() {
 
 function updateSimpyPrev() {
   if (!simpyStoryPrev) return;
-  const inDialogue = !simpyGameStarted && !simpyShowingClear && !simpyRetrying;
-  simpyStoryPrev.hidden = !inDialogue;
+  simpyStoryPrev.hidden = simpyShowingClear || simpyMelodyPlaying;
   simpyStoryPrev.disabled = simpyStoryIndex <= 0;
 }
 
-function saySimpy(message, hint) {
-  simpyDialogueText.textContent = message;
-  const showHint = Boolean(hint);
-  simpyDialogueNext.hidden = !showHint;
-  simpyDialogueNext.textContent = hint || "click";
-  simpyDialogueNext.classList.remove("is-more");
-  updateSimpyPrev();
+function resetStoryMelodyPanel() {
+  silenceMelody();
+  simpyMelodyPlaying = false;
+  melodyPhase = "idle";
+  melodyTarget = [];
+  if (melodyPlayEl) melodyPlayEl.hidden = true;
+  if (simpyFinish) simpyFinish.hidden = true;
+  simpyStoryView?.classList.remove("is-playing");
 }
 
 function renderSimpyStory() {
   const isLast = simpyStoryIndex >= simpyStoryLines.length - 1;
-  const showStart = isLast && !simpyGameStarted && !simpyRetrying;
+  const showStart = isLast && !simpyMelodyPlaying;
   simpyDialogueText.textContent = simpyStoryLines[simpyStoryIndex];
   simpyGameStart.hidden = !showStart;
   simpyGameStart.textContent = "ゲームスタート";
@@ -1529,38 +1626,14 @@ function renderSimpyStory() {
   updateSimpyPrev();
 }
 
-function pauseSimpyPerformance() {
-  if (simpyRaf) cancelAnimationFrame(simpyRaf);
-  simpyRaf = 0;
-  simpyNotes.forEach((note) => note.el.remove());
-  simpyNotes = [];
-  simpyLayers = [];
-}
-
-function resetSimpyStage() {
-  pauseSimpyPerformance();
-  simpyGameStarted = false;
-  simpyRetrying = false;
-  simpyChartSettled = false;
-  simpyCollected = 0;
-  simpyCombo = 0;
-  simpyPoints = 0;
-  simpySpawnIndex = 0;
-  simpyElapsed = 0;
-  simpyStoryView?.classList.remove("is-playing");
-  if (simpyGame) simpyGame.hidden = true;
-  if (simpyFinish) simpyFinish.hidden = true;
-  if (simpyJudgeEl) simpyJudgeEl.textContent = "";
-}
-
 function startSimpyStory() {
   activeStoryId = "simpy";
   simpyStoryIndex = 0;
   simpyShowingClear = false;
+  resetStoryMelodyPanel();
   if (simpyDialogue) simpyDialogue.hidden = false;
   if (simpyClearPanel) simpyClearPanel.hidden = true;
   simpyStoryView?.classList.remove("is-cleared");
-  resetSimpyStage();
   renderSimpyStory();
   switchUndergroundView("story");
 }
@@ -1568,7 +1641,7 @@ function startSimpyStory() {
 function showSimpyClearScreen() {
   activeStoryId = "simpy";
   simpyShowingClear = true;
-  resetSimpyStage();
+  resetStoryMelodyPanel();
   if (simpyDialogue) simpyDialogue.hidden = true;
   if (simpyClearPanel) simpyClearPanel.hidden = false;
   simpyStoryView?.classList.add("is-cleared");
@@ -1585,96 +1658,23 @@ function openSimpyStory() {
 }
 
 function advanceSimpyStory() {
-  if (simpyShowingClear || simpyGameStarted || simpyRetrying) return;
+  if (simpyShowingClear || simpyMelodyPlaying) return;
+  if (simpyFinish && !simpyFinish.hidden) return;
   if (simpyStoryIndex >= simpyStoryLines.length - 1) return;
   simpyStoryIndex += 1;
   renderSimpyStory();
 }
 
 function rewindSimpyStory() {
-  if (simpyShowingClear || simpyGameStarted || simpyRetrying) return;
+  if (simpyShowingClear || simpyMelodyPlaying) return;
   if (simpyStoryIndex <= 0) return;
   simpyStoryIndex -= 1;
   renderSimpyStory();
 }
 
-function simpyAudioContext() {
-  const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  if (!AudioCtx) return null;
-  if (!simpyAudio) simpyAudio = new AudioCtx();
-  if (simpyAudio.state === "suspended") simpyAudio.resume();
-  return simpyAudio;
-}
-
-function simpyTone(freq, when, duration, gainValue, type) {
-  const ctx = simpyAudioContext();
-  if (!ctx) return;
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, when);
-  gain.gain.setValueAtTime(gainValue, when);
-  gain.gain.exponentialRampToValueAtTime(0.001, when + duration);
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start(when);
-  osc.stop(when + duration + 0.02);
-}
-
-function playSimpySuccess(index) {
-  const ctx = simpyAudioContext();
-  if (!ctx) return;
-  const now = ctx.currentTime;
-  const freq = SIMPY_SONG[index];
-  simpyTone(freq, now, 0.62, 0.1, "triangle");
-  simpyLayers.forEach((layer) => {
-    simpyTone(layer, now, 0.48, 0.032, "sine");
-  });
-  simpyLayers.push(freq);
-}
-
-function playSimpyWeird() {
-  const ctx = simpyAudioContext();
-  if (!ctx) return;
-  const now = ctx.currentTime;
-  simpyTone(146, now, 0.22, 0.06, "sawtooth");
-  simpyTone(155, now + 0.03, 0.18, 0.04, "square");
-}
-
-function playSimpySong() {
-  const ctx = simpyAudioContext();
-  if (!ctx) return;
-  const now = ctx.currentTime;
-  SIMPY_SONG.forEach((freq, index) => {
-    const start = now + index * 0.28;
-    simpyTone(freq, start, 0.5, 0.1, "triangle");
-    if (index > 0) simpyTone(SIMPY_SONG[index - 1], start, 0.34, 0.04, "sine");
-  });
-}
-
-function renderSimpyHud() {
-  if (simpyComboEl) simpyComboEl.textContent = `COMBO ${simpyCombo}`;
-  if (simpyProgressEl) {
-    simpyProgressEl.textContent = `${simpyCollected} / ${SIMPY_SONG.length}`;
-  }
-  if (simpyPointsEl) simpyPointsEl.textContent = `${simpyPoints}点`;
-  simpyComboEl?.classList.toggle("is-hot", simpyCombo >= 2);
-}
-
-function flashSimpyJudge(text, kind) {
-  if (!simpyJudgeEl) return;
-  simpyJudgeEl.textContent = text;
-  simpyJudgeEl.dataset.kind = kind;
-  simpyJudgeEl.classList.remove("is-pop");
-  void simpyJudgeEl.offsetWidth;
-  simpyJudgeEl.classList.add("is-pop");
-}
-
 function awardSimpyFriendship() {
   const already = isSimpyStoryCleared();
-  if (!already) {
-    currentUserData.simpyCleared = true;
-  }
+  if (!already) currentUserData.simpyCleared = true;
 
   const nextPoints = already
     ? Math.max(
@@ -1711,199 +1711,633 @@ function awardSimpyFriendship() {
   return { already, points: nextPoints };
 }
 
-function showSimpyFinish(message) {
-  pauseSimpyPerformance();
-  simpyGameStarted = false;
-  simpyRetrying = false;
-  if (simpyGame) simpyGame.hidden = true;
+function simpyAudioContext() {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return null;
+  if (!simpyAudio) simpyAudio = new AudioCtx();
+  if (simpyAudio.state === "suspended") simpyAudio.resume();
+  return simpyAudio;
+}
+
+function simpyTone(freq, when, duration, gainValue, type) {
+  const ctx = simpyAudioContext();
+  if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, when);
+  gain.gain.setValueAtTime(gainValue, when);
+  gain.gain.exponentialRampToValueAtTime(0.001, when + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(when);
+  osc.stop(when + duration + 0.03);
+  melodyVoices.push({ osc, gain });
+}
+
+function stopMelodyVoices() {
+  const now = simpyAudio ? simpyAudio.currentTime : 0;
+  melodyVoices.forEach(({ osc, gain }) => {
+    try {
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(0.0001, now);
+      osc.stop(now + 0.03);
+    } catch {
+      // 鳴り終わった音はそのまま
+    }
+  });
+  melodyVoices = [];
+}
+
+function silenceMelody() {
+  melodyToken += 1;
+  melodyWaiters.forEach(({ timer, resolve }) => {
+    clearTimeout(timer);
+    resolve(false);
+  });
+  melodyWaiters = [];
+  stopMelodyVoices();
+  melodyPlaying = false;
+  markPlaying("");
+}
+
+function stopMelodyPlayback() {
+  const wasPlaying = melodyPlaying;
+  silenceMelody();
+  if (wasPlaying && melodyStatusEl && melodyPhase !== "idle" && melodyPhase !== "done") {
+    melodyStatusEl.textContent = melodyRevealed
+      ? "音を止めたよ。もう一度聴けるよ。"
+      : "音を止めたよ。はじめの音を聴くを押してね。";
+  }
+  updateMelodyControls();
+}
+
+function waitMelody(ms, token) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      melodyWaiters = melodyWaiters.filter((item) => item.timer !== timer);
+      resolve(token === melodyToken);
+    }, ms);
+    melodyWaiters.push({ timer, resolve, token });
+  });
+}
+
+function shuffle(list) {
+  const copy = [...list];
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
+  }
+  return copy;
+}
+
+function buildMeasures(theme) {
+  return theme.measures.map((measure, index) => ({
+    id: `${theme.id}-${index + 1}`,
+    image: `./images/melody/${measure.file}`,
+    notes: measure.notes,
+    wave: theme.wave,
+    gain: theme.gain,
+    noteDur: theme.noteDur,
+    gap: theme.gap,
+    title: theme.title,
+  }));
+}
+
+function shuffledDifferent(list) {
+  let next = shuffle(list);
+  let guard = 0;
+  while (next.every((item, index) => item.id === list[index].id) && guard < 6) {
+    next = shuffle(list);
+    guard += 1;
+  }
+  if (next.every((item, index) => item.id === list[index].id) && list.length > 1) {
+    next = [list[1], list[0], ...list.slice(2)];
+  }
+  return next;
+}
+
+function scheduleMeasure(measure, when) {
+  let cursor = when;
+  measure.notes.forEach((freq) => {
+    simpyTone(freq, cursor, measure.noteDur, measure.gain, measure.wave);
+    cursor += measure.noteDur + measure.gap;
+  });
+  return cursor;
+}
+
+function renderListenGhosts(activeIndex) {
+  if (!melodyStaffEl) return;
+  melodyStaffEl.replaceChildren();
+  for (let index = 0; index < 3; index += 1) {
+    const ghost = document.createElement("div");
+    ghost.className = "melody-ghost";
+    if (index === activeIndex) ghost.classList.add("is-active");
+    const number = document.createElement("span");
+    number.textContent = String(index + 1);
+    const label = document.createElement("small");
+    label.textContent = "小節目";
+    ghost.append(number, label);
+    melodyStaffEl.append(ghost);
+  }
+}
+
+function markPlaying(id) {
+  if (!melodyStaffEl) return;
+  melodyStaffEl.querySelectorAll(".melody-card").forEach((card) => {
+    card.classList.toggle("is-playing", Boolean(id) && card.dataset.id === id);
+  });
+}
+
+function renderMelodyCards() {
+  if (!melodyStaffEl) return;
+  melodyStaffEl.replaceChildren();
+  melodyOrder.forEach((measure, index) => {
+    const card = document.createElement("article");
+    card.className = "melody-card";
+    card.draggable = !melodyAwaitingNext;
+    card.dataset.id = measure.id;
+
+    const slot = document.createElement("p");
+    slot.className = "melody-slot-no";
+    slot.textContent = `${index + 1}番目`;
+
+    const art = document.createElement("div");
+    art.className = "melody-art";
+    const image = document.createElement("img");
+    image.src = measure.image;
+    image.alt = "";
+    image.draggable = false;
+    art.append(image);
+
+    const tools = document.createElement("div");
+    tools.className = "melody-card-tools";
+
+    const left = document.createElement("button");
+    left.type = "button";
+    left.dataset.move = "-1";
+    left.textContent = "前";
+    left.setAttribute("aria-label", "前の位置へ動かす");
+    left.disabled = index === 0 || melodyAwaitingNext;
+
+    const play = document.createElement("button");
+    play.type = "button";
+    play.dataset.play = measure.id;
+    play.textContent = "聴く";
+    play.setAttribute("aria-label", `${index + 1}番目の小節を聴く`);
+
+    const right = document.createElement("button");
+    right.type = "button";
+    right.dataset.move = "1";
+    right.textContent = "次";
+    right.setAttribute("aria-label", "次の位置へ動かす");
+    right.disabled = index === melodyOrder.length - 1 || melodyAwaitingNext;
+
+    tools.append(left, play, right);
+    card.append(slot, art, tools);
+
+    const move = (direction) => {
+      moveMeasure(measure.id, direction);
+    };
+    left.addEventListener("click", (event) => {
+      event.stopPropagation();
+      move(-1);
+    });
+    right.addEventListener("click", (event) => {
+      event.stopPropagation();
+      move(1);
+    });
+    play.addEventListener("click", (event) => {
+      event.stopPropagation();
+      previewMeasure(measure);
+    });
+    card.addEventListener("click", () => {
+      if (suppressMelodyClick) {
+        suppressMelodyClick = false;
+        return;
+      }
+      previewMeasure(measure);
+    });
+    card.addEventListener("dragstart", (event) => {
+      if (melodyAwaitingNext || event.target.closest("button")) {
+        event.preventDefault();
+        return;
+      }
+      suppressMelodyClick = false;
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", measure.id);
+      card.classList.add("is-dragging");
+    });
+    card.addEventListener("dragend", () => {
+      suppressMelodyClick = true;
+      card.classList.remove("is-dragging");
+      setTimeout(() => {
+        suppressMelodyClick = false;
+      }, 80);
+    });
+    card.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      card.classList.add("is-over");
+    });
+    card.addEventListener("dragleave", () => {
+      card.classList.remove("is-over");
+    });
+    card.addEventListener("drop", (event) => {
+      event.preventDefault();
+      card.classList.remove("is-over");
+      const fromId = event.dataTransfer.getData("text/plain");
+      swapMeasures(fromId, measure.id);
+    });
+
+    melodyStaffEl.append(card);
+  });
+}
+
+function moveMeasure(id, direction) {
+  if (melodyAwaitingNext || melodyPhase !== "sort") return;
+  const index = melodyOrder.findIndex((item) => item.id === id);
+  const nextIndex = index + direction;
+  if (index < 0 || nextIndex < 0 || nextIndex >= melodyOrder.length) return;
+  const next = [...melodyOrder];
+  [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+  melodyOrder = next;
+  renderMelodyCards();
+}
+
+function swapMeasures(fromId, toId) {
+  if (!fromId || fromId === toId || melodyAwaitingNext) return;
+  const fromIndex = melodyOrder.findIndex((item) => item.id === fromId);
+  const toIndex = melodyOrder.findIndex((item) => item.id === toId);
+  if (fromIndex < 0 || toIndex < 0) return;
+  const next = [...melodyOrder];
+  [next[fromIndex], next[toIndex]] = [next[toIndex], next[fromIndex]];
+  melodyOrder = next;
+  renderMelodyCards();
+}
+
+function updateMelodyControls() {
+  if (!melodyListenEl || !melodySubmitEl) return;
+  const sorting = melodyPhase === "sort" && melodyRevealed;
+  melodyListenEl.disabled = melodyPlaying || melodyPhase === "done";
+  melodyListenEl.textContent = melodyRevealed ? "もう一度聴く" : "はじめの音を聴く";
+  melodySubmitEl.disabled = !sorting || melodyPlaying;
+}
+
+function renderMelodyScore() {
+  if (melodyScoreEl) melodyScoreEl.textContent = String(melodySessionScore);
+  if (melodyBestEl) {
+    const best = storedMelodyBest();
+    melodyBestEl.textContent = best > 0 ? String(best) : "—";
+  }
+}
+
+async function playTargetSequence({ replay }) {
+  silenceMelody();
+  const token = melodyToken;
+  melodyPlaying = true;
+  melodyPhase = "listen";
+  updateMelodyControls();
+  const ctx = simpyAudioContext();
+  if (ctx?.state === "suspended") {
+    try {
+      await ctx.resume();
+    } catch {
+      // 再生できないときは、聴くボタンからもう一度試せる
+    }
+  }
+  if (token !== melodyToken) return;
+  if (!ctx) {
+    melodyPlaying = false;
+    if (melodyStatusEl) melodyStatusEl.textContent = "このブラウザでは音を鳴らせないよ。";
+    updateMelodyControls();
+    return;
+  }
+
+  if (!melodyRevealed) renderListenGhosts(-1);
+  if (melodyStatusEl) melodyStatusEl.textContent = "聴いてね。";
+  const start = ctx.currentTime + 0.08;
+  let cursor = start;
+  const marks = melodyTarget.map((measure, index) => {
+    const at = cursor;
+    cursor = scheduleMeasure(measure, at);
+    cursor += 0.42;
+    return { index, at };
+  });
+  marks.forEach((mark) => {
+    const timer = setTimeout(() => {
+      if (token !== melodyToken) return;
+      if (melodyStatusEl) melodyStatusEl.textContent = `聴いてね。${mark.index + 1}小節目`;
+      if (!melodyRevealed) renderListenGhosts(mark.index);
+    }, Math.max(0, (mark.at - ctx.currentTime) * 1000));
+    melodyWaiters.push({
+      timer,
+      resolve: () => {},
+      token,
+    });
+  });
+
+  const alive = await waitMelody(Math.max(300, (cursor - ctx.currentTime) * 1000), token);
+  if (!alive || token !== melodyToken) return;
+  melodyPlaying = false;
+  if (replay && melodyRevealed) melodyReplays += 1;
+  if (!melodyRevealed) {
+    melodyRevealed = true;
+    melodyOrder = shuffledDifferent(melodyTarget);
+    roundStartedAt = Date.now();
+  }
+  melodyPhase = "sort";
+  if (melodyStatusEl) {
+    melodyStatusEl.textContent = "小節を聴いて、最初の並びと同じになるように入れ替えてね。";
+  }
+  renderMelodyCards();
+  updateMelodyControls();
+  renderMelodyScore();
+}
+
+function previewMeasure(measure) {
+  if (melodyPhase !== "sort" || melodyPlaying) return;
+  silenceMelody();
+  const token = melodyToken;
+  const ctx = simpyAudioContext();
+  if (!ctx) return;
+  if (ctx.state === "suspended") ctx.resume();
+  melodyPlaying = true;
+  markPlaying(measure.id);
+  updateMelodyControls();
+  const end = scheduleMeasure(measure, ctx.currentTime + 0.04);
+  waitMelody(Math.max(180, (end - ctx.currentTime) * 1000), token).then((alive) => {
+    if (!alive) return;
+    melodyPlaying = false;
+    markPlaying("");
+    updateMelodyControls();
+  });
+}
+
+function beginRound() {
+  const theme = melodyQueue[melodyRound];
+  melodyTarget = shuffle(buildMeasures(theme));
+  melodyOrder = [];
+  melodyRevealed = false;
+  melodyAwaitingNext = false;
+  melodyReplays = 0;
+  melodyWrongs = 0;
+  roundStartedAt = 0;
+  if (melodyRoundEl) melodyRoundEl.textContent = theme.title;
+  playTargetSequence({ replay: false });
+}
+
+function startMelodySession() {
+  melodyQueue = shuffle(MELODY_THEMES);
+  melodyRound = 0;
+  melodySessionScore = 0;
+  melodyPhase = "listen";
+  if (melodyIntroEl) melodyIntroEl.hidden = true;
+  if (melodyDoneEl) melodyDoneEl.hidden = true;
+  if (melodyPlayEl) melodyPlayEl.hidden = false;
+  if (melodySaveNote) melodySaveNote.textContent = "";
+  renderMelodyScore();
+  beginRound();
+}
+
+function scoreCurrentRound() {
+  const elapsed = roundStartedAt ? (Date.now() - roundStartedAt) / 1000 : 60;
+  const timeBonus = Math.max(0, 480 - Math.floor(elapsed * 8));
+  return Math.max(120, 1000 + timeBonus - melodyReplays * 70 - melodyWrongs * 160);
+}
+
+function submitMelodyOrder() {
+  if (melodyPhase !== "sort" || !melodyRevealed || melodyPlaying || melodyAwaitingNext) return;
+  const correct = melodyOrder.every((item, index) => item.id === melodyTarget[index].id);
+  if (!correct) {
+    melodyWrongs += 1;
+    melodyStaffEl?.classList.remove("is-wrong");
+    void melodyStaffEl?.offsetWidth;
+    melodyStaffEl?.classList.add("is-wrong");
+    if (melodyStatusEl) {
+      melodyStatusEl.textContent = "まだ順番が違うよ。もう一度、音を聴きくらべてみて。";
+    }
+    return;
+  }
+
+  completeStoryMelody();
+}
+
+function startStoryMelodyGame() {
+  simpyAudioContext();
+  simpyMelodyPlaying = true;
   if (simpyDialogue) simpyDialogue.hidden = true;
-  if (simpyFinishMessage) simpyFinishMessage.textContent = message;
+  if (simpyFinish) simpyFinish.hidden = true;
+  if (simpyClearPanel) simpyClearPanel.hidden = true;
+  simpyStoryView?.classList.add("is-playing");
+  simpyStoryView?.classList.remove("is-cleared");
+  melodyQueue = [MELODY_THEMES[Math.floor(Math.random() * MELODY_THEMES.length)]];
+  melodyRound = 0;
+  if (melodyPlayEl) melodyPlayEl.hidden = false;
+  updateSimpyPrev();
+  beginRound();
+}
+
+function completeStoryMelody() {
+  const result = awardSimpyFriendship();
+  silenceMelody();
+  simpyMelodyPlaying = false;
+  melodyPhase = "done";
+  if (melodyPlayEl) melodyPlayEl.hidden = true;
+  simpyStoryView?.classList.remove("is-playing");
+  if (simpyDialogue) simpyDialogue.hidden = true;
+  if (simpyFinishMessage) {
+    simpyFinishMessage.textContent = result.already
+      ? "また、聴いた順番に並べられたね。"
+      : `一曲になったよ。友情ポイントを25%あげるね。ホームの右上は、いま${result.points}%だよ。`;
+  }
   if (simpyFinish) simpyFinish.hidden = false;
   simpyFinishHome?.focus();
 }
 
-function noteInHitZone(noteEl) {
-  if (!simpyHitZone) return false;
-  const noteBox = noteEl.getBoundingClientRect();
-  const zoneBox = simpyHitZone.getBoundingClientRect();
-  const center = noteBox.top + noteBox.height / 2;
-  return center >= zoneBox.top - 30 && center <= zoneBox.bottom + 16;
-}
-
-function removeSimpyNote(note) {
-  note.done = true;
-  note.el.remove();
-  simpyNotes = simpyNotes.filter((item) => item !== note);
-}
-
-function breakSimpyCombo() {
-  simpyCombo = 0;
-  simpyLayers = [];
-  renderSimpyHud();
-}
-
-function resolveSimpyNote(note, result) {
-  if (note.done || simpyChartSettled) return;
-  removeSimpyNote(note);
-
-  if (result === "hit") {
-    playSimpySuccess(simpyCollected);
-    simpyCollected += 1;
-    simpyCombo += 1;
-    simpyPoints += 100 + (simpyCombo - 1) * 20;
-    flashSimpyJudge(simpyCombo >= 2 ? `${simpyCombo} COMBO` : "いい音！", "good");
-    if (simpyCombo === 4) {
-      saySimpy("いい調子。音が重なってきたよ。", "");
-    }
-    renderSimpyHud();
+function advanceMelodyRound() {
+  if (!melodyAwaitingNext) return;
+  if (melodyRound >= melodyQueue.length - 1) {
+    finishMelodySession();
     return;
   }
+  melodyRound += 1;
+  beginRound();
+}
 
-  if (result === "bad") {
-    playSimpyWeird();
-    breakSimpyCombo();
-    simpyPoints = Math.max(0, simpyPoints - 50);
-    flashSimpyJudge("−50", "bad");
-    saySimpy("それは変な音！　押さない方がよかったね。", "");
-    renderSimpyHud();
+function finishMelodySession() {
+  silenceMelody();
+  const previous = storedMelodyBest();
+  const score = melodySessionScore;
+  melodyPhase = "done";
+  if (melodyPlayEl) melodyPlayEl.hidden = true;
+  if (melodyDoneEl) melodyDoneEl.hidden = false;
+  if (melodyDoneText) {
+    melodyDoneText.textContent =
+      score > previous
+        ? `4曲で ${score}点。自己ベストだよ。`
+        : `4曲で ${score}点。自己ベストは ${previous}点。`;
+  }
+  saveMelodyBest(score);
+}
+
+async function loadOwnMelodyBest() {
+  renderMelodyScore();
+  if (!currentUserId || !auth.currentUser) return;
+  try {
+    const snap = await getDoc(doc(db, "simpyRhythmScores", currentUserId));
+    if (snap.exists()) {
+      const remote = Number(snap.data().bestScore) || 0;
+      melodyCloudBest = Math.max(melodyCloudBest, remote);
+    }
+  } catch (error) {
+    console.warn("自己ベストの取得に失敗:", error);
+  }
+  renderMelodyScore();
+}
+
+async function saveMelodyBest(score) {
+  const safeScore = Math.max(0, Math.min(MELODY_SCORE_MAX, Math.round(score)));
+  const previous = storedMelodyBest();
+  const best = Math.max(previous, safeScore);
+  if (currentUserId) {
+    try {
+      localStorage.setItem(melodyBestStorageKey(), String(best));
+    } catch {
+      // 端末に残せなくても、画面の点数は見える
+    }
+  }
+  renderMelodyScore();
+  if (!currentUserId || !auth.currentUser) {
+    if (melodySaveNote) melodySaveNote.textContent = "ログインすると、みんなの記録に残るよ。";
     return;
   }
-
-  breakSimpyCombo();
-  flashSimpyJudge(result === "early" ? "はやい" : "ミス", "miss");
-  if (result === "miss") {
-    saySimpy("今のは取りこぼしちゃった。次の輪で集めよう。", "");
+  if (safeScore < previous) {
+    if (melodySaveNote) melodySaveNote.textContent = `自己ベストは${previous}点のまま。`;
+    return;
   }
-  renderSimpyHud();
-}
-
-function spawnSimpyNote(spec) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = spec.good ? "simpy-note is-good" : "simpy-note is-bad";
-  button.dataset.kind = spec.good ? "good" : "bad";
-  button.setAttribute("aria-label", spec.good ? "音符" : "変な音");
-  button.style.left = SIMPY_LANE_LEFT[spec.lane];
-  button.innerHTML = spec.good
-    ? '<span class="simpy-note-mark" aria-hidden="true">♪</span>'
-    : '<span class="simpy-note-face"><span class="simpy-note-mark" aria-hidden="true">✕</span><small>変な音</small></span>';
-  const note = { el: button, good: spec.good, y: -76, done: false };
-  button.addEventListener("click", (event) => {
-    event.stopPropagation();
-    if (!note.good) {
-      resolveSimpyNote(note, "bad");
-      return;
-    }
-    if (noteInHitZone(button)) {
-      resolveSimpyNote(note, "hit");
-      return;
-    }
-    const noteBox = button.getBoundingClientRect();
-    const zoneBox = simpyHitZone.getBoundingClientRect();
-    if (noteBox.bottom < zoneBox.top - 36) return;
-    resolveSimpyNote(note, "early");
-  });
-  simpyLane.append(button);
-  simpyNotes.push(note);
-}
-
-function settleSimpyChart() {
-  if (simpyChartSettled) return;
-  if (simpySpawnIndex < SIMPY_CHART.length || simpyNotes.length > 0) return;
-  simpyChartSettled = true;
-  if (simpyRaf) cancelAnimationFrame(simpyRaf);
-  simpyRaf = 0;
-
-  if (simpyCollected >= SIMPY_SONG.length) {
-    playSimpySong();
-    const { already, points } = awardSimpyFriendship();
-    showSimpyFinish(
-      already
-        ? "また一曲、完成したね。友情ポイントは、このまえ渡してあるよ。"
-        : `聴いて、一曲になったよ。友情ポイントを25%あげるね。ホームの右上は、いま${points}%だよ。`,
+  try {
+    await setDoc(
+      doc(db, "simpyRhythmScores", currentUserId),
+      {
+        uid: currentUserId,
+        nickname: currentUserData.nickname || "ゲスト",
+        avatar: currentUserData.avatar || "pink",
+        bestScore: best,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
     );
+    melodyCloudBest = best;
+    if (melodySaveNote) melodySaveNote.textContent = "みんなの記録に残したよ。";
+    renderMelodyScore();
+  } catch (error) {
+    console.error("ミニゲーム記録の保存エラー:", error);
+    if (melodySaveNote) {
+      melodySaveNote.textContent = "記録をサーバーに残せず、この端末にだけ覚えたよ。";
+    }
+  }
+}
+
+async function touchMelodyProfile() {
+  if (!currentUserId || !auth.currentUser) return;
+  if (!storedMelodyBest()) return;
+  try {
+    await setDoc(
+      doc(db, "simpyRhythmScores", currentUserId),
+      {
+        nickname: currentUserData.nickname || "ゲスト",
+        avatar: currentUserData.avatar || "pink",
+      },
+      { merge: true },
+    );
+  } catch (error) {
+    console.warn("ランキングの名前更新に失敗:", error);
+  }
+}
+
+function renderMelodyRanking() {
+  if (!melodyRankingEl) return;
+  melodyRankingEl.replaceChildren();
+  if (melodyRankError) {
+    const item = document.createElement("li");
+    item.className = "melody-rank-empty";
+    item.textContent = melodyRankError;
+    melodyRankingEl.append(item);
     return;
   }
-
-  simpyGameStarted = false;
-  simpyRetrying = true;
-  simpyGameStart.hidden = false;
-  simpyGameStart.textContent = "もう一度";
-  saySimpy("音が途中で途切れちゃった。変な音は避けて、いい音だけ集めよう。", "");
-  updateSimpyPrev();
-}
-
-function stepSimpyGame(now) {
-  if (!simpyGameStarted) return;
-  const dt = Math.min(34, simpyLastFrame ? now - simpyLastFrame : 16);
-  simpyLastFrame = now;
-  simpyElapsed += dt;
-
-  const travel = Math.max(240, (simpyLane?.clientHeight || 320) - 8);
-  while (
-    simpySpawnIndex < SIMPY_CHART.length &&
-    simpyElapsed >= 280 + simpySpawnIndex * SIMPY_GAP_MS
-  ) {
-    spawnSimpyNote(SIMPY_CHART[simpySpawnIndex]);
-    simpySpawnIndex += 1;
+  if (!melodyRanking.length) {
+    const item = document.createElement("li");
+    item.className = "melody-rank-empty";
+    item.textContent = "まだ記録がないよ。";
+    melodyRankingEl.append(item);
+    return;
   }
-
-  simpyNotes.forEach((note) => {
-    if (note.done) return;
-    note.y += (travel / SIMPY_FALL_MS) * dt;
-    note.el.style.transform = `translate(-50%, ${note.y}px)`;
-    if (!simpyHitZone) return;
-    const noteBox = note.el.getBoundingClientRect();
-    const zoneBox = simpyHitZone.getBoundingClientRect();
-    const center = noteBox.top + noteBox.height / 2;
-    if (center <= zoneBox.bottom + 10) return;
-    if (note.good) resolveSimpyNote(note, "miss");
-    else {
-      removeSimpyNote(note);
-      flashSimpyJudge("よけた", "safe");
-    }
+  melodyRanking.forEach((row, index) => {
+    const item = document.createElement("li");
+    if (row.uid && row.uid === currentUserId) item.classList.add("is-me");
+    const name = document.createElement("span");
+    name.className = "melody-rank-name";
+    name.textContent = `${index + 1}. ${row.nickname || "ゲスト"}`;
+    const score = document.createElement("strong");
+    score.textContent = `${Number(row.bestScore) || 0}点`;
+    item.append(name, score);
+    melodyRankingEl.append(item);
   });
-
-  settleSimpyChart();
-  if (simpyGameStarted) simpyRaf = requestAnimationFrame(stepSimpyGame);
 }
 
-function startSimpyGame() {
-  simpyAudioContext();
-  pauseSimpyPerformance();
-  simpyGameStarted = true;
-  simpyRetrying = false;
-  simpyShowingClear = false;
-  simpyChartSettled = false;
-  simpyCollected = 0;
-  simpyCombo = 0;
-  simpyPoints = 0;
-  simpyLayers = [];
-  simpySpawnIndex = 0;
-  simpyElapsed = 0;
-  simpyLastFrame = 0;
-  simpyGameStart.hidden = true;
-  simpyDialogueNext.hidden = true;
-  if (simpyDialogue) simpyDialogue.hidden = false;
-  if (simpyFinish) simpyFinish.hidden = true;
-  simpyStoryView?.classList.add("is-playing");
-  simpyStoryView?.classList.remove("is-cleared");
-  if (simpyGame) simpyGame.hidden = false;
-  renderSimpyHud();
-  saySimpy("光る輪に重なった音符をクリックして。変な音は押さないで！", "");
-  simpyRaf = requestAnimationFrame(stepSimpyGame);
+function startMelodyRanking() {
+  if (unsubscribeMelodyScores) return;
+  const scoresQuery = query(
+    collection(db, "simpyRhythmScores"),
+    orderBy("bestScore", "desc"),
+    limit(8),
+  );
+  unsubscribeMelodyScores = onSnapshot(
+    scoresQuery,
+    (snapshot) => {
+      melodyRankError = "";
+      melodyRanking = snapshot.docs.map((item) => item.data());
+      renderMelodyRanking();
+    },
+    (error) => {
+      console.error("ミニゲーム記録の取得エラー:", error);
+      melodyRankError = "みんなの記録を読み込めなかったよ。";
+      renderMelodyRanking();
+    },
+  );
 }
 
-document
-  .querySelectorAll(".character-button[data-character='simpy']")
-  .forEach((button) => {
-    button.addEventListener("click", openSimpyStory);
-  });
+function stopMelodyRanking() {
+  if (unsubscribeMelodyScores) unsubscribeMelodyScores();
+  unsubscribeMelodyScores = null;
+  melodyRanking = [];
+}
+
+function showMelodyIntro() {
+  melodyPhase = "idle";
+  melodySessionScore = 0;
+  if (melodyIntroEl) melodyIntroEl.hidden = false;
+  if (melodyPlayEl) melodyPlayEl.hidden = true;
+  if (melodyDoneEl) melodyDoneEl.hidden = true;
+  if (melodyStatusEl) melodyStatusEl.textContent = "";
+  renderMelodyScore();
+}
+
+function openMelodyMinigame() {
+  startMelodyRanking();
+  loadOwnMelodyBest();
+  if (melodyPhase === "idle") showMelodyIntro();
+  else updateMelodyControls();
+}
+
+document.querySelectorAll(".character-button[data-character='simpy']").forEach((button) => {
+  button.addEventListener("click", openSimpyStory);
+});
 
 simpyStoryView?.addEventListener("click", (event) => {
   if (
     event.target.closest(
-      "#simpy-story-back, #simpy-story-prev, #simpy-game-start, #simpy-replay, #simpy-finish-home, .simpy-note, .simpy-clear-panel, #simpy-finish",
+      "#simpy-story-back, #simpy-story-prev, #simpy-game-start, #simpy-replay, .simpy-clear-panel, #melody-play, #simpy-finish",
     )
   ) {
     return;
@@ -1922,7 +2356,7 @@ simpyStoryPrev?.addEventListener("click", (event) => {
 
 simpyGameStart?.addEventListener("click", (event) => {
   event.stopPropagation();
-  startSimpyGame();
+  startStoryMelodyGame();
 });
 
 simpyReplay?.addEventListener("click", (event) => {
@@ -1930,17 +2364,12 @@ simpyReplay?.addEventListener("click", (event) => {
   startSimpyStory();
 });
 
-simpyFinishHome?.addEventListener("click", (event) => {
-  event.stopPropagation();
-  switchUndergroundView("home");
-});
-
 document.addEventListener("keydown", (event) => {
   if (!simpyStoryView || simpyStoryView.hidden) return;
   if (event.key !== "Enter" && event.key !== " ") return;
   if (
     event.target.closest?.(
-      "#simpy-story-back, #simpy-story-prev, #simpy-game-start, #simpy-replay, #simpy-finish-home, .simpy-note",
+      "#simpy-story-back, #simpy-story-prev, #simpy-game-start, #simpy-replay, #melody-play, #simpy-finish",
     )
   ) {
     return;
@@ -1950,12 +2379,284 @@ document.addEventListener("keydown", (event) => {
     switchUndergroundView("home");
     return;
   }
-  if (!simpyGameStart.hidden) {
-    startSimpyGame();
+  if (simpyGameStart && !simpyGameStart.hidden) {
+    startStoryMelodyGame();
     return;
   }
   advanceSimpyStory();
 });
+
+melodyListenEl?.addEventListener("click", () => {
+  if (melodyPlaying || !melodyTarget.length) return;
+  playTargetSequence({ replay: melodyRevealed });
+});
+melodySubmitEl?.addEventListener("click", submitMelodyOrder);
+simpyFinishHome?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  switchUndergroundView("home");
+});
+
+const RHYTHM_SONG = [523.25, 587.33, 659.25, 698.46, 783.99, 698.46, 659.25, 523.25];
+const RHYTHM_CHART = [
+  { good: true, lane: 1 },
+  { good: true, lane: 0 },
+  { good: false, lane: 2 },
+  { good: true, lane: 2 },
+  { good: true, lane: 1 },
+  { good: false, lane: 0 },
+  { good: true, lane: 0 },
+  { good: true, lane: 2 },
+  { good: false, lane: 1 },
+  { good: true, lane: 1 },
+  { good: true, lane: 0 },
+];
+const RHYTHM_FALL_MS = 2600;
+const RHYTHM_GAP_MS = 1150;
+const RHYTHM_LANE_LEFT = ["20%", "50%", "80%"];
+
+let rhythmPhase = "idle";
+let rhythmNotes = [];
+let rhythmRaf = 0;
+let rhythmLastFrame = 0;
+let rhythmElapsed = 0;
+let rhythmSpawnIndex = 0;
+let rhythmCollected = 0;
+let rhythmCombo = 0;
+let rhythmPoints = 0;
+let rhythmLayers = [];
+let rhythmSettled = false;
+
+function renderRhythmHud() {
+  if (rhythmComboEl) rhythmComboEl.textContent = `COMBO ${rhythmCombo}`;
+  if (rhythmProgressEl) rhythmProgressEl.textContent = `${rhythmCollected} / ${RHYTHM_SONG.length}`;
+  if (rhythmPointsEl) rhythmPointsEl.textContent = `${rhythmPoints}点`;
+  rhythmComboEl?.classList.toggle("is-hot", rhythmCombo >= 2);
+  melodySessionScore = rhythmPoints;
+  renderMelodyScore();
+}
+
+function flashRhythmJudge(text) {
+  if (!rhythmJudgeEl) return;
+  rhythmJudgeEl.textContent = text;
+  rhythmJudgeEl.classList.remove("is-pop");
+  void rhythmJudgeEl.offsetWidth;
+  rhythmJudgeEl.classList.add("is-pop");
+}
+
+function playRhythmSuccess(index) {
+  const ctx = simpyAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const freq = RHYTHM_SONG[Math.min(index, RHYTHM_SONG.length - 1)];
+  simpyTone(freq, now, 0.62, 0.1, "triangle");
+  rhythmLayers.forEach((layer) => {
+    simpyTone(layer, now, 0.48, 0.032, "sine");
+  });
+  rhythmLayers.push(freq);
+}
+
+function playRhythmWeird() {
+  const ctx = simpyAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  simpyTone(146, now, 0.22, 0.06, "sawtooth");
+  simpyTone(155, now + 0.03, 0.18, 0.04, "square");
+}
+
+function playRhythmSong() {
+  const ctx = simpyAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  RHYTHM_SONG.forEach((freq, index) => {
+    const start = now + index * 0.28;
+    simpyTone(freq, start, 0.5, 0.1, "triangle");
+    if (index > 0) simpyTone(RHYTHM_SONG[index - 1], start, 0.34, 0.04, "sine");
+  });
+}
+
+function clearRhythmNotes() {
+  rhythmNotes.forEach((note) => note.el.remove());
+  rhythmNotes = [];
+}
+
+function stopRhythmGame() {
+  if (rhythmRaf) cancelAnimationFrame(rhythmRaf);
+  rhythmRaf = 0;
+  clearRhythmNotes();
+  const interruptPlay = rhythmPhase === "play";
+  const stopSound = rhythmPhase === "play" || rhythmPhase === "done";
+  if (interruptPlay) {
+    rhythmPhase = "idle";
+    if (rhythmPlayEl) rhythmPlayEl.hidden = true;
+    if (rhythmIntroEl) rhythmIntroEl.hidden = false;
+    if (rhythmDoneEl) rhythmDoneEl.hidden = true;
+  }
+  if (stopSound) silenceMelody();
+}
+
+function noteInRhythmZone(noteEl) {
+  if (!rhythmHitZoneEl) return false;
+  const noteBox = noteEl.getBoundingClientRect();
+  const zoneBox = rhythmHitZoneEl.getBoundingClientRect();
+  const center = noteBox.top + noteBox.height / 2;
+  return center >= zoneBox.top - 30 && center <= zoneBox.bottom + 16;
+}
+
+function removeRhythmNote(note) {
+  note.done = true;
+  note.el.remove();
+  rhythmNotes = rhythmNotes.filter((item) => item !== note);
+}
+
+function breakRhythmCombo() {
+  rhythmCombo = 0;
+  rhythmLayers = [];
+  renderRhythmHud();
+}
+
+function resolveRhythmNote(note, result) {
+  if (note.done || rhythmSettled) return;
+  removeRhythmNote(note);
+  if (result === "hit") {
+    playRhythmSuccess(rhythmCollected);
+    rhythmCollected += 1;
+    rhythmCombo += 1;
+    rhythmPoints += 100 + (rhythmCombo - 1) * 20;
+    flashRhythmJudge(rhythmCombo >= 2 ? `${rhythmCombo} COMBO` : "いい音！");
+    renderRhythmHud();
+    return;
+  }
+  if (result === "bad") {
+    playRhythmWeird();
+    breakRhythmCombo();
+    rhythmPoints = Math.max(0, rhythmPoints - 50);
+    flashRhythmJudge("−50");
+    renderRhythmHud();
+    return;
+  }
+  breakRhythmCombo();
+  flashRhythmJudge(result === "early" ? "はやい" : "ミス");
+  renderRhythmHud();
+}
+
+function spawnRhythmNote(spec) {
+  if (!rhythmLaneEl) return;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = spec.good ? "rhythm-note is-good" : "rhythm-note is-bad";
+  button.style.left = RHYTHM_LANE_LEFT[spec.lane];
+  button.textContent = spec.good ? "♪" : "変な音";
+  button.setAttribute("aria-label", spec.good ? "音符" : "変な音");
+  const note = { el: button, good: spec.good, y: -76, done: false };
+  button.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (!note.good) {
+      resolveRhythmNote(note, "bad");
+      return;
+    }
+    if (noteInRhythmZone(button)) {
+      resolveRhythmNote(note, "hit");
+      return;
+    }
+    const noteBox = button.getBoundingClientRect();
+    const zoneBox = rhythmHitZoneEl.getBoundingClientRect();
+    if (noteBox.bottom < zoneBox.top - 36) return;
+    resolveRhythmNote(note, "early");
+  });
+  rhythmLaneEl.append(button);
+  rhythmNotes.push(note);
+}
+
+function finishRhythmRun() {
+  rhythmPhase = "done";
+  rhythmSettled = true;
+  if (rhythmRaf) cancelAnimationFrame(rhythmRaf);
+  rhythmRaf = 0;
+  if (rhythmCollected >= RHYTHM_SONG.length) playRhythmSong();
+  if (rhythmPlayEl) rhythmPlayEl.hidden = true;
+  if (rhythmDoneEl) rhythmDoneEl.hidden = false;
+  if (rhythmDoneText) {
+    rhythmDoneText.textContent =
+      rhythmCollected >= RHYTHM_SONG.length
+        ? `一曲あつめたよ。${rhythmPoints}点。`
+        : `今回は ${rhythmPoints}点。いい音は ${rhythmCollected} / ${RHYTHM_SONG.length}。`;
+  }
+  melodySessionScore = rhythmPoints;
+  renderMelodyScore();
+  saveMelodyBest(rhythmPoints);
+}
+
+function settleRhythmChart() {
+  if (rhythmSettled) return;
+  if (rhythmSpawnIndex < RHYTHM_CHART.length || rhythmNotes.length > 0) return;
+  finishRhythmRun();
+}
+
+function stepRhythmGame(now) {
+  if (rhythmPhase !== "play") return;
+  const dt = Math.min(34, rhythmLastFrame ? now - rhythmLastFrame : 16);
+  rhythmLastFrame = now;
+  rhythmElapsed += dt;
+  const travel = Math.max(240, (rhythmLaneEl?.clientHeight || 340) - 8);
+  while (
+    rhythmSpawnIndex < RHYTHM_CHART.length &&
+    rhythmElapsed >= 280 + rhythmSpawnIndex * RHYTHM_GAP_MS
+  ) {
+    spawnRhythmNote(RHYTHM_CHART[rhythmSpawnIndex]);
+    rhythmSpawnIndex += 1;
+  }
+  [...rhythmNotes].forEach((note) => {
+    if (note.done) return;
+    note.y += (travel / RHYTHM_FALL_MS) * dt;
+    note.el.style.transform = `translate(-50%, ${note.y}px)`;
+    if (!rhythmHitZoneEl) return;
+    const noteBox = note.el.getBoundingClientRect();
+    const zoneBox = rhythmHitZoneEl.getBoundingClientRect();
+    const center = noteBox.top + noteBox.height / 2;
+    if (center <= zoneBox.bottom + 10) return;
+    if (note.good) resolveRhythmNote(note, "miss");
+    else {
+      removeRhythmNote(note);
+      flashRhythmJudge("よけた");
+    }
+  });
+  settleRhythmChart();
+  if (rhythmPhase === "play") rhythmRaf = requestAnimationFrame(stepRhythmGame);
+}
+
+function startRhythmGame() {
+  simpyAudioContext();
+  if (rhythmRaf) cancelAnimationFrame(rhythmRaf);
+  clearRhythmNotes();
+  rhythmPhase = "play";
+  rhythmSettled = false;
+  rhythmCollected = 0;
+  rhythmCombo = 0;
+  rhythmPoints = 0;
+  rhythmLayers = [];
+  rhythmSpawnIndex = 0;
+  rhythmElapsed = 0;
+  rhythmLastFrame = 0;
+  if (rhythmIntroEl) rhythmIntroEl.hidden = true;
+  if (rhythmDoneEl) rhythmDoneEl.hidden = true;
+  if (rhythmPlayEl) rhythmPlayEl.hidden = false;
+  if (rhythmJudgeEl) rhythmJudgeEl.textContent = "";
+  renderRhythmHud();
+  rhythmRaf = requestAnimationFrame(stepRhythmGame);
+}
+
+function openRhythmMinigame() {
+  startMelodyRanking();
+  loadOwnMelodyBest();
+  if (rhythmPhase === "idle") {
+    if (rhythmIntroEl) rhythmIntroEl.hidden = false;
+    if (rhythmPlayEl) rhythmPlayEl.hidden = true;
+    if (rhythmDoneEl) rhythmDoneEl.hidden = true;
+  }
+}
+
+document.getElementById("rhythm-start")?.addEventListener("click", startRhythmGame);
+document.getElementById("rhythm-again")?.addEventListener("click", startRhythmGame);
 
 const nasupyStoryLines = [
   "深層まで降りてきてくれたんだね。ぼくはNASUPY。",
@@ -2621,6 +3322,7 @@ profileEditForm.addEventListener("submit", async (event) => {
   try {
     const userRef = doc(db, "users", currentUserId);
     await setDoc(userRef, updatedFields, { merge: true });
+    touchMelodyProfile();
   } catch (error) {
     console.error("プロフィール保存エラー:", error);
     alert("プロフィールの保存に失敗しました。");
