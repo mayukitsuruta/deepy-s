@@ -1,8 +1,14 @@
-import { db, auth } from "./firebase.js?v=20261029-delete-account";
+import { db, auth } from "./firebase.js?v=20261110-persistent-google";
+import { createSpaceHousing, normalizeSpaceHouses, houseLocation, HOUSE_MESSAGE_LIFETIME_MS } from "./space-houses.js?v=20261110-game-map";
 import {
   createUserWithEmailAndPassword,
   EmailAuthProvider,
+  GoogleAuthProvider,
   linkWithCredential,
+  linkWithPopup,
+  signInWithPopup,
+  signInWithCredential,
+  onAuthStateChanged,
   signInAnonymously,
   signInWithEmailAndPassword,
   signOut,
@@ -155,6 +161,10 @@ function writeProfileCache(uid, data) {
   if (!uid || !data || auth.currentUser?.isAnonymous) return;
   const plain = {};
   Object.entries(data).forEach(([key, value]) => {
+    if (key === "spaceHouses") {
+      plain[key] = normalizeSpaceHouses(value);
+      return;
+    }
     if (
       value == null ||
       ["string", "number", "boolean"].includes(typeof value)
@@ -200,6 +210,7 @@ function showAccountActions(user) {
   const registered = Boolean(user && !user.isAnonymous);
   openRegister.hidden = registered;
   deleteAccountButton.hidden = !registered;
+  logoutButton.textContent = registered ? "ログアウト" : "体験を終了する";
 }
 
 function clearProfileCache() {
@@ -298,29 +309,14 @@ function prefetchProfile(user) {
   return profilePrefetch;
 }
 
-// ページを開き直した時点では、前の人のログインを残さない
-clearProfileCache();
-const startupLogout = auth.authStateReady().then(async () => {
-  clearProfileCache();
-  const user = auth.currentUser;
-  if (!user) return;
-  const staleUid = user.uid;
-
-  if (auth.currentUser?.uid !== staleUid) return;
-  currentUserId = null;
-  pendingGuestDocData = null;
-  try {
-    await signOut(auth);
-  } catch (error) {
-    console.warn("前回ログインの終了に失敗:", error);
-  }
-});
+// Firebase が保存済みのログイン状態を読み終わるまで待つ。
+const authReady = auth.authStateReady();
 
 function ensureGuestUser() {
   if (auth.currentUser?.isAnonymous) return Promise.resolve(auth.currentUser);
   if (!guestUserPromise) {
     const version = sessionVersion;
-    guestUserPromise = startupLogout
+    guestUserPromise = authReady
       .then(async () => {
         if (version !== sessionVersion) return auth.currentUser;
         if (auth.currentUser && !auth.currentUser.isAnonymous) {
@@ -347,6 +343,7 @@ function rememberAndEnter(user, userData, persist = true) {
 }
 
 guestButton.addEventListener("click", () => {
+  sessionVersion += 1;
   // ゲストは毎回はじめに戻る。前の人の名前や進み具合は引き継がない
   guestName.value = "";
   resetPlayMemory();
@@ -404,7 +401,7 @@ guestForm.addEventListener("submit", async (event) => {
 
 logoutButton.addEventListener("click", () => {
   const confirmed = confirm(
-    "地底生活を終了しますか？\n" +
+    "ログアウトしますか？\n" +
       "ゲストのまま終了すると、進み具合は保存されません。",
   );
 
@@ -572,7 +569,7 @@ registerForm.addEventListener("submit", async (event) => {
   registerMessage.textContent = "登録中...";
 
   try {
-    await startupLogout;
+    await authReady;
     let user;
 
     if (registerMode === "guest") {
@@ -653,7 +650,7 @@ registerForm.addEventListener("submit", async (event) => {
   }
 });
 
-// 続きから遊ぶときは、毎回メールアドレスとパスワードを入れる
+// 保存済みセッションがない場合のメールログイン。
 loginButton.addEventListener("click", () => {
   signinMessage.textContent = "";
   showScreen(signinScreen);
@@ -668,6 +665,7 @@ signinBack.addEventListener("click", () => {
 // メールアドレス＋パスワードでログイン
 signinForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  const version = ++sessionVersion;
 
   const email = document.getElementById("signin-email").value.trim();
   const password = document.getElementById("signin-password").value;
@@ -677,7 +675,7 @@ signinForm.addEventListener("submit", async (event) => {
   signinMessage.textContent = "ログイン中...";
 
   try {
-    await startupLogout;
+    await authReady;
     // Firebase Authenticationでログイン
     const userCredential = await signInWithEmailAndPassword(
       auth,
@@ -690,6 +688,8 @@ signinForm.addEventListener("submit", async (event) => {
     profilePrefetch = null;
     profilePrefetchUid = null;
     const initial = await loadAccountProfile(user);
+
+    if (version !== sessionVersion || auth.currentUser?.uid !== user.uid) return;
 
     signinForm.reset();
     signinMessage.textContent = "";
@@ -722,9 +722,6 @@ const topbarTitleArea = document.getElementById("topbar-title-area");
 const topbarAvatar = document.getElementById("topbar-avatar");
 const onlineCountEl = document.getElementById("online-count");
 const friendshipValueEl = document.getElementById("friendship-value");
-
-// ① 私の家
-const houseLocationText = document.getElementById("house-location-text");
 
 // ② プロフィール
 const profileAvatarDisplay = document.getElementById("profile-avatar-display");
@@ -772,17 +769,21 @@ function createBlankUserData() {
     friendshipPoints: 0,
     bio: "地底でのんびり暮らしてます。よろしくお願いします！",
     tags: ["デザイン", "カフェ巡り", "音楽"],
-    houseLocation: "第3層・右下エリア",
+    houseLocation: "まだ家がありません",
+    spaceHouses: [],
   };
 }
 
 function resetPlayMemory() {
+  unsubscribeHouseMessages?.();
+  unsubscribeHouseMessages = null;
   currentUserId = null;
   pendingGuestDocData = null;
   guestUserPromise = null;
   profilePrefetch = null;
   profilePrefetchUid = null;
   currentUserData = createBlankUserData();
+  spaceHousing.reset();
   stopMelodyPlayback();
   stopRhythmGame();
   stopMelodyRanking();
@@ -790,14 +791,17 @@ function resetPlayMemory() {
 
 let currentUserData = createBlankUserData();
 let unsubscribeBoard = null;
+let unsubscribeHouseMessages = null;
 let unsubscribeOnlineUsers = null;
 let heartbeatTimer = null;
 let latestUsersDocs = [];
+let mapNeedsInitialFocus = true;
 
 const ONLINE_TIMEOUT_MS = 90 * 1000;
 
 // ホーム画面内のサブビュー切り替え（ホーム / 交流スペース）
 function switchUndergroundView(viewName) {
+  if (viewName !== "space") spaceHousing.cancel();
   homeScreen.classList.toggle("camera-mode", viewName === "camera");
   homeScreen.classList.toggle("space-mode", viewName === "space");
   homeScreen.classList.toggle("story-mode", viewName === "story");
@@ -831,6 +835,10 @@ function switchUndergroundView(viewName) {
   if (viewName === "space") {
     if (topbarTitleArea) topbarTitleArea.textContent = "";
     requestAnimationFrame(() => {
+      if (mapNeedsInitialFocus) {
+        focusMapOnHome();
+        mapNeedsInitialFocus = false;
+      }
       updateMapScrollbar();
     });
   } else if (viewName === "camera") {
@@ -2807,17 +2815,34 @@ document.addEventListener("keydown", (event) => {
 // フレーム付きカメラ（画像はこの画面内でのみ扱い、Firebaseには保存しない）
 const cameraVideo = document.getElementById("camera-video");
 const cameraResult = document.getElementById("camera-result");
+const cameraStage = document.getElementById("camera-stage");
 const cameraMessage = document.getElementById("camera-message");
 const startCameraButton = document.getElementById("start-camera");
 const takePhotoButton = document.getElementById("take-photo");
 const retakePhotoButton = document.getElementById("retake-photo");
 const downloadPhotoLink = document.getElementById("download-photo");
+const togglePhotoCornersButton = document.getElementById("toggle-photo-corners");
 const photoRewardDialog = document.getElementById("photo-reward-dialog");
 const closePhotoRewardButton = document.getElementById("close-photo-reward");
 const frameChoices = document.querySelectorAll(".frame-choice");
 const frameImages = document.querySelectorAll("[data-frame-image]");
 let cameraStream = null;
 let selectedFrame = "frame-1";
+let roundedPhotoCorners = false;
+
+function updateCameraFrameOrientation() {
+  cameraStage?.classList.toggle(
+    "is-landscape",
+    selectedFrame === "frame-3" || selectedFrame === "frame-4",
+  );
+}
+
+togglePhotoCornersButton?.addEventListener("click", () => {
+  roundedPhotoCorners = !roundedPhotoCorners;
+  cameraStage?.classList.toggle("is-rounded", roundedPhotoCorners);
+  cameraStage?.classList.toggle("is-square-cornered", !roundedPhotoCorners);
+  togglePhotoCornersButton.setAttribute("aria-checked", String(roundedPhotoCorners));
+});
 
 function stopCamera() {
   cameraStream?.getTracks().forEach((track) => track.stop());
@@ -2921,6 +2946,7 @@ frameChoices.forEach((choice) => {
     frameImages.forEach((image) => {
       image.hidden = image.dataset.frameImage !== selectedFrame;
     });
+    updateCameraFrameOrientation();
     // 切り替えたフレームが撮影結果にも反映されるよう、再撮影を案内する。
     if (!cameraResult.hidden) {
       cameraResult.hidden = true;
@@ -2937,9 +2963,17 @@ frameChoices.forEach((choice) => {
 takePhotoButton?.addEventListener("click", () => {
   if (!cameraVideo.videoWidth || !cameraVideo.videoHeight) return;
   const canvas = document.createElement("canvas");
-  canvas.width = 960;
-  canvas.height = 1280;
+  const isLandscape = selectedFrame === "frame-3" || selectedFrame === "frame-4";
+  canvas.width = isLandscape ? 1440 : 960;
+  canvas.height = isLandscape ? 966 : 1280;
   const context = canvas.getContext("2d");
+
+  if (roundedPhotoCorners) {
+    const cornerRadius = Math.min(canvas.width, canvas.height) * 0.055;
+    context.beginPath();
+    context.roundRect(0, 0, canvas.width, canvas.height, cornerRadius);
+    context.clip();
+  }
 
   // プレビューと同じく cover で中央を切り抜いて撮影する。
   const sourceRatio = cameraVideo.videoWidth / cameraVideo.videoHeight;
@@ -3033,10 +3067,7 @@ function renderUserData(data) {
   syncFriendshipPill();
 
   // ① 私の家カード
-  if (houseLocationText) {
-    houseLocationText.textContent =
-      currentUserData.houseLocation || "第3層・右下エリア";
-  }
+  spaceHousing.render(currentUserData.spaceHouses);
 
   // ② プロフィールカード
   if (profileAvatarDisplay) {
@@ -3126,6 +3157,7 @@ function startOnlinePresence() {
           latestUsersDocs.push({ id: docSnap.id, ...docSnap.data() });
         });
         recalculateOnlineCount();
+        spaceHousing.renderResidents(latestUsersDocs, currentUserId);
         publishRhythmRanking();
       },
       (error) => {
@@ -3142,21 +3174,13 @@ function endBrowserSession() {
   const user = auth.currentUser;
   const uid = currentUserId;
   const registered = Boolean(user && !user.isAnonymous && uid);
-  clearProfileCache();
-
   if (registered) {
     setDoc(
       doc(db, "users", uid),
       { isOnline: false, lastActiveMs: Date.now() },
       { merge: true },
     ).catch(() => {});
-    signOut(auth).catch(() => {});
-  } else if (user?.isAnonymous) {
-    user.delete().catch(() => {});
   }
-
-  sessionVersion += 1;
-  resetPlayMemory();
   if (heartbeatTimer) {
     clearInterval(heartbeatTimer);
     heartbeatTimer = null;
@@ -3169,10 +3193,12 @@ window.addEventListener("pagehide", () => {
 
 window.addEventListener("pageshow", (event) => {
   if (!event.persisted) return;
-  endBrowserSession();
-  guestName.value = "";
-  if (homeNickname) homeNickname.textContent = "ゲストさん";
-  showScreen(firstView);
+  const user = auth.currentUser;
+  if (user && user.uid === currentUserId && !homeScreen.hidden) {
+    startOnlinePresence();
+  } else {
+    restoreAccountSession();
+  }
 });
 
 // 相対時間のフォーマット
@@ -3191,7 +3217,32 @@ function formatRelativeTime(timestamp) {
 }
 
 // 掲示板のリアルタイム購読開始
+function startHouseMessagesListener() {
+  if (unsubscribeHouseMessages) return;
+  // Keep this separate from the board's 20-post preview so every resident is covered.
+  const recentPostsQuery = query(
+    collection(db, "posts"),
+    where("createdAt", ">=", new Date(Date.now() - HOUSE_MESSAGE_LIFETIME_MS)),
+    orderBy("createdAt", "desc"),
+  );
+  unsubscribeHouseMessages = onSnapshot(
+    recentPostsQuery,
+    (snapshot) => {
+      const posts = [];
+      snapshot.forEach((docSnap) => {
+        posts.push(docSnap.data({ serverTimestamps: "estimate" }));
+      });
+      spaceHousing.renderMessages(posts);
+    },
+    (error) => {
+      console.warn("家のひとことの取得に失敗:", error);
+      spaceHousing.renderMessages([]);
+    },
+  );
+}
+
 function startBoardListener() {
+  startHouseMessagesListener();
   if (unsubscribeBoard) return;
 
   const postsQuery = query(
@@ -3282,8 +3333,10 @@ function startBoardListener() {
 
 // ホーム画面入場時の共通初期化
 function enterHomeWithUser(uid, userData) {
+  mapNeedsInitialFocus = true;
   currentUserId = uid;
   renderUserData(userData || {});
+  spaceHousing.renderResidents(latestUsersDocs, uid);
   switchUndergroundView("home");
   showScreen(homeScreen);
   // 画面を出してから通信を始める。人数と掲示板の取得で最初の表示を止めない
@@ -3395,12 +3448,29 @@ toggleBoardMoreBtn.addEventListener("click", () => {
 });
 
 // =========================================
-// ④ 交流スペース：地層マップエリア（上下ドラッグ＆スクロール連動）
+// ④ 交流スペース：固定サイズのワールドを、カメラで上下左右に探索する。
 // =========================================
 const spaceMapViewport = document.getElementById("space-map-viewport");
 const currentLayerIndicator = document.getElementById(
   "current-layer-indicator",
 );
+const spaceMinimapSurface = document.getElementById("space-minimap-surface");
+const spaceMinimapWindow = document.getElementById("space-minimap-window");
+
+function focusMapOnHome() {
+  const house = spaceMapViewport.querySelector(".own-house");
+  if (!house) {
+    spaceMapViewport.scrollTo({ left: (spaceMapViewport.scrollWidth - spaceMapViewport.clientWidth) / 2, top: 0 });
+    return;
+  }
+  const viewportRect = spaceMapViewport.getBoundingClientRect();
+  const houseRect = house.getBoundingClientRect();
+  spaceMapViewport.scrollTo({
+    left: spaceMapViewport.scrollLeft + houseRect.left - viewportRect.left + houseRect.width / 2 - spaceMapViewport.clientWidth * 0.42,
+    top: spaceMapViewport.scrollTop + houseRect.top - viewportRect.top + houseRect.height / 2 - spaceMapViewport.clientHeight * 0.55,
+    behavior: "auto",
+  });
+}
 
 function updateMapScrollbar() {
   if (!spaceMapViewport || !currentLayerIndicator) return;
@@ -3423,7 +3493,34 @@ function updateMapScrollbar() {
     layerText = "第2層（中層）";
   }
   currentLayerIndicator.textContent = `${layerText}｜地下 -${depthMeters}m`;
+  if (spaceMapViewport.scrollWidth && scrollHeight) {
+    spaceMinimapWindow.style.width = `${spaceMapViewport.clientWidth / spaceMapViewport.scrollWidth * 100}%`;
+    spaceMinimapWindow.style.height = `${viewportHeight / scrollHeight * 100}%`;
+    spaceMinimapWindow.style.left = `${spaceMapViewport.scrollLeft / spaceMapViewport.scrollWidth * 100}%`;
+    spaceMinimapWindow.style.top = `${scrollTop / scrollHeight * 100}%`;
+  }
 }
+
+document.getElementById("space-go-home").addEventListener("click", focusMapOnHome);
+spaceMinimapSurface.addEventListener("click", (event) => {
+  const rect = spaceMinimapSurface.getBoundingClientRect();
+  spaceMapViewport.scrollTo({
+    left: (event.clientX - rect.left) / rect.width * spaceMapViewport.scrollWidth - spaceMapViewport.clientWidth / 2,
+    top: (event.clientY - rect.top) / rect.height * spaceMapViewport.scrollHeight - spaceMapViewport.clientHeight / 2,
+    behavior: "auto",
+  });
+});
+spaceMinimapSurface.addEventListener("keydown", (event) => {
+  const directions = { ArrowLeft: [-200, 0], ArrowRight: [200, 0], ArrowUp: [0, -200], ArrowDown: [0, 200] };
+  const direction = directions[event.key];
+  if (direction) {
+    event.preventDefault();
+    spaceMapViewport.scrollBy({ left: direction[0], top: direction[1] });
+  } else if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    focusMapOnHome();
+  }
+});
 
 if (spaceMapViewport) {
   // スクロール時に深度表示を同期
@@ -3431,39 +3528,219 @@ if (spaceMapViewport) {
     passive: true,
   });
   window.addEventListener("resize", updateMapScrollbar);
+  new ResizeObserver(updateMapScrollbar).observe(spaceMapViewport);
 
-  // マップ本体の「押したまま上下にドラッグ（Grab Scroll）」
-  let isMapDragging = false;
-  let mapStartY = 0;
-  let mapStartScrollTop = 0;
+  // Capture only after a drag threshold, so a click can still place a house.
+  let drag = null;
+  let suppressMapClick = false;
 
   spaceMapViewport.addEventListener("pointerdown", (event) => {
-    if (event.button !== 0 && event.pointerType === "mouse") return;
-    isMapDragging = true;
-    mapStartY = event.clientY;
-    mapStartScrollTop = spaceMapViewport.scrollTop;
-    spaceMapViewport.classList.add("is-dragging");
-    spaceMapViewport.setPointerCapture(event.pointerId);
+    if (event.target.closest("button, a, input, select, textarea, .house-speech")) return;
+    // Native touch scrolling supports both axes and cancels taps after a swipe.
+    if (event.pointerType === "touch") return;
+    if (event.button !== 0) return;
+    suppressMapClick = false;
+    drag = {
+      id: event.pointerId, x: event.clientX, y: event.clientY,
+      left: spaceMapViewport.scrollLeft, top: spaceMapViewport.scrollTop, moved: false,
+    };
   });
 
   spaceMapViewport.addEventListener("pointermove", (event) => {
-    if (!isMapDragging) return;
-    const deltaY = event.clientY - mapStartY;
-    spaceMapViewport.scrollTop = mapStartScrollTop - deltaY;
+    if (!drag || event.pointerId !== drag.id) return;
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) < 5) return;
+    if (!drag.moved) {
+      drag.moved = true;
+      spaceMapViewport.classList.add("is-dragging");
+      spaceMapViewport.setPointerCapture(event.pointerId);
+    }
+    event.preventDefault();
+    spaceMapViewport.scrollLeft = drag.left - dx;
+    spaceMapViewport.scrollTop = drag.top - dy;
   });
 
   const stopMapDragging = (event) => {
-    if (!isMapDragging) return;
-    isMapDragging = false;
+    if (!drag || (event?.pointerId !== undefined && event.pointerId !== drag.id)) return;
+    suppressMapClick = drag.moved;
+    const pointerId = drag.id;
+    drag = null;
     spaceMapViewport.classList.remove("is-dragging");
-    if (
-      event?.pointerId !== undefined &&
-      spaceMapViewport.hasPointerCapture?.(event.pointerId)
-    ) {
-      spaceMapViewport.releasePointerCapture(event.pointerId);
-    }
+    if (spaceMapViewport.hasPointerCapture(pointerId)) spaceMapViewport.releasePointerCapture(pointerId);
   };
 
-  spaceMapViewport.addEventListener("pointerup", stopMapDragging);
-  spaceMapViewport.addEventListener("pointercancel", stopMapDragging);
+  window.addEventListener("pointerup", stopMapDragging);
+  window.addEventListener("pointercancel", stopMapDragging);
+  window.addEventListener("blur", () => stopMapDragging());
+  spaceMapViewport.addEventListener("lostpointercapture", stopMapDragging);
+  spaceMapViewport.addEventListener("click", (event) => {
+    if (!suppressMapClick) return;
+    suppressMapClick = false;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
 }
+
+const spaceHousing = createSpaceHousing({
+  canSave: progressCanBeSaved,
+  ownerName: () => currentUserData.nickname || "私",
+  ownerId: () => currentUserId,
+  onPlacementStart: () => setSpacePanelCollapsed(true),
+  onChange(houses, previousWrite) {
+    const uid = currentUserId;
+    const version = sessionVersion;
+    const fields = {
+      spaceHouses: houses,
+      houseLocation: houseLocation(houses[0]),
+    };
+    currentUserData = { ...currentUserData, ...fields };
+    if (pendingGuestDocData) pendingGuestDocData = { ...pendingGuestDocData, ...fields };
+    if (!progressCanBeSaved()) return Promise.resolve();
+    writeProfileCache(uid, currentUserData);
+    // Serialize complete layouts so a slow earlier write cannot replace a later edit.
+    return previousWrite.then(async () => {
+      if (version !== sessionVersion || uid !== currentUserId) return;
+      await setDoc(doc(db, "users", uid), fields, { merge: true });
+    });
+  },
+});
+
+const toggleSpacePanel = document.getElementById("toggle-space-panel");
+const spaceRightPanel = document.getElementById("space-right-panel");
+const SPACE_PANEL_PREF_KEY = "deepys-space-panel-collapsed";
+
+function setSpacePanelCollapsed(collapsed) {
+  if (collapsed && spaceRightPanel.contains(document.activeElement)) toggleSpacePanel.focus();
+  spaceViewContent.classList.toggle("is-panel-collapsed", collapsed);
+  spaceRightPanel.hidden = collapsed;
+  toggleSpacePanel.setAttribute("aria-expanded", String(!collapsed));
+  const label = collapsed ? "右パネルを開く" : "右パネルを閉じる";
+  toggleSpacePanel.setAttribute("aria-label", label);
+  toggleSpacePanel.title = label;
+  toggleSpacePanel.querySelector(".space-panel-toggle-icon").textContent = collapsed ? "‹" : "›";
+  toggleSpacePanel.querySelector(".space-panel-toggle-label").textContent = collapsed ? "開く" : "閉じる";
+  requestAnimationFrame(updateMapScrollbar);
+}
+
+let savedPanelCollapsed = window.matchMedia("(max-width: 950px)").matches;
+try {
+  const preference = localStorage.getItem(SPACE_PANEL_PREF_KEY);
+  if (preference !== null) savedPanelCollapsed = preference === "1";
+} catch { /* Use the default layout. */ }
+setSpacePanelCollapsed(savedPanelCollapsed);
+toggleSpacePanel.addEventListener("click", () => {
+  const collapsed = !spaceRightPanel.hidden;
+  setSpacePanelCollapsed(collapsed);
+  try { localStorage.setItem(SPACE_PANEL_PREF_KEY, collapsed ? "1" : "0"); } catch { /* The panel still works without storage. */ }
+});
+
+async function restoreAccountSession() {
+  await authReady;
+  const user = auth.currentUser;
+  if (!user || user.isAnonymous) return;
+  const version = sessionVersion;
+  const profile = await loadAccountProfile(user);
+  if (version !== sessionVersion || auth.currentUser?.uid !== user.uid) return;
+  currentUserData = createBlankUserData();
+  rememberAndEnter(user, profile);
+}
+
+function googleAuthMessage(text) {
+  document.querySelectorAll(".google-auth-message").forEach((element) => {
+    element.textContent = text;
+  });
+}
+
+async function signInWithGoogle() {
+  const buttons = document.querySelectorAll("[data-google-login]");
+  buttons.forEach((button) => { button.disabled = true; });
+  googleAuthMessage("Google に接続しています…");
+  const version = ++sessionVersion;
+  try {
+    await authReady;
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    let result;
+    let guestProfile = null;
+    if (auth.currentUser?.isAnonymous) {
+      const progress = { ...currentUserData };
+      try {
+        result = await linkWithPopup(auth.currentUser, provider);
+        guestProfile = progress;
+      } catch (error) {
+        // An existing Google account keeps its own saved home and progress.
+        if (error.code !== "auth/credential-already-in-use") throw error;
+        const credential = GoogleAuthProvider.credentialFromError(error);
+        if (!credential) throw error;
+        result = await signInWithCredential(auth, credential);
+      }
+    } else {
+      result = await signInWithPopup(auth, provider);
+    }
+    const user = result.user;
+    const snapshot = await getDoc(doc(db, "users", user.uid));
+    if (version !== sessionVersion || auth.currentUser?.uid !== user.uid) return;
+    const saved = snapshot.exists() ? snapshot.data() : null;
+    const profile = {
+      ...createBlankUserData(),
+      ...(saved || guestProfile || {}),
+      nickname: savedNickname(saved) || savedNickname(guestProfile) || user.displayName || "地底の住人",
+    };
+    if (!snapshot.exists()) {
+      await setDoc(doc(db, "users", user.uid), {
+        ...profile,
+        spaceHouses: normalizeSpaceHouses(profile.spaceHouses),
+        createdAt: serverTimestamp(),
+      }, { merge: true });
+    }
+    if (version !== sessionVersion || auth.currentUser?.uid !== user.uid) return;
+    guestUserPromise = null;
+    profilePrefetch = null;
+    profilePrefetchUid = null;
+    currentUserData = createBlankUserData();
+    registerModal.hidden = true;
+    rememberAndEnter(user, profile);
+    googleAuthMessage("");
+  } catch (error) {
+    console.warn("Google ログインに失敗:", error);
+    const messages = {
+      "auth/popup-closed-by-user": "ログインをキャンセルしました。もう一度試せます。",
+      "auth/cancelled-popup-request": "別のログイン画面が開いています。そちらで続けてね。",
+      "auth/popup-blocked": "ポップアップを許可してから、もう一度 Google ログインを押してね。",
+      "auth/operation-not-allowed": "Google ログインの設定がまだ有効になっていません。管理者は Firebase の Authentication で Google を有効にしてください。",
+      "auth/unauthorized-domain": "このサイトのドメインが未登録です。Firebase の Authentication → 設定 → 承認済みドメインに追加してください。",
+      "auth/account-exists-with-different-credential": "このメールのアカウントがすでにあります。メールとパスワードでログインしてください。",
+      "auth/network-request-failed": "通信できませんでした。接続を確認して、もう一度試してね。",
+    };
+    googleAuthMessage(messages[error.code] || "ログインを完了できませんでした。もう一度試してね。");
+  } finally {
+    buttons.forEach((button) => { button.disabled = false; });
+  }
+}
+
+document.querySelectorAll("[data-google-login]").forEach((button) => {
+  button.addEventListener("click", signInWithGoogle);
+});
+
+document.querySelectorAll("[data-email-login]").forEach((button) => {
+  button.addEventListener("click", () => loginButton.click());
+});
+
+// Other tabs may log out this account; stop showing its private local state too.
+onAuthStateChanged(auth, (user) => {
+  if (!user && currentUserId) {
+    sessionVersion += 1;
+    stopCamera();
+    clearProfileCache();
+    resetPlayMemory();
+    if (heartbeatTimer) clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+    showScreen(firstView);
+  }
+});
+
+restoreAccountSession().catch((error) => {
+  console.warn("ログイン状態の復元に失敗:", error);
+  googleAuthMessage("接続を確認してください。ログイン状態の読み込みを再試行できます。");
+});

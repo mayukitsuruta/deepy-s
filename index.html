@@ -11,7 +11,7 @@
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js" />
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js" />
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js" />
-  <link rel="stylesheet" href="./css/style.css?v=20261105-swap" />
+  <link rel="stylesheet" href="./css/style.css?v=20261110-account-buttons" />
 </head>
 
 <body>
@@ -20,6 +20,9 @@
     <h1>DEEPY’s</h1>
     <p>地底人との暮らし</p>
     <button id="start-story">物語をはじめる</button>
+    <button class="google-login-button" data-google-login type="button"><span class="google-mark" aria-hidden="true">G</span>Google でログイン</button>
+    <button class="email-login-shortcut" data-email-login type="button">メールでログイン</button>
+    <p class="google-auth-message" role="status" aria-live="polite"></p>
   </section>
 
   <!-- ② ストーリー導入 -->
@@ -41,6 +44,9 @@
   <section id="login-screen" class="screen login-screen" hidden>
     <h2>地底の世界へようこそ！</h2>
     <p>あなたはどうやって地底生活を始める？</p>
+
+    <button class="google-login-button" data-google-login type="button"><span class="google-mark" aria-hidden="true">G</span>Google でログイン</button>
+    <p class="google-auth-message" role="status" aria-live="polite"></p>
 
     <button id="guest-button">ゲストとして遊ぶ</button>
     <button id="register-button">新規登録</button>
@@ -144,7 +150,7 @@
         <img class="deepy-menu" src="./images/deepy.png" alt="DEEPY" />
       </div>
 
-      <button id="logout-button" class="logout-button" type="button">体験を終了する</button>
+      <button id="delete-account" class="sidebar-account-action" type="button" hidden>このアカウントを消す</button>
     </aside>
 
     <!-- メインエリア -->
@@ -160,7 +166,7 @@
               <span class="user-name" id="home-nickname">ゲストさん</span>
             </div>
             <button id="open-register" type="button">アカウント登録</button>
-            <button id="delete-account" type="button" hidden>このアカウントを消す</button>
+            <button id="logout-button" type="button">体験を終了する</button>
             <div class="user-count-badge" title="オンライン人数">
               <span class="icon-inline" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
@@ -388,6 +394,10 @@
 
       <!-- 交流スペース画面コンテンツ -->
       <div id="space-view-content" class="space-view" hidden>
+          <button id="toggle-space-panel" class="space-panel-toggle" type="button" aria-controls="space-right-panel" aria-expanded="true" aria-label="右パネルを閉じる" title="右パネルを閉じる">
+            <span class="space-panel-toggle-icon" aria-hidden="true">›</span>
+            <span class="space-panel-toggle-label">閉じる</span>
+          </button>
         <!-- 中央エリア：地層マップエリア -->
         <div class="space-map-wrapper" id="space-map-wrapper">
           <!-- 上部固定ガイドバッジ -->
@@ -395,9 +405,24 @@
             <div class="placeholder-layer-badge" id="current-layer-indicator">
               第1層（上層）〜 第3層（深層）地層マップ
             </div>
+            <nav class="house-layer-nav" aria-label="地層へ移動">
+              <button type="button" data-house-layer="1">1層</button>
+              <button type="button" data-house-layer="2">2層</button>
+              <button type="button" data-house-layer="3">3層</button>
+            </nav>
+            <button id="space-go-home" class="space-go-home" type="button">⌂ 私の家へ</button>
+            <span class="map-drag-hint">マップをドラッグして、地底を自由に歩いてみよう。</span>
           </div>
 
-          <div class="space-map-viewport" id="space-map-viewport" tabindex="0" aria-label="地層マップエリア">
+          <div class="space-minimap" aria-label="全体マップ">
+            <span class="space-minimap-label">全体マップ</span>
+            <div id="space-minimap-surface" class="space-minimap-surface" role="button" tabindex="0" aria-label="全体マップ。クリックした場所に移動します。矢印キーでも移動できます。">
+              <span class="space-minimap-layer"></span><span class="space-minimap-layer"></span><span class="space-minimap-layer"></span>
+              <span id="space-minimap-window" class="space-minimap-window"></span>
+            </div>
+          </div>
+
+          <div class="space-map-viewport" id="space-map-viewport" tabindex="0" aria-label="地層マップ。マウスで上下左右にドラッグ、タッチでスワイプして探索できます">
             <div class="space-map-canvas" id="space-map-canvas">
               <!-- 地表からの光演出 -->
               <div class="stratum-surface-glow" aria-hidden="true"></div>
@@ -441,13 +466,13 @@
 
               <!-- 地勢・深度メモリ（左側） -->
               <div class="stratum-depth-scale" aria-hidden="true">
-                <span class="depth-tick" style="top: 40px">0m (地表付近)</span>
-                <span class="depth-tick" style="top: 520px">-50m</span>
-                <span class="depth-tick" style="top: 1000px">-100m</span>
-                <span class="depth-tick" style="top: 1500px">-150m</span>
-                <span class="depth-tick" style="top: 2000px">-200m</span>
-                <span class="depth-tick" style="top: 2500px">-250m</span>
-                <span class="depth-tick" style="top: 2920px">-300m (最深部)</span>
+                <span class="depth-tick" style="top: 40px">0m</span>
+                <span class="depth-tick" style="top: 16.7%">-50m</span>
+                <span class="depth-tick" style="top: 33.3%">-100m</span>
+                <span class="depth-tick" style="top: 50%">-150m</span>
+                <span class="depth-tick" style="top: 66.7%">-200m</span>
+                <span class="depth-tick" style="top: 83.3%">-250m</span>
+                <span class="depth-tick" style="top: 97%">-300m</span>
               </div>
 
               <!-- 第1層：上層（明るい砂土・陽だまり層） -->
@@ -490,10 +515,30 @@
               </section>
             </div>
           </div>
+          <div class="house-map-controls">
+            <p id="house-map-status" role="status" aria-live="polite">「家を選ぶ」で、お気に入りの家をひとつ選んでね。</p>
+            <div class="house-toolbar" role="group" aria-label="家の操作">
+              <button id="house-move" type="button" disabled>✥ 移動</button>
+              <button id="house-flip" type="button" disabled>↔ 向きを変える</button>
+              <button id="house-remove" type="button" disabled>家をしまう</button>
+              <button id="house-add" type="button">家を選ぶ</button>
+              <button id="house-cancel" type="button" hidden>キャンセル</button>
+              <button id="house-retry" type="button" hidden>保存を再試行</button>
+            </div>
+          </div>
         </div>
 
+        <dialog id="house-picker" class="house-picker" aria-labelledby="house-picker-title">
+          <div class="house-picker-heading">
+            <div><p class="house-picker-eyebrow">ちいさな地底暮らし</p><h2 id="house-picker-title">どの家にしよう？</h2></div>
+            <button id="house-picker-close" class="icon-btn" type="button" aria-label="家の選択を閉じる">✕</button>
+          </div>
+          <p id="house-picker-description">ひとりにひとつのおうち。選んだら、マップの好きな場所に置いてね。</p>
+          <div id="house-picker-options" class="house-picker-options"></div>
+        </dialog>
+
         <!-- 右カラム：私の家・プロフィール・掲示板 -->
-        <aside class="space-right-panel">
+        <aside class="space-right-panel" id="space-right-panel" aria-label="私の家・プロフィール・掲示板">
           <!-- ① 私の家カード -->
           <section class="panel-card my-house-card">
             <div class="card-header">
@@ -505,7 +550,7 @@
                 </span>
                 <h3>私の家</h3>
               </div>
-              <button class="icon-btn" type="button" title="編集（準備中）" aria-label="編集">
+              <button id="edit-house-btn" class="icon-btn" type="button" title="家を選ぶ" aria-label="家を選ぶ">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                   <path d="M16.8 3.5a2.1 2.1 0 0 1 3 3L8.3 18l-4.3 1 1-4.3L16.8 3.5Z" />
                 </svg>
@@ -513,18 +558,12 @@
             </div>
 
             <div class="house-preview" id="house-preview-box">
-              <div class="house-preview-art" aria-hidden="true">
-                <svg viewBox="0 0 160 80" width="140" height="70" fill="none">
-                  <path d="M15 72C18 35 46 14 80 14s62 21 65 58H15Z" fill="#a57551" opacity="0.45" />
-                  <path d="M38 72c4-24 20-38 42-38s38 14 42 38H38Z" fill="#d39e72" />
-                  <path d="M63 72c2-15 8-23 17-23s15 8 17 23H63Z" fill="#4b2e1b" />
-                  <circle cx="52" cy="52" r="5" fill="#fff0c9" />
-                  <circle cx="108" cy="52" r="5" fill="#fff0c9" />
-                </svg>
+              <div class="house-preview-art">
+                <img id="house-preview-image" alt="" hidden />
+                <p id="house-preview-empty">ここから、あなたの地底暮らし。<br />お気に入りの家を置いてみよう。</p>
               </div>
-              <!-- 仮ボタン（ダミー） -->
               <button id="change-interior-btn" class="interior-badge-btn" type="button">
-                インテリアを変更
+                家を選ぶ
               </button>
             </div>
 
@@ -536,9 +575,8 @@
                   </svg>
                   家の場所
                 </span>
-                <p class="location-value" id="house-location-text">第3層・右下エリア</p>
+                <p class="location-value" id="house-location-text">まだ家がありません</p>
               </div>
-              <!-- 仮ボタン（ダミー） -->
               <button id="move-house-btn" class="pill-outline-btn" type="button">
                 <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"
                   stroke-linecap="round" stroke-linejoin="round" class="inline-svg">
@@ -547,6 +585,7 @@
                 移動する
               </button>
             </div>
+            <p id="house-save-note" class="house-save-note">ゲストの家は今回のプレイ中だけ残ります。登録すると保存できます。</p>
           </section>
 
           <!-- ② プロフィールカード -->
@@ -640,6 +679,7 @@
               <input type="text" id="board-message-input" placeholder="地底の仲間へメッセージを書く…" maxlength="100" required />
               <button type="submit">投稿</button>
             </form>
+            <p class="board-house-note">24時間以内の最新のひとことが、あなたの家の上にも表示されます。</p>
 
             <!-- 投稿リスト（Firebaseリアルタイム連動） -->
             <div id="board-list" class="board-list">
@@ -673,23 +713,34 @@
             <button class="frame-choice" type="button" data-frame="frame-2" aria-label="フレーム2を選択" aria-pressed="false">
               <img src="./images/frame-2.PNG" alt="" />
             </button>
-            <button class="frame-choice" type="button" data-frame="frame-3" aria-label="フレーム3を選択"
-              aria-pressed="false">
-              <img src="./images/frame-3.PNG" alt="" />
+            <button class="frame-choice" type="button" data-frame="frame-3" aria-label="フレーム3を選択" aria-pressed="false">
+              <img src="./images/frame-3-landscape.PNG" alt="" />
             </button>
             <button class="frame-choice" type="button" data-frame="frame-4" aria-label="フレーム4を選択" aria-pressed="false">
-              <img src="./images/frame-4.PNG" alt="" />
+              <img src="./images/frame-4-landscape.PNG" alt="" />
             </button>
           </div>
-          <div class="camera-stage" id="camera-stage">
+          <div class="camera-stage is-square-cornered" id="camera-stage">
             <video id="camera-video" autoplay muted playsinline aria-label="カメラのプレビュー"></video>
             <img class="camera-overlay camera-frame" data-frame-image="frame-1" src="./images/frame-1.PNG" alt="" />
-            <img class="camera-overlay camera-frame" data-frame-image="frame-2" src="./images/frame-2.PNG" alt="" hidden />
-            <img class="camera-overlay camera-frame" data-frame-image="frame-3" src="./images/frame-3.PNG" alt="" hidden />
-            <img class="camera-overlay camera-frame" data-frame-image="frame-4" src="./images/frame-4.PNG" alt="" hidden />
+            <img class="camera-overlay camera-frame" data-frame-image="frame-2" src="./images/frame-2.PNG" alt=""
+              hidden />
+            <img class="camera-overlay camera-frame" data-frame-image="frame-3" src="./images/frame-3-landscape.PNG"
+              alt="" hidden />
+            <img class="camera-overlay camera-frame" data-frame-image="frame-4" src="./images/frame-4-landscape.PNG"
+              alt="" hidden />
             <img id="camera-result" class="camera-result" alt="撮影した写真" hidden />
           </div>
           <div class="camera-actions">
+            <div class="camera-corner-control">
+              <span class="camera-corner-label">角丸</span>
+              <button id="toggle-photo-corners" class="corner-switch" type="button" role="switch" aria-label="角丸"
+                aria-checked="false">
+                <span class="corner-switch-track" aria-hidden="true">
+                  <span class="corner-switch-thumb"></span>
+                </span>
+              </button>
+            </div>
             <button id="start-camera" class="camera-button camera-button-secondary" type="button">カメラを起動</button>
             <button id="take-photo" class="camera-button" type="button" disabled>写真を撮る</button>
             <button id="retake-photo" class="camera-button camera-button-secondary" type="button" hidden>もう一度撮る</button>
@@ -735,6 +786,8 @@
 
       <h2 id="register-title">地底住民登録</h2>
       <p>登録すると、スマホでも続きから遊べるよ！</p>
+      <button class="google-login-button" data-google-login type="button"><span class="google-mark" aria-hidden="true">G</span>Google で登録・ログイン</button>
+      <p class="google-auth-message" role="status" aria-live="polite"></p>
 
       <form id="register-form">
         <div id="register-nickname-area">
@@ -774,6 +827,8 @@
     <div class="signin-content">
       <h2>おかえりなさい！</h2>
       <p>地底生活の続きをはじめよう！</p>
+      <button class="google-login-button" data-google-login type="button"><span class="google-mark" aria-hidden="true">G</span>Google でログイン</button>
+      <p class="google-auth-message" role="status" aria-live="polite"></p>
 
       <form id="signin-form">
         <label for="signin-email">メールアドレス</label>
@@ -791,7 +846,7 @@
     </div>
   </section>
 
-  <script type="module" src="./js/main.js?v=20261105-scores"></script>
+  <script type="module" src="./js/main.js?v=20261110-game-map"></script>
 </body>
 
 </html>
