@@ -11,14 +11,12 @@
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js" />
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js" />
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js" />
-  <link rel="stylesheet" href="./css/style.css?v=20261110-account-buttons" />
+  <link rel="stylesheet" href="./css/style.css?v=20261110-card-alpha-88" />
 </head>
 
 <body>
   <!-- ① ファーストビュー -->
   <section id="first-view" class="screen first-view">
-    <h1>DEEPY’s</h1>
-    <p>地底人との暮らし</p>
     <button id="start-story">物語をはじめる</button>
     <button class="google-login-button" data-google-login type="button"><span class="google-mark" aria-hidden="true">G</span>Google でログイン</button>
     <button class="email-login-shortcut" data-email-login type="button">メールでログイン</button>
@@ -70,7 +68,7 @@
   </section>
 
   <!-- ⑤ 地底ホーム画面 -->
-  <section id="home-screen" class="screen home-screen" hidden>
+  <section id="home-screen" class="screen home-screen is-home" hidden>
     <!-- 左側メニュー -->
     <aside class="home-sidebar">
       <div class="sidebar-logo">
@@ -115,15 +113,6 @@
             </svg>
           </span>
           <span>地底人診断</span>
-        </button>
-        <button class="nav-item" data-view="notice" type="button">
-          <span class="nav-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-              <path
-                d="M12 3a6 6 0 0 0-6 6v4.2l-1.6 2.4A1 1 0 0 0 5.2 17h13.6a1 1 0 0 0 .8-1.4L18 13.2V9a6 6 0 0 0-6-6Zm0 18a2.5 2.5 0 0 0 2.4-2h-4.8a2.5 2.5 0 0 0 2.4 2Z" />
-            </svg>
-          </span>
-          <span>お知らせ</span>
         </button>
         <button class="nav-item" data-view="camera" type="button">
           <span class="nav-icon" aria-hidden="true">

@@ -802,6 +802,7 @@ const ONLINE_TIMEOUT_MS = 90 * 1000;
 // ホーム画面内のサブビュー切り替え（ホーム / 交流スペース）
 function switchUndergroundView(viewName) {
   if (viewName !== "space") spaceHousing.cancel();
+  homeScreen.classList.toggle("is-home", viewName === "home");
   homeScreen.classList.toggle("camera-mode", viewName === "camera");
   homeScreen.classList.toggle("space-mode", viewName === "space");
   homeScreen.classList.toggle("story-mode", viewName === "story");

@@ -25,8 +25,7 @@
   text-align: center;
 }
 
-.first-view h1,
-.first-view p {
+.first-view .google-auth-message {
   color: white;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
@@ -183,6 +182,15 @@ body {
   min-height: 100dvh;
   background: radial-gradient(circle at 45% 35%, #5c3d28 0%, #3b2518 70%, #2a1a10 100%);
   color: #f9efe3;
+}
+
+.home-screen.is-home {
+  background-color: #2a1a10;
+  background-image: url("../images/home-bg.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 /* 左サイドバー */
@@ -411,6 +419,7 @@ body {
   color: #fff6ea;
   font-size: 16px;
   line-height: 1.8;
+  text-shadow: 0 1px 2px rgba(28, 14, 8, 0.9), 0 0 14px rgba(28, 14, 8, 0.65);
 }
 
 /* キャラクターカード */
@@ -457,19 +466,19 @@ body {
 }
 
 .chippy {
-  background: #e9e9b2;
+  background: rgba(233, 233, 178, 0.88);
 }
 
 .simpy {
-  background: #ffd4d0;
+  background: rgba(255, 212, 208, 0.88);
 }
 
 .nasupy {
-  background: #e5d4f5;
+  background: rgba(229, 212, 245, 0.88);
 }
 
 .hitopy {
-  background: #77706c;
+  background: rgba(119, 112, 108, 0.88);
   color: #fff;
 }
 
@@ -553,6 +562,7 @@ body {
   margin-top: 30px;
   text-align: center;
   font-size: 18px;
+  text-shadow: 0 1px 2px rgba(28, 14, 8, 0.9), 0 0 14px rgba(28, 14, 8, 0.65);
 }
 
 /* タブレット */
@@ -2248,6 +2258,12 @@ body {
   height: 100dvh;
   min-height: 0;
   overflow: hidden;
+  background-color: #3b2418;
+  background-image: url("../images/camera-bg.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 .camera-mode .home-main {
