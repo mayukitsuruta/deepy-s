@@ -14,15 +14,15 @@
       privacy.content = "no-referrer";
       document.head.append(privacy);
     } else {
+      // ログイン済みで戻った人だけ、トップが見える前から潜る画面を出す。
+      // 初めての人はトップをすぐ見せ、ログインや登録のあとに潜る。
       try {
         const cached = JSON.parse(localStorage.getItem("deepys-profile") || "null");
         if (cached && cached.uid && cached.data) {
           document.documentElement.classList.add("is-descending");
           window.__deepysDescentStart = Date.now();
         }
-      } catch (error) {
-        // 保存を読めないときは、いつもどおり最初の画面から始める
-      }
+      } catch { /* 保存が読めないときはトップから始める。 */ }
     }
   </script>
   <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
@@ -31,11 +31,11 @@
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js" />
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js" />
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js" />
-  <link rel="stylesheet" href="./css/style.css?v=20261112-descent-slow" />
+  <link rel="stylesheet" href="./css/style.css?v=20261112-descent-entry" />
 </head>
 
 <body>
-  <!-- ログイン済みで戻ってきたときの、地底へ潜るローディング -->
+  <!-- ログイン・登録のあと、またはログイン済みで戻ったときに地底へ潜るローディング -->
   <div id="descent-screen" class="descent-screen" role="status" aria-live="polite" aria-busy="true">
     <div class="descent-viewport" aria-hidden="true">
       <div class="descent-world">
@@ -910,7 +910,7 @@
     <button id="retry-photo-share" class="camera-button" type="button" hidden>もう一度試す</button>
     <form method="dialog"><button class="camera-button camera-button-secondary" type="submit">閉じる</button></form>
   </dialog>
-  <script type="module" src="./js/main.js?v=20261112-descent-slow"></script>
+  <script type="module" src="./js/main.js?v=20261112-descent-after-auth"></script>
 </body>
 
 </html>

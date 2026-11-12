@@ -3947,7 +3947,7 @@ body {
 .photo-receive-view .receive-expiry { color: #776354; font-size: 12px; }
 .photo-receive-view [hidden] { display: none !important; }
 
-/* ログイン済みで戻ったとき、地底へ潜ってからホームを開く */
+/* ログイン・登録のあと、またはログイン済みで戻ったとき、地底へ潜ってからホームを開く */
 html.is-descending,
 html.is-descending body {
   overflow: hidden;

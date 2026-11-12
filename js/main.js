@@ -71,15 +71,23 @@ function setScreensInert(inert) {
   });
 }
 
-function beginDescent() {
-  if (!descentActive) {
+function restartDescentWorld() {
+  const world = descentScreen.querySelector(".descent-world");
+  if (!world) return;
+  world.style.animation = "none";
+  void world.offsetWidth;
+  world.style.animation = "";
+}
+
+function beginDescent(fresh = false) {
+  if (!descentActive || fresh) {
     descentGeneration += 1;
     descentActive = true;
-    if (!descentStartedAt) {
-      descentStartedAt = window.__deepysDescentStart || Date.now();
-    }
+    descentStartedAt = fresh ? Date.now() : (descentStartedAt || window.__deepysDescentStart || Date.now());
+    if (fresh) descentScreen.classList.remove("is-leaving");
   }
   document.documentElement.classList.add("is-descending");
+  if (fresh) restartDescentWorld();
   descentScreen.setAttribute("aria-busy", "true");
   setScreensInert(true);
   return descentGeneration;
@@ -123,6 +131,15 @@ function cancelDescent() {
   document.documentElement.classList.remove("is-descending");
   descentScreen.setAttribute("aria-busy", "false");
   setScreensInert(false);
+}
+
+async function descendToTop(fresh = false) {
+  const token = beginDescent(fresh);
+  showScreen(firstView);
+  await waitForDescent();
+  if (token !== descentGeneration) return;
+  showScreen(firstView);
+  await finishDescent();
 }
 
 if (document.documentElement.classList.contains("is-descending")) {
@@ -418,6 +435,30 @@ function rememberAndEnter(user, userData, persist = true) {
   enterHomeWithUser(user.uid, userData);
 }
 
+// 初めてのログイン・登録、および再ログインのあと、潜ってからホームへ入る。
+async function enterAfterLogin(user, userData, persist = true) {
+  if (!homeScreen.hidden && currentUserId === user.uid) {
+    rememberAndEnter(user, userData, persist);
+    return;
+  }
+  const token = beginDescent(true);
+  const version = sessionVersion;
+  pendingGuestDocData = userData;
+  if (persist && user && !user.isAnonymous) writeProfileCache(user.uid, userData);
+  showAccountActions(user);
+  enterHomeWithUser(user.uid, userData);
+  await waitForDescent();
+  if (
+    token !== descentGeneration ||
+    version !== sessionVersion ||
+    auth.currentUser?.uid !== user.uid
+  ) {
+    if (token === descentGeneration) cancelDescent();
+    return;
+  }
+  await finishDescent();
+}
+
 guestButton.addEventListener("click", () => {
   sessionVersion += 1;
   // ゲストは毎回はじめに戻る。前の人の名前や進み具合は引き継がない
@@ -466,7 +507,7 @@ guestForm.addEventListener("submit", async (event) => {
     };
 
     currentUserData = createBlankUserData();
-    rememberAndEnter(user, userData, false);
+    await enterAfterLogin(user, userData, false);
   } catch (error) {
     console.error("ゲスト登録エラー:", error);
     alert("登録に失敗しました。コンソールを確認してね。");
@@ -492,7 +533,7 @@ logoutButton.addEventListener("click", () => {
   resetPlayMemory();
   guestName.value = "";
   homeNickname.textContent = "ゲストさん";
-  showScreen(firstView);
+  descendToTop(true);
   if (heartbeatTimer) {
     clearInterval(heartbeatTimer);
     heartbeatTimer = null;
@@ -574,7 +615,7 @@ confirmDeleteAccount.addEventListener("click", async () => {
     homeNickname.textContent = "ゲストさん";
     deleteAccountModal.hidden = true;
     deleteAccountMessage.textContent = "";
-    showScreen(firstView);
+    descendToTop(true);
     if (heartbeatTimer) {
       clearInterval(heartbeatTimer);
       heartbeatTimer = null;
@@ -706,7 +747,7 @@ registerForm.addEventListener("submit", async (event) => {
     registerModal.hidden = true;
     registerForm.reset();
     registerMessage.textContent = "";
-    rememberAndEnter(user, userData);
+    await enterAfterLogin(user, userData);
     touchMelodyProfile();
   } catch (error) {
     console.error("登録エラー:", error);
@@ -769,7 +810,7 @@ signinForm.addEventListener("submit", async (event) => {
 
     signinForm.reset();
     signinMessage.textContent = "";
-    rememberAndEnter(user, initial, true);
+    await enterAfterLogin(user, initial, true);
     prefetchProfile(user);
   } catch (error) {
     console.error("ログインエラー:", error);
@@ -3727,6 +3768,7 @@ async function restoreAccountSession() {
   const user = auth.currentUser;
   if (!user || user.isAnonymous) {
     cancelDescent();
+    showScreen(firstView);
     return;
   }
   const token = beginDescent();
@@ -3807,7 +3849,7 @@ async function signInWithGoogle() {
     profilePrefetchUid = null;
     currentUserData = createBlankUserData();
     registerModal.hidden = true;
-    rememberAndEnter(user, profile);
+    await enterAfterLogin(user, profile);
     googleAuthMessage("");
   } catch (error) {
     console.warn("Google ログインに失敗:", error);
@@ -3843,12 +3885,14 @@ onAuthStateChanged(auth, (user) => {
     resetPlayMemory();
     if (heartbeatTimer) clearInterval(heartbeatTimer);
     heartbeatTimer = null;
-    showScreen(firstView);
+    descendToTop(true);
   }
 });
 
 restoreAccountSession().catch((error) => {
   console.warn("ログイン状態の復元に失敗:", error);
+  showScreen(firstView);
+  cancelDescent();
   googleAuthMessage("接続を確認してください。ログイン状態の読み込みを再試行できます。");
 });
 
