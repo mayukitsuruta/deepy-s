@@ -30,6 +30,8 @@ import {
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
+// QRコードから開いたときは、ゲームを開始せず写真だけを表示する。
+function initializeGame() {
 console.log("DEEPY’sのFirebase接続準備ができました！");
 console.log("Firestore:", db);
 
@@ -2813,7 +2815,7 @@ document.addEventListener("keydown", (event) => {
   advanceNasupyStory();
 });
 
-// フレーム付きカメラ（画像はこの画面内でのみ扱い、Firebaseには保存しない）
+// フレーム付きカメラ（「スマホで保存」を選んだ写真だけ24時間共有する）
 const cameraVideo = document.getElementById("camera-video");
 const cameraResult = document.getElementById("camera-result");
 const cameraStage = document.getElementById("camera-stage");
@@ -2830,6 +2832,7 @@ const frameImages = document.querySelectorAll("[data-frame-image]");
 let cameraStream = null;
 let selectedFrame = "frame-1";
 let roundedPhotoCorners = false;
+const photoSharing = setupPhotoSharing();
 
 function updateCameraFrameOrientation() {
   cameraStage?.classList.toggle(
@@ -2846,6 +2849,7 @@ togglePhotoCornersButton?.addEventListener("click", () => {
 });
 
 function stopCamera() {
+  photoSharing.reset();
   cameraStream?.getTracks().forEach((track) => track.stop());
   cameraStream = null;
   if (cameraVideo) cameraVideo.srcObject = null;
@@ -2950,6 +2954,7 @@ frameChoices.forEach((choice) => {
     updateCameraFrameOrientation();
     // 切り替えたフレームが撮影結果にも反映されるよう、再撮影を案内する。
     if (!cameraResult.hidden) {
+      photoSharing.reset();
       cameraResult.hidden = true;
       cameraVideo.hidden = false;
       takePhotoButton.disabled = false;
@@ -3029,9 +3034,15 @@ takePhotoButton?.addEventListener("click", () => {
       canvas.width,
       canvas.height,
     );
+  } else {
+    setCameraMessage(selectedImage?.complete
+      ? "フレームを読み込めませんでした。ページを開き直してね。"
+      : "フレームを読み込んでいます。少し待ってから、もう一度撮ってね。");
+    return;
   }
   cameraResult.src = canvas.toDataURL("image/png");
   downloadPhotoLink.href = cameraResult.src;
+  photoSharing.setPhoto(cameraResult.src);
   cameraResult.hidden = false;
   takePhotoButton.disabled = true;
   retakePhotoButton.hidden = false;
@@ -3042,6 +3053,7 @@ takePhotoButton?.addEventListener("click", () => {
 });
 
 retakePhotoButton?.addEventListener("click", () => {
+  photoSharing.reset();
   cameraResult.hidden = true;
   takePhotoButton.disabled = !cameraStream;
   retakePhotoButton.hidden = true;
@@ -3744,4 +3756,281 @@ onAuthStateChanged(auth, (user) => {
 restoreAccountSession().catch((error) => {
   console.warn("ログイン状態の復元に失敗:", error);
   googleAuthMessage("接続を確認してください。ログイン状態の読み込みを再試行できます。");
+});
+
+}
+
+// フレーム付き写真の共有とスマホでの受け取り
+// 写真の共有専用。RESTを使い、オフライン時にアップロードを保留しない。
+
+const photoShareOptions = db.app.options;
+const photoShareEndpoint = `https://firestore.googleapis.com/v1/projects/${photoShareOptions.projectId}/databases/(default)/documents/photoShares`;
+const MAX_DATA_URL_LENGTH = 900000;
+const SHARE_LIFETIME_MS = 24 * 60 * 60 * 1000;
+const PHOTO_ID = /^[a-f0-9]{32}$/;
+const PHOTO_DATA = /^data:image\/(png|webp);base64,[A-Za-z0-9+/]+=*$/;
+
+async function requestSharedPhoto(url, init = {}) {
+  const response = await fetch(url, {
+    ...init,
+    cache: "no-store",
+    referrerPolicy: "no-referrer",
+    signal: AbortSignal.timeout(20000),
+  });
+  const body = await response.json();
+  if (!response.ok) {
+    const error = new Error(body.error?.message || "写真を取得できませんでした。");
+    error.code = body.error?.status;
+    throw error;
+  }
+  return body;
+}
+
+function isPhotoId(id) {
+  return PHOTO_ID.test(id || "");
+}
+
+async function prepareSharedPhoto(source) {
+  if (source.length <= MAX_DATA_URL_LENGTH && PHOTO_DATA.test(source)) return source;
+  const image = new Image();
+  image.src = source;
+  await image.decode();
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  const context = canvas.getContext("2d");
+  // WebPは角丸写真の透明部分も保持する。元のPNGダウンロードは変更しない。
+  for (const scale of [1, 0.8, 0.6]) {
+    canvas.width = Math.round(image.naturalWidth * scale);
+    canvas.height = Math.round(image.naturalHeight * scale);
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    for (const quality of [0.94, 0.85, 0.75]) {
+      const data = canvas.toDataURL("image/webp", quality);
+      if (data.length <= MAX_DATA_URL_LENGTH && PHOTO_DATA.test(data)) return data;
+    }
+  }
+  throw new Error("写真のサイズを小さくできませんでした。ダウンロードで保存してね。");
+}
+
+async function createPhotoShare(source) {
+  const user = auth.currentUser;
+  if (!user) throw new Error("通信を確認して、もう一度試してね。");
+  const dataUrl = await prepareSharedPhoto(source);
+  const token = await user.getIdToken();
+  const id = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
+  const expiresAt = new Date(Date.now() + SHARE_LIFETIME_MS);
+  await requestSharedPhoto(`${photoShareEndpoint}?documentId=${id}&key=${photoShareOptions.apiKey}`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ fields: {
+      ownerUid: { stringValue: user.uid },
+      dataUrl: { stringValue: dataUrl },
+      expiresAt: { timestampValue: expiresAt.toISOString() },
+    } }),
+  });
+  return { id, expiresAt };
+}
+
+async function readPhotoShare(id) {
+  if (!isPhotoId(id)) throw new Error("INVALID_LINK");
+  const result = await requestSharedPhoto(`${photoShareEndpoint}/${id}?key=${photoShareOptions.apiKey}`);
+  const dataUrl = result.fields?.dataUrl?.stringValue;
+  const expiresAt = new Date(result.fields?.expiresAt?.timestampValue);
+  if (!Number.isFinite(expiresAt.getTime()) || expiresAt.getTime() <= Date.now()) throw new Error("EXPIRED_LINK");
+  if (typeof dataUrl !== "string" || dataUrl.length > MAX_DATA_URL_LENGTH || !PHOTO_DATA.test(dataUrl)) throw new Error("INVALID_PHOTO");
+  return { dataUrl, expiresAt };
+}
+
+function setupPhotoSharing() {
+  const button = document.getElementById("share-photo");
+  const note = document.getElementById("photo-share-note");
+  const dialog = document.getElementById("photo-share-dialog");
+  const status = document.getElementById("photo-share-status");
+  const qr = document.getElementById("photo-share-qr");
+  const expiry = document.getElementById("photo-share-expiry");
+  const link = document.getElementById("photo-share-link");
+  const retry = document.getElementById("retry-photo-share");
+  let source = null;
+  let generation = 0;
+  let currentShare = null;
+  let pending = null;
+
+  function clearResult() {
+    qr.hidden = true;
+    qr.removeAttribute("src");
+    link.hidden = true;
+    link.removeAttribute("href");
+    expiry.hidden = true;
+    retry.hidden = true;
+  }
+
+  function reset() {
+    generation++;
+    source = null;
+    currentShare = null;
+    pending = null;
+    button.hidden = true;
+    note.hidden = true;
+    dialog.close();
+    clearResult();
+    status.textContent = "";
+  }
+
+  async function showShare() {
+    if (!source) return;
+    if (!dialog.open) dialog.showModal();
+    if (pending) return;
+    clearResult();
+    const version = generation;
+    status.textContent = "写真をアップロードして、QRコードを準備しています…";
+    try {
+      if (["localhost", "127.0.0.1", "[::1]"].includes(location.hostname) || location.protocol === "file:") {
+        throw new Error("スマホで受け取るには、公開サイトで写真を撮ってね。このパソコン内だけのアドレスはスマホから開けません。");
+      }
+      if (!currentShare || currentShare.expiresAt.getTime() <= Date.now()) {
+        pending = createPhotoShare(source);
+        const result = await pending;
+        if (version !== generation) return;
+        currentShare = result;
+      }
+      const url = new URL(location.href);
+      url.hash = `photo=${currentShare.id}`;
+      const { default: qrcode } = await import("https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.mjs");
+      if (version !== generation) return;
+      const code = qrcode(0, "M");
+      code.addData(url.href, "Byte");
+      code.make();
+      qr.src = code.createDataURL(6, 24);
+      qr.hidden = false;
+      link.href = url.href;
+      link.hidden = false;
+      expiry.textContent = `${currentShare.expiresAt.toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}まで受け取れます。リンクを知っている人が写真を開けます。`;
+      expiry.hidden = false;
+      status.textContent = "自分のスマホのカメラで読み取ってね。開いたページから写真を保存できます。";
+    } catch (error) {
+      if (version !== generation) return;
+      console.error("写真の共有に失敗:", error);
+      status.textContent = error.code === "PERMISSION_DENIED"
+        ? "写真を共有できませんでした。スタッフにお知らせください。ダウンロードボタンからは保存できます。"
+        : error.name === "TimeoutError" || error instanceof TypeError
+          ? "通信できませんでした。インターネット接続を確認して、もう一度試してね。"
+          : error.code
+            ? "写真を共有できませんでした。通信を確認して、もう一度試してね。ダウンロードボタンからも保存できます。"
+            : error.message;
+      retry.hidden = false;
+    } finally {
+      if (version === generation) pending = null;
+    }
+  }
+
+  button.addEventListener("click", showShare);
+  retry.addEventListener("click", showShare);
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) {
+      const bounds = dialog.getBoundingClientRect();
+      if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
+    }
+  });
+  return {
+    reset,
+    setPhoto(dataUrl) {
+      reset();
+      source = dataUrl;
+      button.hidden = false;
+      note.hidden = false;
+    },
+  };
+}
+
+function setupPhotoReceiver() {
+  const status = document.getElementById("receive-status");
+  const photo = document.getElementById("received-photo");
+  const save = document.getElementById("save-received-photo");
+  const retry = document.getElementById("retry-receive-photo");
+  const help = document.getElementById("receive-help");
+  const expiry = document.getElementById("receive-expiry");
+  let file = null;
+  let objectUrl = null;
+  let loadVersion = 0;
+
+  async function loadPhoto() {
+    const version = ++loadVersion;
+    const id = new URLSearchParams(location.hash.slice(1)).get("photo");
+    photo.hidden = save.hidden = retry.hidden = help.hidden = expiry.hidden = true;
+    photo.removeAttribute("src");
+    file = null;
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    objectUrl = null;
+    if (!isPhotoId(id)) {
+      status.textContent = "写真のリンクが正しくありません。展示画面のQRコードをもう一度読み取ってね。";
+      return;
+    }
+    status.textContent = "写真を読み込んでいます…";
+    try {
+      const result = await readPhotoShare(id);
+      let blob = await (await fetch(result.dataUrl)).blob();
+      // 受け取り側ではPNGに戻し、スマホの写真アプリにも保存しやすくする。
+      if (blob.type === "image/webp") {
+        const image = new Image();
+        image.src = result.dataUrl;
+        await image.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        canvas.getContext("2d").drawImage(image, 0, 0);
+        blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+        if (!blob) throw new Error("INVALID_PHOTO");
+      }
+      if (version !== loadVersion) return;
+      const extension = blob.type === "image/webp" ? "webp" : "png";
+      file = new File([blob], `deepys-photo.${extension}`, { type: blob.type });
+      objectUrl = URL.createObjectURL(file);
+      photo.src = objectUrl;
+      await photo.decode();
+      if (version !== loadVersion) return;
+      photo.hidden = save.hidden = help.hidden = expiry.hidden = false;
+      status.textContent = "遊びに来てくれてありがとう！自分のスマホに保存してね。";
+      expiry.textContent = `このリンクの有効期限：${result.expiresAt.toLocaleString("ja-JP")}。期限までに保存してね。`;
+    } catch (error) {
+      if (version !== loadVersion) return;
+      console.error("写真の受け取りに失敗:", error);
+      const unavailable = ["NOT_FOUND", "PERMISSION_DENIED"].includes(error.code) || ["EXPIRED_LINK", "INVALID_LINK"].includes(error.message);
+      status.textContent = unavailable
+        ? "この写真は有効期限が切れたか、見つかりませんでした。展示画面で新しいQRコードを作ってね。"
+        : "写真を読み込めませんでした。インターネット接続を確認して、もう一度試してね。";
+      retry.hidden = unavailable;
+    }
+  }
+
+  save.addEventListener("click", async () => {
+    if (!file) return;
+    // iPhoneでは共有シートから「画像を保存」を選べる。
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file] });
+        return;
+      } catch (error) {
+        if (error.name === "AbortError") return;
+      }
+    }
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = file.name;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+  });
+  retry.addEventListener("click", loadPhoto);
+  window.addEventListener("hashchange", loadPhoto);
+  loadPhoto();
+}
+
+const receivingPhoto = new URLSearchParams(location.hash.slice(1)).has("photo");
+if (receivingPhoto) {
+  setupPhotoReceiver();
+} else {
+  initializeGame();
+}
+window.addEventListener("hashchange", () => {
+  if (new URLSearchParams(location.hash.slice(1)).has("photo") !== receivingPhoto) location.reload();
 });

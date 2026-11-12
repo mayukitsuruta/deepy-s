@@ -5,13 +5,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DEEPY’s - 地底人との暮らし</title>
+  <script>
+    if (new URLSearchParams(location.hash.slice(1)).has("photo")) {
+      document.documentElement.classList.add("photo-receive-mode");
+      document.title = "写真を受け取る | DEEPY’s";
+      const privacy = document.createElement("meta");
+      privacy.name = "referrer";
+      privacy.content = "no-referrer";
+      document.head.append(privacy);
+    }
+  </script>
   <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://identitytoolkit.googleapis.com" />
   <link rel="preconnect" href="https://firestore.googleapis.com" />
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js" />
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js" />
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js" />
-  <link rel="stylesheet" href="./css/style.css?v=20261110-card-alpha-88" />
+  <link rel="stylesheet" href="./css/style.css?v=20261112-initial-load" />
 </head>
 
 <body>
@@ -72,7 +82,7 @@
     <!-- 左側メニュー -->
     <aside class="home-sidebar">
       <div class="sidebar-logo">
-        <img class="sidebar-logo-image" src="./images/Deepy's-logo.png" alt="DEEPY’s" />
+        <img loading="lazy" class="sidebar-logo-image" src="./images/Deepy's-logo.png" alt="DEEPY’s" />
       </div>
 
       <nav class="home-nav">
@@ -136,7 +146,7 @@
 
       <div class="sidebar-footer">
         <p class="deepy-speech">ようこそ<br />ディーピーズの<br />世界へ！</p>
-        <img class="deepy-menu" src="./images/deepy.png" alt="DEEPY" />
+        <img loading="lazy" class="deepy-menu" src="./images/deepy.png" alt="DEEPY" />
       </div>
 
       <button id="delete-account" class="sidebar-account-action" type="button" hidden>このアカウントを消す</button>
@@ -192,7 +202,7 @@
         <div class="character-list">
           <article class="character-card chippy">
             <div class="character-portrait">
-              <img src="./images/green.png" alt="CHIPPY" />
+              <img loading="lazy" src="./images/green.png" alt="CHIPPY" />
             </div>
             <div class="character-info">
               <h3>CHIPPY</h3>
@@ -211,7 +221,7 @@
 
           <article class="character-card simpy">
             <div class="character-portrait">
-              <img src="./images/pink.png" alt="SIMPY" />
+              <img loading="lazy" src="./images/pink.png" alt="SIMPY" />
             </div>
             <div class="character-info">
               <h3>SIMPY</h3>
@@ -229,7 +239,7 @@
 
           <article class="character-card nasupy">
             <div class="character-portrait">
-              <img src="./images/purple.png" alt="NASUPY" />
+              <img loading="lazy" src="./images/purple.png" alt="NASUPY" />
             </div>
             <div class="character-info">
               <h3>NASUPY</h3>
@@ -247,7 +257,7 @@
 
           <article class="character-card hitopy locked">
             <div class="character-portrait">
-              <img id="hitopy-portrait" class="is-silhouette" src="./images/white.png" alt="HITOPY" />
+              <img loading="lazy" id="hitopy-portrait" class="is-silhouette" src="./images/white.png" alt="HITOPY" />
             </div>
             <div class="character-info">
               <h3>HITOPY</h3>
@@ -272,7 +282,7 @@
 
       <div id="story-view-content" class="chippy-story" hidden>
         <button id="chippy-story-back" class="chippy-story-back" type="button">ホームにもどる</button>
-        <img class="chippy-story-character" src="./images/green.png" alt="CHIPPY" />
+        <img loading="lazy" class="chippy-story-character" src="./images/green.png" alt="CHIPPY" />
         <div id="chippy-game" class="chippy-game" hidden></div>
         <div class="chippy-dialogue" id="chippy-dialogue">
           <p class="chippy-dialogue-name">CHIPPY</p>
@@ -297,7 +307,7 @@
 
       <div id="simpy-story-view" class="chippy-story simpy-story" hidden>
         <button id="simpy-story-back" class="chippy-story-back" type="button">ホームにもどる</button>
-        <img class="chippy-story-character simpy-story-character" src="./images/pink.png" alt="SIMPY" />
+        <img loading="lazy" class="chippy-story-character simpy-story-character" src="./images/pink.png" alt="SIMPY" />
         <div class="chippy-dialogue" id="simpy-dialogue">
           <p class="chippy-dialogue-name simpy-dialogue-name">SIMPY</p>
           <p class="chippy-dialogue-text" id="simpy-dialogue-text" aria-live="polite"></p>
@@ -331,7 +341,7 @@
 
       <div id="nasupy-story-view" class="chippy-story nasupy-story" hidden>
         <button id="nasupy-story-back" class="chippy-story-back" type="button">ホームにもどる</button>
-        <img class="chippy-story-character nasupy-story-character" src="./images/purple.png" alt="NASUPY" />
+        <img loading="lazy" class="chippy-story-character nasupy-story-character" src="./images/purple.png" alt="NASUPY" />
         <div class="chippy-dialogue" id="nasupy-dialogue">
           <p class="chippy-dialogue-name nasupy-dialogue-name">NASUPY</p>
           <p class="chippy-dialogue-text" id="nasupy-dialogue-text" aria-live="polite"></p>
@@ -697,26 +707,26 @@
           <div class="camera-frame-picker" role="group" aria-label="フレームを選択">
             <button class="frame-choice active" type="button" data-frame="frame-1" aria-label="フレーム1を選択"
               aria-pressed="true">
-              <img src="./images/frame-1.PNG" alt="" />
+              <img loading="lazy" src="./images/frame-1.PNG" alt="" />
             </button>
             <button class="frame-choice" type="button" data-frame="frame-2" aria-label="フレーム2を選択" aria-pressed="false">
-              <img src="./images/frame-2.PNG" alt="" />
+              <img loading="lazy" src="./images/frame-2.PNG" alt="" />
             </button>
             <button class="frame-choice" type="button" data-frame="frame-3" aria-label="フレーム3を選択" aria-pressed="false">
-              <img src="./images/frame-3-landscape.PNG" alt="" />
+              <img loading="lazy" src="./images/frame-3-landscape.PNG" alt="" />
             </button>
             <button class="frame-choice" type="button" data-frame="frame-4" aria-label="フレーム4を選択" aria-pressed="false">
-              <img src="./images/frame-4-landscape.PNG" alt="" />
+              <img loading="lazy" src="./images/frame-4-landscape.PNG" alt="" />
             </button>
           </div>
           <div class="camera-stage is-square-cornered" id="camera-stage">
             <video id="camera-video" autoplay muted playsinline aria-label="カメラのプレビュー"></video>
-            <img class="camera-overlay camera-frame" data-frame-image="frame-1" src="./images/frame-1.PNG" alt="" />
-            <img class="camera-overlay camera-frame" data-frame-image="frame-2" src="./images/frame-2.PNG" alt=""
+            <img loading="lazy" class="camera-overlay camera-frame" data-frame-image="frame-1" src="./images/frame-1.PNG" alt="" />
+            <img loading="lazy" class="camera-overlay camera-frame" data-frame-image="frame-2" src="./images/frame-2.PNG" alt=""
               hidden />
-            <img class="camera-overlay camera-frame" data-frame-image="frame-3" src="./images/frame-3-landscape.PNG"
+            <img loading="lazy" class="camera-overlay camera-frame" data-frame-image="frame-3" src="./images/frame-3-landscape.PNG"
               alt="" hidden />
-            <img class="camera-overlay camera-frame" data-frame-image="frame-4" src="./images/frame-4-landscape.PNG"
+            <img loading="lazy" class="camera-overlay camera-frame" data-frame-image="frame-4" src="./images/frame-4-landscape.PNG"
               alt="" hidden />
             <img id="camera-result" class="camera-result" alt="撮影した写真" hidden />
           </div>
@@ -735,6 +745,8 @@
             <button id="retake-photo" class="camera-button camera-button-secondary" type="button" hidden>もう一度撮る</button>
             <a id="download-photo" class="camera-button camera-button-secondary camera-download"
               download="deepys-photo.png" hidden>ダウンロード</a>
+            <button id="share-photo" class="camera-button" type="button" hidden>スマホで保存</button>
+            <p id="photo-share-note" class="camera-message" hidden>QRコードを読み取って、<br />自分のスマホに写真を保存しよう。<br />リンクは24時間有効です。</p>
             <p id="camera-message" class="camera-message" role="status" hidden></p>
           </div>
         </div>
@@ -835,7 +847,29 @@
     </div>
   </section>
 
-  <script type="module" src="./js/main.js?v=20261110-game-map"></script>
+  <main id="photo-receive-view" class="photo-receive-view">
+    <img loading="lazy" class="photo-logo" src="./images/Deepy's-logo.png" alt="DEEPY’s" />
+    <h1>地底の思い出を持ち帰ろう</h1>
+    <p id="receive-status" role="status" aria-live="polite">写真を読み込んでいます…</p>
+    <img id="received-photo" class="received-photo" alt="フレーム付きの記念写真" hidden />
+    <div class="receive-actions">
+      <button id="save-received-photo" type="button" hidden>写真を保存する</button>
+      <button id="retry-receive-photo" type="button" hidden>もう一度読み込む</button>
+    </div>
+    <p id="receive-help" hidden>保存できない場合は、写真を長押しして「写真に保存」または「画像を保存」を選んでね。</p>
+    <p id="receive-expiry" class="receive-expiry" hidden></p>
+  </main>
+
+  <dialog id="photo-share-dialog" class="photo-share-dialog" aria-labelledby="photo-share-title" aria-describedby="photo-share-status">
+    <h2 id="photo-share-title">スマホに写真を持ち帰ろう</h2>
+    <p id="photo-share-status" role="status" aria-live="polite"></p>
+    <img id="photo-share-qr" class="photo-share-qr" alt="写真の受け取りページを開くQRコード" hidden />
+    <p id="photo-share-expiry" class="photo-share-expiry" hidden></p>
+    <a id="photo-share-link" class="photo-share-link" target="_blank" rel="noopener noreferrer" hidden>受け取りページを開く</a>
+    <button id="retry-photo-share" class="camera-button" type="button" hidden>もう一度試す</button>
+    <form method="dialog"><button class="camera-button camera-button-secondary" type="submit">閉じる</button></form>
+  </dialog>
+  <script type="module" src="./js/main.js?v=20261112-initial-load"></script>
 </body>
 
 </html>

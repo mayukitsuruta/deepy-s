@@ -12,7 +12,7 @@
 
 /* ① ファーストビュー */
 .first-view {
-  background-image: url("../images/firstview.png");
+  background-image: url("../images/firstview.webp");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -2548,6 +2548,65 @@ body {
   text-decoration: none;
 }
 
+.photo-share-dialog {
+  width: min(410px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 24px;
+  overflow: auto;
+  box-sizing: border-box;
+  border: 2px solid #d5c0a9;
+  border-radius: 20px;
+  background: #fffaf2;
+  color: #4b3526;
+  text-align: center;
+}
+
+#photo-share-note {
+  color: #fff8e9;
+}
+
+.photo-share-dialog::backdrop {
+  background: rgba(26, 17, 12, 0.76);
+}
+
+.photo-share-dialog h2 {
+  margin: 0 0 12px;
+  font-size: 21px;
+}
+
+.photo-share-dialog p {
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.photo-share-qr {
+  display: block;
+  width: min(100%, 270px);
+  height: auto;
+  margin: 16px auto;
+  image-rendering: pixelated;
+}
+
+.photo-share-dialog .photo-share-expiry {
+  font-size: 12px;
+  color: #806c5b;
+}
+
+.photo-share-link {
+  display: block;
+  margin: 12px auto 20px;
+  color: #684b34;
+  text-underline-offset: 3px;
+}
+
+.photo-share-dialog form {
+  margin: 16px 0 0;
+}
+
+.photo-share-dialog [hidden] {
+  display: none !important;
+}
+
 .reward-backdrop {
   position: fixed;
   z-index: 1000;
@@ -3866,3 +3925,24 @@ body {
   .space-right-panel { top: 200px; max-height: calc(100% - 212px); }
   .space-panel-toggle { top: 218px; }
 }
+
+/* 同じページをQRコードで開いたときの写真受け取り画面 */
+.photo-receive-view { display: none; }
+.photo-receive-mode body > :not(#photo-receive-view) { display: none !important; }
+.photo-receive-mode body {
+  color-scheme: light;
+  color: #4b3526;
+  background: #f3e8d6;
+  padding: 24px 16px;
+}
+.photo-receive-mode .photo-receive-view { display: block; width: min(100%, 560px); margin: 0 auto; text-align: center; }
+.photo-receive-view * { box-sizing: border-box; }
+.photo-receive-view .photo-logo { width: 120px; height: auto; margin: 0 auto 12px; }
+.photo-receive-view h1 { font-size: clamp(20px, 5vw, 28px); margin: 0 0 16px; }
+.photo-receive-view p { font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }
+.photo-receive-view .received-photo { display: block; max-width: 100%; max-height: 65dvh; width: auto; height: auto; margin: 20px auto; }
+.photo-receive-view .receive-actions { display: flex; justify-content: center; gap: 12px; }
+.photo-receive-view button { min-height: 48px; padding: 12px 28px; border: 0; border-radius: 999px; background: #865c3e; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.photo-receive-view button:focus-visible { outline: 3px solid #4b3526; outline-offset: 4px; }
+.photo-receive-view .receive-expiry { color: #776354; font-size: 12px; }
+.photo-receive-view [hidden] { display: none !important; }
