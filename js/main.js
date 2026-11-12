@@ -54,6 +54,80 @@ const guestName = document.getElementById("guest-name");
 
 const homeScreen = document.getElementById("home-screen");
 const homeNickname = document.getElementById("home-nickname");
+const descentScreen = document.getElementById("descent-screen");
+const descentMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+let descentActive = false;
+let descentGeneration = 0;
+let descentStartedAt = 0;
+
+function descentTimings() {
+  const reduce = descentMotion.matches;
+  return { hold: reduce ? 700 : 5000, leave: reduce ? 180 : 650 };
+}
+
+function setScreensInert(inert) {
+  document.querySelectorAll("body > .screen").forEach((element) => {
+    element.toggleAttribute("inert", inert);
+  });
+}
+
+function beginDescent() {
+  if (!descentActive) {
+    descentGeneration += 1;
+    descentActive = true;
+    if (!descentStartedAt) {
+      descentStartedAt = window.__deepysDescentStart || Date.now();
+    }
+  }
+  document.documentElement.classList.add("is-descending");
+  descentScreen.setAttribute("aria-busy", "true");
+  setScreensInert(true);
+  return descentGeneration;
+}
+
+function waitForDescent() {
+  const elapsed = descentStartedAt ? Date.now() - descentStartedAt : 0;
+  const remain = Math.max(0, descentTimings().hold - elapsed);
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, remain);
+  });
+}
+
+function finishDescent() {
+  if (!descentActive) return Promise.resolve();
+  const token = descentGeneration;
+  descentScreen.classList.add("is-leaving");
+  setScreensInert(false);
+  return new Promise((resolve) => {
+    window.setTimeout(() => {
+      if (token !== descentGeneration) {
+        resolve();
+        return;
+      }
+      descentScreen.classList.remove("is-leaving");
+      document.documentElement.classList.remove("is-descending");
+      descentScreen.setAttribute("aria-busy", "false");
+      descentActive = false;
+      descentStartedAt = 0;
+      resolve();
+    }, descentTimings().leave);
+  });
+}
+
+function cancelDescent() {
+  if (!descentActive && !document.documentElement.classList.contains("is-descending")) return;
+  descentGeneration += 1;
+  descentActive = false;
+  descentStartedAt = 0;
+  descentScreen.classList.remove("is-leaving");
+  document.documentElement.classList.remove("is-descending");
+  descentScreen.setAttribute("aria-busy", "false");
+  setScreensInert(false);
+}
+
+if (document.documentElement.classList.contains("is-descending")) {
+  beginDescent();
+}
 
 // 導入ストーリー（仮の文章）
 const stories = [
@@ -3651,12 +3725,32 @@ toggleSpacePanel.addEventListener("click", () => {
 async function restoreAccountSession() {
   await authReady;
   const user = auth.currentUser;
-  if (!user || user.isAnonymous) return;
+  if (!user || user.isAnonymous) {
+    cancelDescent();
+    return;
+  }
+  const token = beginDescent();
   const version = sessionVersion;
-  const profile = await loadAccountProfile(user);
-  if (version !== sessionVersion || auth.currentUser?.uid !== user.uid) return;
-  currentUserData = createBlankUserData();
-  rememberAndEnter(user, profile);
+  try {
+    const [profile] = await Promise.all([
+      loadAccountProfile(user),
+      waitForDescent(),
+    ]);
+    if (
+      token !== descentGeneration ||
+      version !== sessionVersion ||
+      auth.currentUser?.uid !== user.uid
+    ) {
+      if (token === descentGeneration) cancelDescent();
+      return;
+    }
+    currentUserData = createBlankUserData();
+    rememberAndEnter(user, profile);
+    await finishDescent();
+  } catch (error) {
+    if (token === descentGeneration) cancelDescent();
+    throw error;
+  }
 }
 
 function googleAuthMessage(text) {
