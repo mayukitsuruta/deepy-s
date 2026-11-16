@@ -988,6 +988,10 @@ navItems.forEach((btn) => {
     ) {
       switchUndergroundView(view);
       if (view !== "camera") stopCamera();
+    } else if (view === "diagnosis") {
+      // 地底人診断は別ページ（sindan.html）。同じタブで移動する
+      stopCamera();
+      window.location.href = "./sindan.html";
     } else {
       alert("この画面は現在準備中です！");
     }

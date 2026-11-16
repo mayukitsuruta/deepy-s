@@ -4311,3 +4311,7 @@ html.is-descending .descent-screen {
     animation-duration: 0.18s;
   }
 }
+
+/* 地底人診断へのリンク（ファーストビュー） */
+.first-view .sindan-entry-link { display: inline-block; margin-top: 10px; color: white; font-size: 13px; text-decoration: underline; text-shadow: 0 1px 4px #322; }
+.first-view .sindan-entry-link:hover { color: #ffd0a8; }

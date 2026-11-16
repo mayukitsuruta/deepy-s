@@ -1,0 +1,676 @@
+/* =========================================
+   地底人診断（sindan.html 専用）
+   クラス名はすべて diagnosis- で始め、style.css と競合しないようにする。
+   色・フォントは style.css（ホーム画面・図鑑・キャラカード）と同じ値を使う。
+   ========================================= */
+
+.diagnosis-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: #2a1a10;
+  background-image: radial-gradient(circle at 45% 35%, #5c3d28 0%, #3b2518 70%, #2a1a10 100%);
+  background-attachment: fixed;
+  color: #f9efe3;
+  font-family: "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+}
+
+.diagnosis-screen[hidden] {
+  display: none !important;
+}
+
+.diagnosis-page *,
+.diagnosis-page *::before,
+.diagnosis-page *::after {
+  box-sizing: border-box;
+}
+
+/* ----- ヘッダー ----- */
+.diagnosis-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.diagnosis-logo img {
+  display: block;
+  width: 130px;
+  height: auto;
+}
+
+.diagnosis-header-link {
+  padding: 8px 16px;
+  border: 1px solid rgba(214, 182, 148, 0.45);
+  border-radius: 999px;
+  color: #e5cdb4;
+  font-size: 13px;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.diagnosis-header-link:hover {
+  background: rgba(255, 235, 210, 0.1);
+}
+
+/* ----- 共通 ----- */
+.diagnosis-main {
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: 0 16px 48px;
+}
+
+.diagnosis-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.diagnosis-card {
+  margin: 0;
+  padding: 26px 24px;
+  border-radius: 28px;
+  background: rgba(255, 248, 238, 0.96);
+  color: #4b3028;
+  box-shadow: 0 10px 28px rgba(28, 14, 6, 0.22);
+}
+
+.diagnosis-section-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  color: #8a5a3a;
+}
+
+.diagnosis-kicker {
+  display: inline-block;
+  margin: 0;
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: #ffd0cc;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.diagnosis-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12px 28px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.diagnosis-button.is-primary {
+  border: 0;
+  background: #ff9138;
+  color: #3b2518;
+}
+
+.diagnosis-button.is-primary:hover {
+  background: #ffb067;
+}
+
+.diagnosis-button.is-secondary {
+  border: 1.5px solid #d6b694;
+  background: transparent;
+  color: #f9efe3;
+}
+
+.diagnosis-button.is-secondary:hover {
+  background: rgba(255, 235, 210, 0.1);
+}
+
+.diagnosis-text-button {
+  align-self: center;
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: #e5cdb4;
+  font: inherit;
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.diagnosis-page :focus-visible {
+  outline: 3px solid #ffb067;
+  outline-offset: 3px;
+}
+
+.diagnosis-page [data-focus]:focus {
+  outline: none;
+}
+
+/* ----- スタート画面 ----- */
+.diagnosis-start-card {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.diagnosis-title {
+  margin: 14px 0 10px;
+  font-size: clamp(30px, 6vw, 40px);
+  letter-spacing: 0.08em;
+}
+
+.diagnosis-lead {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.9;
+}
+
+.diagnosis-meta {
+  margin: 12px 0 22px;
+  color: #8a6a52;
+  font-size: 13px;
+}
+
+/* ----- 質問画面 ----- */
+.diagnosis-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.diagnosis-progress-text {
+  margin: 0;
+  min-width: 52px;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.diagnosis-progress-track {
+  position: relative;
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 235, 210, 0.18);
+  overflow: hidden;
+}
+
+.diagnosis-progress-bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 10%;
+  border-radius: inherit;
+  background: #ff9138;
+  transition: width 0.25s ease;
+}
+
+.diagnosis-question-card {
+  border-radius: 100px 100px 30px 30px;
+  padding: 40px 24px 26px;
+  text-align: center;
+}
+
+.diagnosis-question-number {
+  margin: 0;
+  color: #c97a3a;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.diagnosis-question-text {
+  margin: 8px 0 22px;
+  font-size: clamp(18px, 4.4vw, 22px);
+  line-height: 1.6;
+}
+
+.diagnosis-options {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.diagnosis-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 18px;
+  border: 1px solid #4b3028;
+  border-radius: 30px;
+  background: transparent;
+  color: #4b3028;
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.diagnosis-option:hover,
+.diagnosis-option.is-selected {
+  background: #4b3028;
+  color: #fff6ea;
+}
+
+.diagnosis-option-mark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #ffd0cc;
+  color: #4b3028;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+/* ----- 結果：1位の地底人 ----- */
+.diagnosis-hero {
+  margin-top: 8px;
+  padding: 14px 14px 26px;
+  border-radius: 100px 100px 30px 30px;
+  text-align: center;
+}
+
+/* キャラカードと同じ色（style.css .chippy など）。色の設定がない子はクリーム色のまま */
+.diagnosis-hero.is-chippy { background: rgba(233, 233, 178, 0.96); }
+.diagnosis-hero.is-simpy { background: rgba(255, 212, 208, 0.96); }
+.diagnosis-hero.is-nasupy { background: rgba(229, 212, 245, 0.96); }
+.diagnosis-hero.is-hitopy { background: rgba(119, 112, 108, 0.96); color: #fff; }
+
+.diagnosis-hero-portrait {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: clamp(220px, 55vw, 300px);
+  border-radius: 100px 100px 20px 20px;
+  background: rgba(255, 255, 255, 0.45);
+  overflow: hidden;
+}
+
+.diagnosis-hero.is-hitopy .diagnosis-hero-portrait {
+  background: #5a534e;
+}
+
+.diagnosis-hero-portrait img {
+  width: 100%;
+  height: 96%;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.diagnosis-portrait-empty {
+  align-self: center;
+  color: #8a6a52;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+}
+
+.diagnosis-hero-kicker {
+  margin: 18px 0 2px;
+  font-size: 14px;
+}
+
+.diagnosis-hero-name {
+  margin: 0;
+  font-size: clamp(32px, 8vw, 44px);
+  letter-spacing: 0.12em;
+}
+
+.diagnosis-hero-percent {
+  margin: 6px 0 0;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.diagnosis-hero-percent strong {
+  font-size: 40px;
+  color: #c75a1a;
+}
+
+.diagnosis-hero.is-hitopy .diagnosis-hero-percent strong {
+  color: #ffd0a8;
+}
+
+/* ----- 結果：結果発表・タイプ・パラメーター ----- */
+.diagnosis-announce-text {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.7;
+}
+
+.diagnosis-type-name {
+  margin: 0;
+  font-size: clamp(22px, 5.4vw, 28px);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.diagnosis-type-catch {
+  margin: 8px 0 14px;
+  line-height: 1.8;
+}
+
+.diagnosis-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.diagnosis-chip {
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #ffe7d2;
+  color: #6a4632;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.diagnosis-chips.is-small .diagnosis-chip {
+  padding: 3px 10px;
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.diagnosis-param-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.diagnosis-param-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed rgba(176, 129, 86, 0.45);
+}
+
+.diagnosis-param-label {
+  font-weight: 700;
+}
+
+.diagnosis-stars {
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.diagnosis-stars-on {
+  color: #d99b32;
+}
+
+.diagnosis-stars-off {
+  color: #e3d3bd;
+}
+
+/* ----- 結果：地底調査ノート風（ホームステイ予想・プロフィール） ----- */
+.diagnosis-note {
+  position: relative;
+  padding: 22px 20px 24px 36px;
+  border-radius: 6px 18px 16px 8px;
+  background-color: #f4e7d0;
+  background-image: repeating-linear-gradient(to bottom,
+      transparent 0,
+      transparent 31px,
+      rgba(176, 129, 86, 0.28) 32px);
+  color: #3d291c;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+}
+
+.diagnosis-note::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 16px;
+  border-radius: 6px 0 0 8px;
+  background: linear-gradient(#e7b89a, #d7a184);
+  border-right: 2px solid rgba(176, 72, 62, 0.7);
+}
+
+.diagnosis-note-kicker {
+  margin: 0 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+}
+
+.diagnosis-note-title {
+  margin: 0 0 14px;
+  font-size: clamp(20px, 5vw, 24px);
+  letter-spacing: 0.06em;
+}
+
+.diagnosis-homestay-list {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.diagnosis-homestay-item {
+  display: grid;
+  gap: 4px;
+}
+
+.diagnosis-homestay-label {
+  justify-self: start;
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: #ff9138;
+  color: #3b2518;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.diagnosis-homestay.is-timeline .diagnosis-homestay-label {
+  min-width: 52px;
+  text-align: center;
+  background: #4b3028;
+  color: #fff6ea;
+}
+
+.diagnosis-homestay-text {
+  margin: 0;
+  line-height: 1.8;
+}
+
+.diagnosis-profile-list {
+  display: grid;
+  grid-template-columns: 9em minmax(0, 1fr);
+  gap: 10px 14px;
+  margin: 0;
+}
+
+.diagnosis-profile-list dt {
+  font-size: 13px;
+  font-weight: 800;
+  color: #8a5a3a;
+  line-height: 1.8;
+}
+
+.diagnosis-profile-list dd {
+  margin: 0;
+  line-height: 1.8;
+}
+
+.diagnosis-profile-lines {
+  margin: 0;
+  padding-left: 1.1em;
+}
+
+/* ----- 結果：ランキング ----- */
+.diagnosis-ranking-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.diagnosis-ranking-item {
+  display: grid;
+  grid-template-columns: 28px 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.diagnosis-ranking-item:first-child {
+  background: #ffe7d2;
+}
+
+.diagnosis-ranking-rank {
+  font-size: 20px;
+  font-weight: 800;
+  text-align: center;
+  color: #c97a3a;
+}
+
+.diagnosis-ranking-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #f4e7d0;
+  overflow: hidden;
+}
+
+.diagnosis-ranking-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.diagnosis-ranking-thumb.is-empty .diagnosis-portrait-empty {
+  font-size: 9px;
+  letter-spacing: 0;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.diagnosis-ranking-body {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.diagnosis-ranking-name {
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.diagnosis-ranking-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: #ecdcc6;
+  overflow: hidden;
+}
+
+.diagnosis-ranking-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #ff9138;
+}
+
+.diagnosis-ranking-percent {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* ----- 結果：ボタン ----- */
+.diagnosis-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+/* ----- スマホ ----- */
+@media (max-width: 650px) {
+  .diagnosis-br-pc {
+    display: none;
+  }
+
+  .diagnosis-card {
+    padding: 22px 18px;
+  }
+
+  .diagnosis-question-card {
+    border-radius: 70px 70px 26px 26px;
+    padding: 32px 16px 20px;
+  }
+
+  .diagnosis-hero {
+    border-radius: 80px 80px 26px 26px;
+    padding: 12px 12px 22px;
+  }
+
+  .diagnosis-hero-portrait {
+    border-radius: 80px 80px 18px 18px;
+  }
+
+  .diagnosis-param-list {
+    grid-template-columns: 1fr;
+  }
+
+  .diagnosis-profile-list {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .diagnosis-profile-list dd {
+    margin-bottom: 10px;
+  }
+
+  .diagnosis-ranking-item {
+    grid-template-columns: 22px 44px minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  .diagnosis-ranking-thumb {
+    width: 44px;
+    height: 44px;
+  }
+
+  .diagnosis-actions .diagnosis-button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .diagnosis-progress-bar,
+  .diagnosis-option,
+  .diagnosis-button {
+    transition: none;
+  }
+}
