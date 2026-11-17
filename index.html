@@ -47,6 +47,7 @@
       href="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js"
     />
     <link rel="stylesheet" href="./css/style.css?v=20261117-nasupy-items3" />
+    <link rel="stylesheet" href="./css/style.css?v=20261117-space-profile" />
   </head>
 
   <body>
@@ -619,7 +620,11 @@
         </div>
 
         <div id="hitopy-story-view" class="chippy-story hitopy-story" hidden>
-          <button id="hitopy-story-back" class="chippy-story-back" type="button">
+          <button
+            id="hitopy-story-back"
+            class="chippy-story-back"
+            type="button"
+          >
             ホームにもどる
           </button>
           <img
@@ -650,7 +655,11 @@
             </div>
             <div id="hitopy-rhythm-done" class="rhythm-done" hidden>
               <p id="hitopy-rhythm-done-text"></p>
-              <button id="hitopy-rhythm-again" class="melody-primary" type="button">
+              <button
+                id="hitopy-rhythm-again"
+                class="melody-primary"
+                type="button"
+              >
                 もう一度
               </button>
             </div>
@@ -670,7 +679,9 @@
               >
                 前に戻る
               </button>
-              <p class="chippy-dialogue-next" id="hitopy-dialogue-next">click</p>
+              <p class="chippy-dialogue-next" id="hitopy-dialogue-next">
+                click
+              </p>
             </div>
             <button
               id="hitopy-game-start"
@@ -1036,8 +1047,8 @@
                   移動する
                 </button>
               </div>
-              <p id="house-save-note" class="house-save-note">
-                ゲストの家は今回のプレイ中だけ残ります。登録すると保存できます。
+              <p id="house-save-note" class="house-save-note" hidden>
+                家はひとりひとつ。Google で登録すると、次回も続きから遊べます。
               </p>
             </section>
 
@@ -1066,6 +1077,8 @@
                   type="button"
                   title="プロフィールを編集"
                   aria-label="プロフィールを編集"
+                  aria-controls="profile-edit-form"
+                  aria-expanded="false"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -1101,51 +1114,105 @@
 
               <!-- プロフィール編集フォーム（折りたたみ） -->
               <form id="profile-edit-form" class="inline-edit-form" hidden>
-                <label class="form-field">
-                  <span>アイコンカラー</span>
-                  <select id="profile-avatar-input">
-                    <option value="pink">ピンク</option>
-                    <option value="green">グリーン</option>
-                    <option value="cream">クリーム</option>
-                    <option value="purple">パープル</option>
-                    <option value="orange">オレンジ</option>
-                  </select>
-                </label>
-                <label class="form-field">
-                  <span>ニックネーム</span>
-                  <input
-                    type="text"
-                    id="profile-nickname-input"
-                    maxlength="20"
-                    required
-                  />
-                </label>
-                <label class="form-field">
-                  <span>ひとこと紹介</span>
-                  <textarea
-                    id="profile-bio-input"
-                    rows="2"
-                    maxlength="80"
-                  ></textarea>
-                </label>
-                <label class="form-field">
-                  <span>タグ（カンマ区切り・最大3つ）</span>
-                  <input
-                    type="text"
-                    id="profile-tags-input"
-                    placeholder="デザイン, カフェ巡り, 音楽"
-                  />
-                </label>
-                <div class="form-actions">
-                  <button type="submit" class="save-btn">保存する</button>
-                  <button
-                    type="button"
-                    id="cancel-profile-edit"
-                    class="cancel-btn"
+                <fieldset
+                  id="profile-edit-fields"
+                  class="profile-edit-fields"
+                  aria-label="プロフィールを編集"
+                >
+                  <div class="profile-avatar-field">
+                    <div
+                      id="profile-avatar-preview"
+                      class="profile-avatar"
+                      role="img"
+                      aria-label="アイコンのプレビュー"
+                    ></div>
+                    <div
+                      class="profile-avatar-actions"
+                      role="group"
+                      aria-label="アイコンの変更方法"
+                    >
+                      <button
+                        type="button"
+                        aria-expanded="false"
+                        aria-controls="profile-avatar-presets"
+                      >
+                        標準アイコン
+                      </button>
+                      <button
+                        type="button"
+                        aria-expanded="false"
+                        aria-controls="profile-avatar-upload"
+                      >
+                        アップロード
+                      </button>
+                    </div>
+                  </div>
+                  <div
+                    id="profile-avatar-presets"
+                    class="profile-avatar-presets"
+                    role="group"
+                    aria-label="標準アイコン"
+                    hidden
+                  ></div>
+                  <div
+                    id="profile-avatar-upload"
+                    class="form-field profile-avatar-upload"
+                    hidden
                   >
-                    キャンセル
-                  </button>
-                </div>
+                    <label for="profile-avatar-input">アイコン画像</label>
+                    <input
+                      type="file"
+                      id="profile-avatar-input"
+                      accept="image/jpeg,image/png,image/webp"
+                      aria-describedby="profile-avatar-hint"
+                    />
+                    <span id="profile-avatar-hint" class="profile-avatar-hint">
+                      JPEG・PNG・WebP（最大10 MB）
+                    </span>
+                  </div>
+                  <label class="form-field">
+                    <span>ニックネーム</span>
+                    <input
+                      type="text"
+                      id="profile-nickname-input"
+                      maxlength="20"
+                      required
+                    />
+                  </label>
+                  <label class="form-field">
+                    <span>ひとこと紹介</span>
+                    <textarea
+                      id="profile-bio-input"
+                      rows="2"
+                      maxlength="80"
+                    ></textarea>
+                  </label>
+                  <label class="form-field">
+                    <span>タグ（カンマ区切り・最大3つ）</span>
+                    <input
+                      type="text"
+                      id="profile-tags-input"
+                      placeholder="デザイン, カフェ巡り, 音楽"
+                    />
+                  </label>
+                  <div class="form-actions">
+                    <button type="submit" id="profile-save" class="save-btn">
+                      保存する
+                    </button>
+                    <button
+                      type="button"
+                      id="cancel-profile-edit"
+                      class="cancel-btn"
+                    >
+                      キャンセル
+                    </button>
+                  </div>
+                </fieldset>
+                <p
+                  id="profile-edit-status"
+                  class="profile-edit-status"
+                  role="status"
+                ></p>
               </form>
             </section>
 
@@ -1575,6 +1642,6 @@
       </div>
     </section>
 
-    <script type="module" src="./js/main.js?v=20261117-hitopy-story"></script>
+    <script type="module" src="./js/main.js?v=20261117-space-profile"></script>
   </body>
 </html>

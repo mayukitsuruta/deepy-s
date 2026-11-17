@@ -1,5 +1,5 @@
 import { db, auth } from "./firebase.js?v=20261110-persistent-google";
-import { createSpaceHousing, normalizeSpaceHouses, houseLocation, HOUSE_MESSAGE_LIFETIME_MS } from "./space-houses.js?v=20261113-resident-card";
+import { createSpaceHousing, normalizeSpaceHouses, houseLocation, HOUSE_MESSAGE_LIFETIME_MS } from "./space-houses.js?v=20261117-guest-house-note";
 import {
   createUserWithEmailAndPassword,
   EmailAuthProvider,
@@ -796,11 +796,17 @@ const profileBio = document.getElementById("profile-bio");
 const profileTags = document.getElementById("profile-tags");
 const toggleProfileEditBtn = document.getElementById("toggle-profile-edit");
 const profileEditForm = document.getElementById("profile-edit-form");
+const profileEditFields = document.getElementById("profile-edit-fields");
 const profileAvatarInput = document.getElementById("profile-avatar-input");
+const profileAvatarPreview = document.getElementById("profile-avatar-preview");
+const profileAvatarPresets = document.getElementById("profile-avatar-presets");
+const profileAvatarModeButtons = profileEditForm.querySelectorAll(".profile-avatar-actions button");
 const profileNicknameInput = document.getElementById("profile-nickname-input");
 const profileBioInput = document.getElementById("profile-bio-input");
 const profileTagsInput = document.getElementById("profile-tags-input");
+const profileSaveBtn = document.getElementById("profile-save");
 const cancelProfileEditBtn = document.getElementById("cancel-profile-edit");
+const profileEditStatus = document.getElementById("profile-edit-status");
 const residentProfileDialog = document.getElementById("resident-profile-dialog");
 const residentProfileAvatar = document.getElementById("resident-profile-avatar");
 const residentProfileName = document.getElementById("resident-profile-name");
@@ -817,24 +823,60 @@ const boardMessageInput = document.getElementById("board-message-input");
 const boardList = document.getElementById("board-list");
 const toggleBoardMoreBtn = document.getElementById("toggle-board-more");
 
-// アバターカラー定義（純色アイコン用）
-const AVATAR_PALETTE = {
-  pink: "#f2a6b8",
-  green: "#9ed18b",
-  cream: "#ecd9b5",
-  purple: "#b89fd9",
-  orange: "#f4ad7b",
+const AVATAR_PRESETS = {
+  pink: { label: "ピンク", color: "#f2a6b8" },
+  green: { label: "グリーン", color: "#9ed18b" },
+  cream: { label: "クリーム", color: "#ecd9b5" },
+  purple: { label: "パープル", color: "#b89fd9" },
+  orange: { label: "オレンジ", color: "#f4ad7b" },
+  chippy: { label: "CHIPPY", color: "#9ed18b", src: "./images/green.png" },
+  simpy: { label: "SIMPY", color: "#f2a6b8", src: "./images/pink.png" },
+  nasupy: { label: "NASUPY", color: "#b89fd9", src: "./images/purple.png" },
 };
+const AVATAR_FILE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_AVATAR_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_AVATAR_DATA_LENGTH = 64000;
+const AVATAR_IMAGE_DATA = /^data:image\/(?:webp|png|jpeg);base64,[A-Za-z0-9+/]+={0,2}$/;
 
-function getAvatarSvg(avatarKey = "pink", size = 24) {
-  const color = typeof avatarKey === "string" && Object.hasOwn(AVATAR_PALETTE, avatarKey)
-    ? AVATAR_PALETTE[avatarKey]
-    : AVATAR_PALETTE.pink;
+function isAvatarImage(data) {
+  return typeof data === "string" && data.length <= MAX_AVATAR_DATA_LENGTH && AVATAR_IMAGE_DATA.test(data);
+}
+
+function avatarPresetKey(avatarKey) {
+  return typeof avatarKey === "string" && Object.hasOwn(AVATAR_PRESETS, avatarKey)
+    ? avatarKey
+    : "pink";
+}
+
+function getAvatarSvg(color, size) {
   return `
     <svg viewBox="0 0 36 36" width="${size}" height="${size}" aria-hidden="true">
       <circle cx="18" cy="18" r="18" fill="${color}" />
     </svg>
   `;
+}
+
+function renderAvatar(container, { avatar, avatarImage }, size) {
+  const preset = AVATAR_PRESETS[avatarPresetKey(avatar)];
+  const uploaded = isAvatarImage(avatarImage);
+  const source = uploaded ? avatarImage : preset.src;
+  if (!source) {
+    container.innerHTML = getAvatarSvg(preset.color, size);
+    return;
+  }
+
+  if (container.firstElementChild?.getAttribute("src") === source) return;
+  const image = new Image(size, size);
+  image.className = "avatar-image";
+  if (!uploaded) image.classList.add("avatar-image-preset");
+  image.alt = "";
+  image.addEventListener("error", () => {
+    if (container.firstElementChild === image) {
+      container.innerHTML = getAvatarSvg(preset.color, size);
+    }
+  }, { once: true });
+  image.src = source;
+  container.replaceChildren(image);
 }
 
 let currentUserId = null;
@@ -860,6 +902,7 @@ function resetPlayMemory() {
   profilePrefetch = null;
   profilePrefetchUid = null;
   currentUserData = createBlankUserData();
+  closeProfileEditForm();
   residentProfileDialog.close();
   spaceHousing.reset();
   stopMelodyPlayback();
@@ -2388,7 +2431,6 @@ async function saveMelodyBest(score) {
       doc(db, "users", currentUserId),
       {
         nickname: currentUserData.nickname || "ゲスト",
-        avatar: currentUserData.avatar || "pink",
         rhythmBest: best,
       },
       { merge: true },
@@ -2413,7 +2455,6 @@ async function touchMelodyProfile() {
       doc(db, "users", currentUserId),
       {
         nickname: currentUserData.nickname || "ゲスト",
-        avatar: currentUserData.avatar || "pink",
         rhythmBest: storedMelodyBest(),
       },
       { merge: true },
@@ -3920,13 +3961,9 @@ retakePhotoButton?.addEventListener("click", () => {
 function renderUserData(data) {
   currentUserData = withSavedFriendship({ ...currentUserData, ...data });
 
-  const avatarKey = AVATAR_PALETTE[currentUserData.avatar]
-    ? currentUserData.avatar
-    : "pink";
-
   // 右上ステータスバー
   if (topbarAvatar) {
-    topbarAvatar.innerHTML = getAvatarSvg(avatarKey, 28);
+    renderAvatar(topbarAvatar, currentUserData, 28);
   }
   if (homeNickname) {
     homeNickname.textContent = `${currentUserData.nickname || "ゲスト"}さん`;
@@ -3938,7 +3975,7 @@ function renderUserData(data) {
 
   // ② プロフィールカード
   if (profileAvatarDisplay) {
-    profileAvatarDisplay.innerHTML = getAvatarSvg(avatarKey, 52);
+    renderAvatar(profileAvatarDisplay, currentUserData, 52);
   }
   if (profileNickname) {
     profileNickname.textContent = currentUserData.nickname || "ゲスト";
@@ -3955,6 +3992,7 @@ function renderUserData(data) {
       : ["デザイン", "カフェ巡り", "音楽"];
     renderProfileTags(profileTags, tags);
   }
+  renderBoardAvatars();
 }
 
 function renderProfileTags(container, tags) {
@@ -3973,7 +4011,7 @@ function openResidentProfile(uid, house) {
   const resident = latestUsersDocs.find((user) => user.id === uid);
   if (!resident || residentProfileDialog.open) return;
   residentProfileOwnerId = uid;
-  residentProfileAvatar.innerHTML = getAvatarSvg(resident.avatar, 36);
+  renderAvatar(residentProfileAvatar, resident, 36);
   residentProfileName.textContent = resident.nickname || "地底の住人";
   residentProfileHouse.src = `./images/${house.type}.png`;
   residentProfileHouse.classList.toggle("is-flipped", house.flipped);
@@ -4070,6 +4108,9 @@ function startOnlinePresence() {
         snapshot.forEach((docSnap) => {
           latestUsersDocs.push({ id: docSnap.id, ...docSnap.data() });
         });
+        const resident = latestUsersDocs.find((user) => user.id === residentProfileOwnerId);
+        if (residentProfileDialog.open && resident) renderAvatar(residentProfileAvatar, resident, 36);
+        renderBoardAvatars();
         recalculateOnlineCount();
         spaceHousing.renderResidents(latestUsersDocs, currentUserId);
         publishRhythmRanking();
@@ -4183,7 +4224,8 @@ function startBoardListener() {
 
         const avatarDiv = document.createElement("div");
         avatarDiv.className = "board-avatar";
-        avatarDiv.innerHTML = getAvatarSvg(post.avatar || "pink", 30);
+        avatarDiv.dataset.uid = post.uid || "";
+        avatarDiv.dataset.avatar = post.avatar || "pink";
 
         const bodyDiv = document.createElement("div");
         bodyDiv.className = "board-body";
@@ -4236,6 +4278,7 @@ function startBoardListener() {
         item.appendChild(bodyDiv);
         boardList.appendChild(item);
       });
+      renderBoardAvatars();
     },
     (error) => {
       console.error("掲示板の取得エラー:", error);
@@ -4245,9 +4288,22 @@ function startBoardListener() {
   );
 }
 
+function renderBoardAvatars() {
+  const residents = new Map(latestUsersDocs.map((user) => [user.id, user]));
+  boardList.querySelectorAll(".board-avatar").forEach((container) => {
+    const uid = container.dataset.uid;
+    const profile = uid === currentUserId ? currentUserData : residents.get(uid);
+    renderAvatar(container, {
+      avatar: profile?.avatar ?? container.dataset.avatar,
+      avatarImage: profile?.avatarImage,
+    }, 30);
+  });
+}
+
 // ホーム画面入場時の共通初期化
 function enterHomeWithUser(uid, userData) {
   mapNeedsInitialFocus = true;
+  if (uid !== currentUserId) closeProfileEditForm();
   currentUserId = uid;
   renderUserData(userData || {});
   spaceHousing.renderResidents(latestUsersDocs, uid);
@@ -4262,10 +4318,88 @@ function enterHomeWithUser(uid, userData) {
 }
 
 // ② プロフィール：編集＆Firebase保存
+let avatarSelection = 0;
+let pendingAvatarFields = null;
+
+function showProfileAvatarPanel(panelId) {
+  if (panelId === profileAvatarPresets.id && !profileAvatarPresets.childElementCount) {
+    buildProfileAvatarPresets();
+  }
+  profileAvatarModeButtons.forEach((button) => {
+    const panel = document.getElementById(button.getAttribute("aria-controls"));
+    const expanded = panel.id === panelId;
+    panel.hidden = !expanded;
+    button.setAttribute("aria-expanded", String(expanded));
+  });
+}
+
+function renderProfileAvatarPreview() {
+  const profile = { ...currentUserData, ...pendingAvatarFields };
+  renderAvatar(profileAvatarPreview, profile, 52);
+  const selected = isAvatarImage(profile.avatarImage) ? null : avatarPresetKey(profile.avatar);
+  profileAvatarPresets.querySelectorAll("button").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.value === selected));
+  });
+}
+
+profileAvatarModeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const expanded = button.getAttribute("aria-expanded") === "true";
+    showProfileAvatarPanel(expanded ? null : button.getAttribute("aria-controls"));
+  });
+});
+
+function buildProfileAvatarPresets() {
+  for (const [avatar, preset] of Object.entries(AVATAR_PRESETS)) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.value = avatar;
+    button.className = "profile-avatar-option";
+    button.title = preset.label;
+    button.setAttribute("aria-label", preset.label);
+    renderAvatar(button, { avatar }, 32);
+    button.addEventListener("click", () => {
+      avatarSelection += 1;
+      pendingAvatarFields = { avatar, avatarImage: null };
+      profileAvatarInput.value = "";
+      profileSaveBtn.disabled = false;
+      profileEditStatus.textContent = "";
+      renderProfileAvatarPreview();
+    });
+    profileAvatarPresets.append(button);
+  }
+  renderProfileAvatarPreview();
+}
+
+async function prepareAvatarImage(file) {
+  const source = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = source;
+    await image.decode();
+
+    const canvas = document.createElement("canvas");
+    const size = 192;
+    const crop = Math.min(image.naturalWidth, image.naturalHeight);
+    canvas.width = size;
+    canvas.height = size;
+    canvas.getContext("2d").drawImage(
+      image, (image.naturalWidth - crop) / 2, (image.naturalHeight - crop) / 2,
+      crop, crop, 0, 0, size, size,
+    );
+    const data = canvas.toDataURL("image/webp", 0.82);
+    if (isAvatarImage(data)) return data;
+
+    const jpeg = canvas.toDataURL("image/jpeg", 0.85);
+    if (isAvatarImage(jpeg)) return jpeg;
+    throw new Error("アイコン画像を作成できませんでした。");
+  } finally {
+    URL.revokeObjectURL(source);
+  }
+}
+
 function openProfileEditForm() {
-  profileAvatarInput.value = AVATAR_PALETTE[currentUserData.avatar]
-    ? currentUserData.avatar
-    : "pink";
+  renderProfileAvatarPreview();
   profileNicknameInput.value = currentUserData.nickname || "";
   profileBioInput.value = currentUserData.bio || "";
   const tagsList = Array.isArray(currentUserData.tags)
@@ -4273,23 +4407,74 @@ function openProfileEditForm() {
     : [];
   profileTagsInput.value = tagsList.join(", ");
   profileEditForm.hidden = false;
+  toggleProfileEditBtn.setAttribute("aria-expanded", "true");
+}
+
+function closeProfileEditForm() {
+  avatarSelection += 1;
+  pendingAvatarFields = null;
+  profileEditForm.hidden = true;
+  profileEditForm.reset();
+  showProfileAvatarPanel(null);
+  profileAvatarPreview.replaceChildren();
+  profileEditStatus.textContent = "";
+  profileEditFields.disabled = false;
+  profileSaveBtn.disabled = false;
+  toggleProfileEditBtn.disabled = false;
+  toggleProfileEditBtn.setAttribute("aria-expanded", "false");
 }
 
 toggleProfileEditBtn.addEventListener("click", () => {
   if (profileEditForm.hidden) {
     openProfileEditForm();
   } else {
-    profileEditForm.hidden = true;
+    closeProfileEditForm();
   }
 });
 
 cancelProfileEditBtn.addEventListener("click", () => {
-  profileEditForm.hidden = true;
+  closeProfileEditForm();
+  toggleProfileEditBtn.focus();
+});
+
+profileAvatarInput.addEventListener("change", async () => {
+  const selection = ++avatarSelection;
+  const file = profileAvatarInput.files[0];
+  profileEditStatus.textContent = "";
+  profileSaveBtn.disabled = false;
+  if (!file) return;
+
+  if (file.type && !AVATAR_FILE_TYPES.includes(file.type)) {
+    profileAvatarInput.value = "";
+    profileEditStatus.textContent = "JPEG・PNG・WebP の画像を選んでね。";
+    return;
+  }
+  if (file.size > MAX_AVATAR_FILE_SIZE) {
+    profileAvatarInput.value = "";
+    profileEditStatus.textContent = "10 MB 以下の画像を選んでね。";
+    return;
+  }
+
+  profileSaveBtn.disabled = true;
+  profileEditStatus.textContent = "画像を読み込んでいます…";
+  try {
+    const avatarImage = await prepareAvatarImage(file);
+    if (selection !== avatarSelection) return;
+    pendingAvatarFields = { avatarImage };
+    renderProfileAvatarPreview();
+    profileEditStatus.textContent = "";
+  } catch {
+    if (selection !== avatarSelection) return;
+    profileAvatarInput.value = "";
+    profileEditStatus.textContent = "画像を読み込めませんでした。別の画像を選んでね。";
+  } finally {
+    if (selection === avatarSelection) profileSaveBtn.disabled = false;
+  }
 });
 
 profileEditForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const newAvatar = profileAvatarInput.value;
+  if (profileEditForm.hidden || profileEditFields.disabled || profileSaveBtn.disabled) return;
   const newNickname = profileNicknameInput.value.trim();
   const newBio = profileBioInput.value.trim();
   const newTags = profileTagsInput.value
@@ -4301,31 +4486,49 @@ profileEditForm.addEventListener("submit", async (event) => {
   if (!newNickname) return;
 
   const updatedFields = {
-    avatar: newAvatar,
+    ...pendingAvatarFields,
     nickname: newNickname,
     bio: newBio || "地底でのんびり暮らしてます。よろしくお願いします！",
     tags: newTags.length > 0 ? newTags : ["地底生活"],
   };
 
-  renderUserData(updatedFields);
-  profileEditForm.hidden = true;
+  const user = auth.currentUser;
+  const uid = currentUserId;
+  const version = sessionVersion;
+  if (!progressCanBeSaved()) {
+    renderUserData(updatedFields);
+    closeProfileEditForm();
+    toggleProfileEditBtn.focus();
+    return;
+  }
 
-  if (!progressCanBeSaved()) return;
+  if (user.uid !== uid) return;
+  profileEditFields.disabled = true;
+  toggleProfileEditBtn.disabled = true;
+  profileEditStatus.textContent = "プロフィールを保存しています…";
 
-  writeProfileCache(currentUserId, currentUserData);
   try {
-    const userRef = doc(db, "users", currentUserId);
-    await setDoc(userRef, updatedFields, { merge: true });
-    if (auth.currentUser && !auth.currentUser.isAnonymous) {
-      await updateProfile(auth.currentUser, { displayName: newNickname }).catch(
-        () => {},
-      );
-    }
-    touchMelodyProfile();
+    await setDoc(doc(db, "users", uid), updatedFields, { merge: true });
   } catch (error) {
     console.error("プロフィール保存エラー:", error);
-    alert("プロフィールの保存に失敗しました。");
+    if (version === sessionVersion && uid === currentUserId && auth.currentUser?.uid === uid) {
+      profileEditFields.disabled = false;
+      toggleProfileEditBtn.disabled = false;
+      profileEditStatus.textContent = "プロフィールを保存できませんでした。もう一度試してね。";
+    }
+    return;
   }
+
+  if (version !== sessionVersion || uid !== currentUserId || auth.currentUser?.uid !== uid) return;
+  const nicknameChanged = currentUserData.nickname !== newNickname;
+  renderUserData(updatedFields);
+  if (pendingGuestDocData) pendingGuestDocData = { ...pendingGuestDocData, ...updatedFields };
+  writeProfileCache(uid, currentUserData);
+  closeProfileEditForm();
+  toggleProfileEditBtn.focus();
+  if (!nicknameChanged) return;
+  updateProfile(user, { displayName: newNickname }).catch(() => {});
+  touchMelodyProfile();
 });
 
 // ③ 掲示板：新規投稿＆もっと見る切り替え
@@ -4341,9 +4544,7 @@ boardPostForm.addEventListener("submit", async (event) => {
     await addDoc(collection(db, "posts"), {
       uid: currentUserId || "guest",
       nickname: currentUserData.nickname || "ゲスト",
-      avatar: AVATAR_PALETTE[currentUserData.avatar]
-        ? currentUserData.avatar
-        : "pink",
+      avatar: avatarPresetKey(currentUserData.avatar),
       text: text,
       createdAt: serverTimestamp(),
     });
@@ -4617,9 +4818,14 @@ async function signInWithGoogle() {
     const snapshot = await getDoc(doc(db, "users", user.uid));
     if (version !== sessionVersion || auth.currentUser?.uid !== user.uid) return;
     const saved = snapshot.exists() ? snapshot.data() : null;
+    const guestAvatar = guestProfile && {
+      avatar: avatarPresetKey(guestProfile.avatar),
+      avatarImage: guestProfile.avatarImage ?? null,
+    };
     const profile = {
       ...createBlankUserData(),
       ...(saved || guestProfile || {}),
+      ...guestAvatar,
       nickname: savedNickname(saved) || savedNickname(guestProfile) || user.displayName || "地底の住人",
     };
     if (!snapshot.exists()) {
@@ -4628,6 +4834,8 @@ async function signInWithGoogle() {
         spaceHouses: normalizeSpaceHouses(profile.spaceHouses),
         createdAt: serverTimestamp(),
       }, { merge: true });
+    } else if (guestAvatar && (guestAvatar.avatar !== saved.avatar || guestAvatar.avatarImage !== (saved.avatarImage ?? null))) {
+      await setDoc(doc(db, "users", user.uid), guestAvatar, { merge: true });
     }
     if (version !== sessionVersion || auth.currentUser?.uid !== user.uid) return;
     guestUserPromise = null;
