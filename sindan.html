@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>地底人診断 | DEEPY’s - 地底人との暮らし</title>
+  <link rel="stylesheet" href="./css/style.css?v=20261112-sindan" />
+  <link rel="stylesheet" href="./css/sindan.css?v=20261112-sindan" />
+</head>
+
+<body class="diagnosis-page">
+  <header class="diagnosis-header">
+    <a class="diagnosis-logo" href="./index.html">
+      <img src="./images/Deepy's-logo.png" alt="DEEPY’s トップへ" />
+    </a>
+    <a class="diagnosis-header-link" href="./index.html">サイトへもどる</a>
+  </header>
+
+  <main class="diagnosis-main">
+    <!-- スタート画面 -->
+    <section id="diagnosis-start" class="diagnosis-screen">
+      <div class="diagnosis-card diagnosis-start-card">
+        <p class="diagnosis-kicker">DEEPY’s</p>
+        <h1 class="diagnosis-title" tabindex="-1" data-focus>地底人診断</h1>
+        <p class="diagnosis-lead">
+          10個の質問に答えると、7匹の地底人の中から<br class="diagnosis-br-pc" />
+          あなたと相性ぴったりの子がわかるよ！
+        </p>
+        <p class="diagnosis-meta">全10問・4つの中から選んでね</p>
+        <button id="diagnosis-start-button" class="diagnosis-button is-primary" type="button">診断をはじめる</button>
+      </div>
+    </section>
+
+    <!-- 質問画面 -->
+    <section id="diagnosis-question" class="diagnosis-screen" hidden>
+      <div class="diagnosis-progress">
+        <p id="diagnosis-progress-text" class="diagnosis-progress-text">1 / 10</p>
+        <div class="diagnosis-progress-track" role="progressbar" aria-label="質問の進み具合" aria-valuemin="1"
+          aria-valuemax="10" aria-valuenow="1">
+          <span id="diagnosis-progress-bar" class="diagnosis-progress-bar"></span>
+        </div>
+      </div>
+
+      <div class="diagnosis-card diagnosis-question-card">
+        <p id="diagnosis-question-number" class="diagnosis-question-number">Q1</p>
+        <h1 id="diagnosis-question-text" class="diagnosis-question-text" tabindex="-1" data-focus></h1>
+        <ol id="diagnosis-options" class="diagnosis-options"></ol>
+      </div>
+
+      <button id="diagnosis-back" class="diagnosis-text-button" type="button">はじめの画面にもどる</button>
+    </section>
+
+    <!-- 結果画面（sindan.js が中身を作る） -->
+    <section id="diagnosis-result" class="diagnosis-screen diagnosis-result" hidden aria-live="polite"></section>
+
+    <noscript>
+      <p class="diagnosis-card">地底人診断を遊ぶには、JavaScript を有効にしてね。</p>
+    </noscript>
+  </main>
+
+  <script type="module" src="./js/sindan/sindan.js?v=20261112-sindan"></script>
+</body>
+
+</html>
