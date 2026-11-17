@@ -46,7 +46,7 @@
       rel="modulepreload"
       href="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js"
     />
-    <link rel="stylesheet" href="./css/style.css?v=20261117-simpy-orange" />
+    <link rel="stylesheet" href="./css/style.css?v=20261117-hitopy-story" />
   </head>
 
   <body>
@@ -334,7 +334,7 @@
           <!-- ホームの説明 -->
           <p class="home-intro">
             気になる地底人を一人選んで暮らしを見てみよう！<br />
-            どれか一人の暮らしをのぞき終わったら、隠しキャラクターストーリーが開放され、このゲームがもっと楽しくなるよ！
+            暮らしをのぞき終わると、友情ポイントがもらえるよ。
           </p>
 
           <!-- キャラクターカード -->
@@ -394,26 +394,22 @@
               </div>
             </article>
 
-            <article class="character-card hitopy locked">
+            <article class="character-card hitopy">
               <div class="character-portrait">
-                <img
-                  loading="lazy"
-                  id="hitopy-portrait"
-                  class="is-silhouette"
-                  src="./images/white.png"
-                  alt="HITOPY"
-                />
+                <img loading="lazy" src="./images/white.png" alt="HITOPY" />
               </div>
               <div class="character-info">
                 <h3>HITOPY</h3>
                 <p class="character-subtitle">〜 建築家 〜</p>
                 <p class="character-description">
-                  地底に素敵な家を建てるのが夢！ みんなの暮らしをつなぐ建築家。
+                  地底に住むみんなの家を建てているよ。
+                  土を叩くリズムがずれると、地層が崩れちゃう。
                 </p>
                 <p class="character-detail">職業：建築家</p>
                 <p class="character-detail">住んでいる地層：？？？</p>
-                <button class="character-button" disabled>？？？</button>
-                <small>🔒 3つのルートを達成すると解放されます</small>
+                <button class="character-button" data-character="hitopy">
+                  この子の暮らしをのぞく →
+                </button>
               </div>
             </article>
           </div>
@@ -617,6 +613,87 @@
             <h2>このストーリーはクリア！</h2>
             <p>友情ポイントを25%もらったよ。</p>
             <button id="nasupy-replay" type="button">
+              もう一度<br />暮らしを見てみる？
+            </button>
+          </section>
+        </div>
+
+        <div id="hitopy-story-view" class="chippy-story hitopy-story" hidden>
+          <button id="hitopy-story-back" class="chippy-story-back" type="button">
+            ホームにもどる
+          </button>
+          <img
+            loading="lazy"
+            class="chippy-story-character hitopy-story-character"
+            src="./images/white.png"
+            alt="HITOPY"
+          />
+          <div id="hitopy-game" class="hitopy-game" hidden>
+            <div id="hitopy-rhythm-play" class="rhythm-play" hidden>
+              <div class="rhythm-hud">
+                <p id="hitopy-rhythm-combo" class="rhythm-combo">COMBO 0</p>
+                <p id="hitopy-rhythm-progress" class="rhythm-progress">0 / 8</p>
+                <p id="hitopy-rhythm-points" class="rhythm-points">0点</p>
+              </div>
+              <div id="hitopy-rhythm-lane" class="rhythm-lane">
+                <div
+                  id="hitopy-rhythm-hit-zone"
+                  class="rhythm-hit-zone"
+                  aria-hidden="true"
+                ></div>
+              </div>
+              <p
+                id="hitopy-rhythm-judge"
+                class="rhythm-judge"
+                aria-live="polite"
+              ></p>
+            </div>
+            <div id="hitopy-rhythm-done" class="rhythm-done" hidden>
+              <p id="hitopy-rhythm-done-text"></p>
+              <button id="hitopy-rhythm-again" class="melody-primary" type="button">
+                もう一度
+              </button>
+            </div>
+          </div>
+          <div class="chippy-dialogue" id="hitopy-dialogue">
+            <p class="chippy-dialogue-name hitopy-dialogue-name">HITOPY</p>
+            <p
+              class="chippy-dialogue-text"
+              id="hitopy-dialogue-text"
+              aria-live="polite"
+            ></p>
+            <div class="chippy-dialogue-footer">
+              <button
+                id="hitopy-story-prev"
+                class="chippy-story-prev"
+                type="button"
+              >
+                前に戻る
+              </button>
+              <p class="chippy-dialogue-next" id="hitopy-dialogue-next">click</p>
+            </div>
+            <button
+              id="hitopy-game-start"
+              class="chippy-game-start"
+              type="button"
+              hidden
+            >
+              ゲームスタート
+            </button>
+          </div>
+          <div id="hitopy-finish" class="chippy-finish" hidden>
+            <p id="hitopy-finish-message"></p>
+            <button id="hitopy-finish-home" type="button">クリア</button>
+          </div>
+          <section
+            id="hitopy-clear-panel"
+            class="chippy-clear-panel hitopy-clear-panel"
+            hidden
+          >
+            <p class="chippy-clear-kicker">HITOPY</p>
+            <h2>このストーリーはクリア！</h2>
+            <p>友情ポイントを25%もらったよ。</p>
+            <button id="hitopy-replay" type="button">
               もう一度<br />暮らしを見てみる？
             </button>
           </section>
@@ -1498,6 +1575,6 @@
       </div>
     </section>
 
-    <script type="module" src="./js/main.js?v=20261117-nasupy-success"></script>
+    <script type="module" src="./js/main.js?v=20261117-hitopy-story"></script>
   </body>
 </html>

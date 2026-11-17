@@ -778,7 +778,9 @@ const cameraViewContent = document.getElementById("camera-view-content");
 const storyViewContent = document.getElementById("story-view-content");
 const simpyStoryView = document.getElementById("simpy-story-view");
 const nasupyStoryView = document.getElementById("nasupy-story-view");
+const hitopyStoryView = document.getElementById("hitopy-story-view");
 let activeStoryId = "chippy";
+let rhythmTheme = "music";
 const zukanViewContent = document.getElementById("zukan-view-content");
 const minigameViewContent = document.getElementById("minigame-view-content");
 const zukanNote = document.getElementById("zukan-note");
@@ -900,7 +902,7 @@ function switchUndergroundView(viewName) {
   cameraViewContent.hidden = viewName !== "camera";
   const showingStory = viewName === "story";
   if (!(showingStory && activeStoryId === "simpy")) stopMelodyPlayback();
-  if (viewName !== "minigame") stopRhythmGame();
+  if (viewName !== "minigame" || rhythmTheme === "build") stopRhythmGame();
   if (storyViewContent) {
     storyViewContent.hidden = !(showingStory && activeStoryId === "chippy");
   }
@@ -909,6 +911,9 @@ function switchUndergroundView(viewName) {
   }
   if (nasupyStoryView) {
     nasupyStoryView.hidden = !(showingStory && activeStoryId === "nasupy");
+  }
+  if (hitopyStoryView) {
+    hitopyStoryView.hidden = !(showingStory && activeStoryId === "hitopy");
   }
   if (zukanViewContent) zukanViewContent.hidden = viewName !== "zukan";
   if (minigameViewContent) minigameViewContent.hidden = viewName !== "minigame";
@@ -1045,6 +1050,7 @@ function storyFriendshipFloor() {
   if (isChippyStoryCleared()) points += 25;
   if (isSimpyStoryCleared()) points += 25;
   if (isNasupyStoryCleared()) points += 25;
+  if (isHitopyStoryCleared()) points += 25;
   return Math.min(100, points);
 }
 
@@ -1650,16 +1656,59 @@ const melodyScoreEl = document.getElementById("rhythm-score");
 const melodyBestEl = document.getElementById("rhythm-best");
 const melodySaveNote = document.getElementById("rhythm-save-note");
 const melodyRankingEl = document.getElementById("rhythm-ranking");
-const rhythmIntroEl = document.getElementById("rhythm-intro");
-const rhythmPlayEl = document.getElementById("rhythm-play");
-const rhythmDoneEl = document.getElementById("rhythm-done");
-const rhythmDoneText = document.getElementById("rhythm-done-text");
-const rhythmLaneEl = document.getElementById("rhythm-lane");
-const rhythmHitZoneEl = document.getElementById("rhythm-hit-zone");
-const rhythmComboEl = document.getElementById("rhythm-combo");
-const rhythmProgressEl = document.getElementById("rhythm-progress");
-const rhythmPointsEl = document.getElementById("rhythm-points");
-const rhythmJudgeEl = document.getElementById("rhythm-judge");
+let rhythmIntroEl = document.getElementById("rhythm-intro");
+let rhythmPlayEl = document.getElementById("rhythm-play");
+let rhythmDoneEl = document.getElementById("rhythm-done");
+let rhythmDoneText = document.getElementById("rhythm-done-text");
+let rhythmLaneEl = document.getElementById("rhythm-lane");
+let rhythmHitZoneEl = document.getElementById("rhythm-hit-zone");
+let rhythmComboEl = document.getElementById("rhythm-combo");
+let rhythmProgressEl = document.getElementById("rhythm-progress");
+let rhythmPointsEl = document.getElementById("rhythm-points");
+let rhythmJudgeEl = document.getElementById("rhythm-judge");
+let rhythmGoodSpawn = 0;
+
+const rhythmMusicStage = {
+  theme: "music",
+  intro: rhythmIntroEl,
+  play: rhythmPlayEl,
+  done: rhythmDoneEl,
+  doneText: rhythmDoneText,
+  lane: rhythmLaneEl,
+  hitZone: rhythmHitZoneEl,
+  combo: rhythmComboEl,
+  progress: rhythmProgressEl,
+  points: rhythmPointsEl,
+  judge: rhythmJudgeEl,
+};
+
+const rhythmBuildStage = {
+  theme: "build",
+  intro: null,
+  play: document.getElementById("hitopy-rhythm-play"),
+  done: document.getElementById("hitopy-rhythm-done"),
+  doneText: document.getElementById("hitopy-rhythm-done-text"),
+  lane: document.getElementById("hitopy-rhythm-lane"),
+  hitZone: document.getElementById("hitopy-rhythm-hit-zone"),
+  combo: document.getElementById("hitopy-rhythm-combo"),
+  progress: document.getElementById("hitopy-rhythm-progress"),
+  points: document.getElementById("hitopy-rhythm-points"),
+  judge: document.getElementById("hitopy-rhythm-judge"),
+};
+
+function bindRhythmStage(stage) {
+  rhythmTheme = stage.theme;
+  rhythmIntroEl = stage.intro;
+  rhythmPlayEl = stage.play;
+  rhythmDoneEl = stage.done;
+  rhythmDoneText = stage.doneText;
+  rhythmLaneEl = stage.lane;
+  rhythmHitZoneEl = stage.hitZone;
+  rhythmComboEl = stage.combo;
+  rhythmProgressEl = stage.progress;
+  rhythmPointsEl = stage.points;
+  rhythmJudgeEl = stage.judge;
+}
 
 let simpyStoryIndex = 0;
 let simpyShowingClear = false;
@@ -2551,6 +2600,7 @@ function renderRhythmHud() {
   if (rhythmProgressEl) rhythmProgressEl.textContent = `${rhythmCollected} / ${RHYTHM_SONG.length}`;
   if (rhythmPointsEl) rhythmPointsEl.textContent = `${rhythmPoints}点`;
   rhythmComboEl?.classList.toggle("is-hot", rhythmCombo >= 2);
+  if (rhythmTheme !== "music") return;
   melodySessionScore = rhythmPoints;
   renderMelodyScore();
 }
@@ -2561,6 +2611,34 @@ function flashRhythmJudge(text) {
   rhythmJudgeEl.classList.remove("is-pop");
   void rhythmJudgeEl.offsetWidth;
   rhythmJudgeEl.classList.add("is-pop");
+}
+
+function playBuildStrike(index, when) {
+  const ctx = simpyAudioContext();
+  if (!ctx) return;
+  const start = when ?? ctx.currentTime;
+  const kind = index % 3;
+  if (kind === 0) {
+    simpyTone(196, start, 0.09, 0.22, "triangle");
+    simpyTone(392, start, 0.05, 0.08, "square");
+    return;
+  }
+  if (kind === 1) {
+    simpyTone(880, start, 0.16, 0.12, "triangle");
+    simpyTone(1320, start, 0.12, 0.05, "sine");
+    return;
+  }
+  simpyTone(82, start, 0.32, 0.28, "sine");
+  simpyTone(55, start, 0.28, 0.16, "triangle");
+}
+
+function playBuildPhrase() {
+  const ctx = simpyAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  for (let index = 0; index < RHYTHM_SONG.length; index += 1) {
+    playBuildStrike(index, now + index * 0.28);
+  }
 }
 
 function playRhythmSuccess(index) {
@@ -2584,6 +2662,10 @@ function playRhythmWeird() {
 }
 
 function playRhythmSong() {
+  if (rhythmTheme === "build") {
+    playBuildPhrase();
+    return;
+  }
   const ctx = simpyAudioContext();
   if (!ctx) return;
   const now = ctx.currentTime;
@@ -2608,8 +2690,8 @@ function stopRhythmGame() {
   if (interruptPlay) {
     rhythmPhase = "idle";
     if (rhythmPlayEl) rhythmPlayEl.hidden = true;
-    if (rhythmIntroEl) rhythmIntroEl.hidden = false;
     if (rhythmDoneEl) rhythmDoneEl.hidden = true;
+    if (rhythmIntroEl) rhythmIntroEl.hidden = rhythmTheme !== "music";
   }
   if (stopSound) silenceMelody();
 }
@@ -2638,11 +2720,19 @@ function resolveRhythmNote(note, result) {
   if (note.done || rhythmSettled) return;
   removeRhythmNote(note);
   if (result === "hit") {
-    playRhythmSuccess(rhythmCollected);
+    if (rhythmTheme === "build") playBuildStrike(note.soundIndex || 0);
+    else playRhythmSuccess(rhythmCollected);
+    const buildName = ["トン", "カン", "ドン"][(note.soundIndex || 0) % 3];
     rhythmCollected += 1;
     rhythmCombo += 1;
     rhythmPoints += 100 + (rhythmCombo - 1) * 20;
-    flashRhythmJudge(rhythmCombo >= 2 ? `${rhythmCombo} COMBO` : "いい音！");
+    flashRhythmJudge(
+      rhythmCombo >= 2
+        ? `${rhythmCombo} COMBO`
+        : rhythmTheme === "build"
+          ? `${buildName}！`
+          : "いい音！",
+    );
     renderRhythmHud();
     return;
   }
@@ -2650,7 +2740,7 @@ function resolveRhythmNote(note, result) {
     playRhythmWeird();
     breakRhythmCombo();
     rhythmPoints = Math.max(0, rhythmPoints - 50);
-    flashRhythmJudge("−50");
+    flashRhythmJudge(rhythmTheme === "build" ? "崩れちゃった" : "−50");
     renderRhythmHud();
     return;
   }
@@ -2665,9 +2755,20 @@ function spawnRhythmNote(spec) {
   button.type = "button";
   button.className = spec.good ? "rhythm-note is-good" : "rhythm-note is-bad";
   button.style.left = RHYTHM_LANE_LEFT[spec.lane];
-  button.textContent = spec.good ? "♪" : "変な音";
-  button.setAttribute("aria-label", spec.good ? "音符" : "変な音");
-  const note = { el: button, good: spec.good, y: -76, done: false };
+  const soundIndex = rhythmGoodSpawn;
+  const buildName = ["トン", "カン", "ドン"][soundIndex % 3];
+  if (spec.good && rhythmTheme === "build") rhythmGoodSpawn += 1;
+  const label = spec.good
+    ? rhythmTheme === "build"
+      ? buildName
+      : "♪"
+    : rhythmTheme === "build"
+      ? "崩れ"
+      : "変な音";
+  button.textContent = label;
+  button.setAttribute("aria-label", label);
+  if (rhythmTheme === "build") button.classList.add("is-word");
+  const note = { el: button, good: spec.good, y: -76, done: false, soundIndex };
   button.addEventListener("click", (event) => {
     event.stopPropagation();
     if (!note.good) {
@@ -2692,7 +2793,22 @@ function finishRhythmRun() {
   rhythmSettled = true;
   if (rhythmRaf) cancelAnimationFrame(rhythmRaf);
   rhythmRaf = 0;
-  if (rhythmCollected >= RHYTHM_SONG.length) playRhythmSong();
+  const built = rhythmCollected >= RHYTHM_SONG.length;
+  if (rhythmTheme === "build") {
+    if (built) {
+      playBuildPhrase();
+      finishHitopyBuild();
+      return;
+    }
+    if (rhythmPlayEl) rhythmPlayEl.hidden = true;
+    if (rhythmDoneEl) rhythmDoneEl.hidden = false;
+    if (rhythmDoneText) {
+      rhythmDoneText.textContent =
+        "地層が崩れちゃった。もう一度、合図に合わせてトントンしてみて。";
+    }
+    return;
+  }
+  if (built) playRhythmSong();
   if (rhythmPlayEl) rhythmPlayEl.hidden = true;
   if (rhythmDoneEl) rhythmDoneEl.hidden = false;
   if (rhythmDoneText) {
@@ -2755,6 +2871,7 @@ function startRhythmGame() {
   rhythmPoints = 0;
   rhythmLayers = [];
   rhythmSpawnIndex = 0;
+  rhythmGoodSpawn = 0;
   rhythmElapsed = 0;
   rhythmLastFrame = 0;
   if (rhythmIntroEl) rhythmIntroEl.hidden = true;
@@ -2766,6 +2883,7 @@ function startRhythmGame() {
 }
 
 function openRhythmMinigame() {
+  bindRhythmStage(rhythmMusicStage);
   startMelodyRanking();
   loadOwnMelodyBest();
   if (rhythmPhase === "idle") {
@@ -2777,6 +2895,270 @@ function openRhythmMinigame() {
 
 document.getElementById("rhythm-start")?.addEventListener("click", startRhythmGame);
 document.getElementById("rhythm-again")?.addEventListener("click", startRhythmGame);
+
+const hitopyStoryLines = [
+  "建築現場へようこそ。ぼくはHITOPY。地底に住むみんなの家を建てているんだ。",
+  "地底の建築には、地上の建築とは違うルールがあるよ。",
+  "地下の土はとても繊細で、適当なタイミングで叩くと地層が崩れちゃう。",
+  "地底の家はね、決まったリズムで叩かないと崩れちゃうんだ。",
+  "ぼくが合図を出すから、タイミングよくトントンしてみて！",
+  "落ちてくる音が光る輪に重なったらクリック。音はトン、カン、ドン。崩れそうな印は押さないで。",
+  "準備はいいかな。ゲームスタートを押して、いっしょに家を建てよう。",
+];
+
+const hitopyDialogue = document.getElementById("hitopy-dialogue");
+const hitopyDialogueText = document.getElementById("hitopy-dialogue-text");
+const hitopyDialogueNext = document.getElementById("hitopy-dialogue-next");
+const hitopyStoryBack = document.getElementById("hitopy-story-back");
+const hitopyStoryPrev = document.getElementById("hitopy-story-prev");
+const hitopyGameStart = document.getElementById("hitopy-game-start");
+const hitopyGame = document.getElementById("hitopy-game");
+const hitopyFinish = document.getElementById("hitopy-finish");
+const hitopyFinishMessage = document.getElementById("hitopy-finish-message");
+const hitopyFinishHome = document.getElementById("hitopy-finish-home");
+const hitopyClearPanel = document.getElementById("hitopy-clear-panel");
+const hitopyReplay = document.getElementById("hitopy-replay");
+let hitopyStoryIndex = 0;
+let hitopyPlaying = false;
+let hitopyShowingClear = false;
+
+function hitopyClearStorageKey() {
+  return `deepys-hitopy-cleared:${currentUserId || "local"}`;
+}
+
+function isHitopyStoryCleared() {
+  if (currentUserData?.hitopyCleared) return true;
+  if (!progressCanBeSaved()) return false;
+  try {
+    return localStorage.getItem(hitopyClearStorageKey()) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function awardHitopyFriendship() {
+  const already = isHitopyStoryCleared();
+  if (!already) currentUserData.hitopyCleared = true;
+
+  const nextPoints = already
+    ? Math.max(
+        resolvedFriendshipPoints(currentUserData.friendshipPoints),
+        storyFriendshipFloor(),
+      )
+    : Math.min(
+        100,
+        Math.max(
+          resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
+          storyFriendshipFloor(),
+        ),
+      );
+
+  renderUserData({ friendshipPoints: nextPoints, hitopyCleared: true });
+  syncFriendshipPill();
+
+  if (!already && progressCanBeSaved()) {
+    try {
+      localStorage.setItem(hitopyClearStorageKey(), "1");
+    } catch {
+      // 保存できない場合も、この画面の表示は更新済み
+    }
+    writeProfileCache(currentUserId, currentUserData);
+    setDoc(
+      doc(db, "users", currentUserId),
+      { friendshipPoints: nextPoints, hitopyCleared: true },
+      { merge: true },
+    ).catch((error) => {
+      console.error("友情ポイントの保存エラー:", error);
+    });
+  }
+}
+
+function stopHitopyGame() {
+  hitopyPlaying = false;
+  if (rhythmTheme === "build") stopRhythmGame();
+  bindRhythmStage(rhythmMusicStage);
+  hitopyStoryView?.classList.remove("is-playing");
+  if (hitopyGame) hitopyGame.hidden = true;
+  if (hitopyFinish) hitopyFinish.hidden = true;
+}
+
+function updateHitopyPrev() {
+  if (!hitopyStoryPrev) return;
+  const inDialogue =
+    !hitopyPlaying && !hitopyShowingClear && hitopyFinish?.hidden !== false;
+  hitopyStoryPrev.hidden = !inDialogue;
+  hitopyStoryPrev.disabled = hitopyStoryIndex <= 0;
+}
+
+function sayHitopy(message, hint = "") {
+  if (!hitopyDialogueText) return;
+  hitopyDialogueText.textContent = message;
+  if (!hitopyDialogueNext) return;
+  hitopyDialogueNext.hidden = !hint;
+  hitopyDialogueNext.textContent = hint;
+  hitopyDialogueNext.classList.remove("is-more");
+  updateHitopyPrev();
+}
+
+function renderHitopyStory() {
+  const isLast = hitopyStoryIndex >= hitopyStoryLines.length - 1;
+  const showStart = isLast && !hitopyPlaying && hitopyFinish?.hidden !== false;
+  hitopyDialogueText.textContent = hitopyStoryLines[hitopyStoryIndex];
+  hitopyGameStart.hidden = !showStart;
+  hitopyDialogueNext.hidden = showStart || hitopyPlaying;
+  hitopyDialogueNext.textContent = "click";
+  hitopyDialogueNext.classList.toggle(
+    "is-more",
+    !isLast && !showStart && !hitopyPlaying,
+  );
+  updateHitopyPrev();
+}
+
+function startHitopyStory() {
+  activeStoryId = "hitopy";
+  hitopyStoryIndex = 0;
+  hitopyShowingClear = false;
+  stopHitopyGame();
+  if (hitopyDialogue) hitopyDialogue.hidden = false;
+  if (hitopyClearPanel) hitopyClearPanel.hidden = true;
+  hitopyStoryView?.classList.remove("is-cleared");
+  renderHitopyStory();
+  switchUndergroundView("story");
+}
+
+function showHitopyClearScreen() {
+  activeStoryId = "hitopy";
+  hitopyShowingClear = true;
+  stopHitopyGame();
+  if (hitopyDialogue) hitopyDialogue.hidden = true;
+  if (hitopyClearPanel) hitopyClearPanel.hidden = false;
+  hitopyStoryView?.classList.add("is-cleared");
+  switchUndergroundView("story");
+}
+
+function openHitopyStory() {
+  if (isHitopyStoryCleared()) {
+    showHitopyClearScreen();
+    return;
+  }
+  startHitopyStory();
+}
+
+function advanceHitopyStory() {
+  if (hitopyPlaying || hitopyShowingClear || hitopyFinish?.hidden === false) return;
+  if (hitopyStoryIndex >= hitopyStoryLines.length - 1) return;
+  hitopyStoryIndex += 1;
+  renderHitopyStory();
+}
+
+function rewindHitopyStory() {
+  if (hitopyPlaying || hitopyShowingClear) return;
+  if (hitopyStoryIndex <= 0) return;
+  hitopyStoryIndex -= 1;
+  renderHitopyStory();
+}
+
+function startHitopyGame() {
+  hitopyPlaying = true;
+  hitopyShowingClear = false;
+  hitopyStoryView?.classList.add("is-playing");
+  hitopyStoryView?.classList.remove("is-cleared");
+  if (hitopyDialogue) hitopyDialogue.hidden = false;
+  if (hitopyClearPanel) hitopyClearPanel.hidden = true;
+  if (hitopyFinish) hitopyFinish.hidden = true;
+  if (hitopyGame) hitopyGame.hidden = false;
+  if (hitopyGameStart) hitopyGameStart.hidden = true;
+  sayHitopy("光る輪に重なったらクリック。トン、カン、ドン。崩れは押さないで。");
+  bindRhythmStage(rhythmBuildStage);
+  startRhythmGame();
+}
+
+function finishHitopyBuild() {
+  if (!hitopyPlaying) return;
+  const already = isHitopyStoryCleared();
+  awardHitopyFriendship();
+  hitopyPlaying = false;
+  hitopyStoryView?.classList.remove("is-playing");
+  if (hitopyGame) hitopyGame.hidden = true;
+  if (hitopyDialogue) hitopyDialogue.hidden = true;
+  if (hitopyFinishMessage) {
+    hitopyFinishMessage.textContent = already
+      ? "ありがとう。またリズムを合わせてくれたね。友情ポイントは、このまえ渡してあるよ。"
+      : "ありがとう。家が建ったよ。友情ポイントを25%あげるね。";
+  }
+  if (hitopyFinish) hitopyFinish.hidden = false;
+  hitopyFinishHome?.focus();
+}
+
+document.querySelectorAll(".character-button[data-character='hitopy']").forEach((button) => {
+  button.addEventListener("click", openHitopyStory);
+});
+
+hitopyStoryView?.addEventListener("click", (event) => {
+  if (
+    event.target.closest(
+      "#hitopy-story-back, #hitopy-story-prev, #hitopy-game-start, #hitopy-game, #hitopy-finish, #hitopy-clear-panel",
+    )
+  ) {
+    return;
+  }
+  advanceHitopyStory();
+});
+
+hitopyStoryBack?.addEventListener("click", () => {
+  stopHitopyGame();
+  switchUndergroundView("home");
+});
+
+hitopyStoryPrev?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  rewindHitopyStory();
+});
+
+hitopyGameStart?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  startHitopyGame();
+});
+
+hitopyReplay?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  startHitopyStory();
+});
+
+document.getElementById("hitopy-rhythm-again")?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  bindRhythmStage(rhythmBuildStage);
+  startRhythmGame();
+});
+
+hitopyFinishHome?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  stopHitopyGame();
+  switchUndergroundView("home");
+});
+
+document.addEventListener("keydown", (event) => {
+  if (!hitopyStoryView || hitopyStoryView.hidden) return;
+  if (event.key !== "Enter" && event.key !== " ") return;
+  if (
+    event.target.closest?.(
+      "#hitopy-story-back, #hitopy-story-prev, #hitopy-game-start, #hitopy-game, #hitopy-finish-home, #hitopy-replay",
+    )
+  ) {
+    return;
+  }
+  event.preventDefault();
+  if (hitopyFinish && !hitopyFinish.hidden) {
+    stopHitopyGame();
+    switchUndergroundView("home");
+    return;
+  }
+  if (hitopyGameStart && !hitopyGameStart.hidden) {
+    startHitopyGame();
+    return;
+  }
+  advanceHitopyStory();
+});
 
 const NASUPY_MIX_DIR = "./調合ゲーム素材";
 const NASUPY_INGREDIENTS = [
