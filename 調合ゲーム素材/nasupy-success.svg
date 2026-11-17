@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500" role="img" aria-label="°WD¬LgM_">
+  <defs>
+    <radialGradient id="success-glow" cx="50%" cy="45%" r="50%">
+      <stop offset="0%" stop-color="#fff6b8" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#fff6b8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="success-brew" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f6ffb4"/>
+      <stop offset="100%" stop-color="#73c84a"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="250" cy="250" rx="150" ry="52" fill="url(#success-glow)"/>
+  <path d="M92 236c0 86 70 150 158 150s158-64 158-150c0 16-70 34-158 34S92 252 92 236z" fill="#e3e3e3"/>
+  <path d="M112 242c0 70 62 124 138 124s138-54 138-124c0 12-62 28-138 28s-138-16-138-28z" fill="#f7f7f7"/>
+  <ellipse cx="250" cy="236" rx="146" ry="38" fill="#d5d5d5"/>
+  <ellipse cx="250" cy="232" rx="128" ry="30" fill="url(#success-brew)"/>
+  <ellipse cx="214" cy="224" rx="42" ry="10" fill="#ffffff" opacity="0.55"/>
+  <g transform="translate(211 132)">
+    <rect x="24" y="0" width="30" height="16" rx="4" fill="#c9894a"/>
+    <rect x="18" y="16" width="42" height="10" rx="3" fill="#79c2ea"/>
+    <rect x="6" y="26" width="66" height="78" rx="20" fill="#fff8ea" stroke="#f0d8b4" stroke-width="3"/>
+    <rect x="14" y="50" width="50" height="44" rx="16" fill="#86dc58"/>
+    <ellipse cx="30" cy="66" rx="10" ry="6" fill="#ffffff" opacity="0.65"/>
+  </g>
+  <g fill="#ffe98a">
+    <path d="M118 150l7 16 16 7-16 7-7 16-7-16-16-7 16-7z"/>
+    <path d="M372 138l5 12 12 5-12 5-5 12-5-12-12-5 12-5z"/>
+    <path d="M392 214l4 9 9 4-9 4-4 9-4-9-9-4 9-4z"/>
+  </g>
+  <rect x="214" y="378" width="72" height="16" rx="5" fill="#cfcfcf"/>
+</svg>

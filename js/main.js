@@ -863,6 +863,7 @@ function resetPlayMemory() {
   stopMelodyPlayback();
   stopRhythmGame();
   stopMelodyRanking();
+  stopNasupyGame();
 }
 
 let currentUserData = createBlankUserData();
@@ -1043,6 +1044,7 @@ function storyFriendshipFloor() {
   let points = 0;
   if (isChippyStoryCleared()) points += 25;
   if (isSimpyStoryCleared()) points += 25;
+  if (isNasupyStoryCleared()) points += 25;
   return Math.min(100, points);
 }
 
@@ -2776,43 +2778,178 @@ function openRhythmMinigame() {
 document.getElementById("rhythm-start")?.addEventListener("click", startRhythmGame);
 document.getElementById("rhythm-again")?.addEventListener("click", startRhythmGame);
 
-const nasupyStoryLines = [
-  "深層まで降りてきてくれたんだね。ぼくはNASUPY。",
-  "仕事は植物のお医者さん。具合の悪い葉っぱや花を、この虫めがねで診ているよ。",
-  "植物とは話せるんだ。声が小さくなると、どこか具合が悪いってわかる。",
-  "診た子には、ひとつずつ名前をつけちゃう。ここは深層の、植物たちの診療室。",
-  "準備はいいかな。ゲームスタートを押して、いっしょに診てみよう。",
+const NASUPY_MIX_DIR = "./調合ゲーム素材";
+const NASUPY_INGREDIENTS = [
+  { id: "01", name: "むらさききのこ" },
+  { id: "02", name: "くすりのバケツ" },
+  { id: "03", name: "まきひげの葉" },
+  { id: "04", name: "切り株" },
+  { id: "05", name: "とろけるビン" },
+  { id: "06", name: "ランプ" },
 ];
 
-const nasupyGamePendingLine =
-  "診療のつづきは、まだカルテにしてる途中なんだ。できあがったら、また来てね。";
+const nasupyStoryLines = [
+  "深層の診療室へようこそ。ぼくはNASUPY。植物のお医者さんだよ。",
+  "具合の悪い葉っぱたちが、新しい薬を待っているんだ。",
+  "このボウルで、材料をふたつ調合する。上に並んだものを、ボウルへドラッグしてね。",
+  "ひとつ入れると、ボウルの中身が変わる。もうひとつ入れて、薬になる組み合わせを探そう。",
+  "準備はいいかな。ゲームスタートを押して、新しい薬作りを手伝って。",
+];
 
+const nasupyDialogue = document.getElementById("nasupy-dialogue");
 const nasupyDialogueText = document.getElementById("nasupy-dialogue-text");
 const nasupyDialogueNext = document.getElementById("nasupy-dialogue-next");
 const nasupyStoryBack = document.getElementById("nasupy-story-back");
 const nasupyStoryPrev = document.getElementById("nasupy-story-prev");
 const nasupyGameStart = document.getElementById("nasupy-game-start");
+const nasupyGame = document.getElementById("nasupy-game");
+const nasupyItems = document.getElementById("nasupy-items");
+const nasupyBowlSlot = document.getElementById("nasupy-bowl-slot");
+const nasupyBowlImage = document.getElementById("nasupy-bowl-image");
+const nasupyFinish = document.getElementById("nasupy-finish");
+const nasupyFinishMessage = document.getElementById("nasupy-finish-message");
+const nasupyFinishHome = document.getElementById("nasupy-finish-home");
+const nasupyClearPanel = document.getElementById("nasupy-clear-panel");
+const nasupyReplay = document.getElementById("nasupy-replay");
 let nasupyStoryIndex = 0;
-let nasupyAwaitingGame = false;
+let nasupyPlaying = false;
+let nasupyShowingClear = false;
+let nasupyFirstId = "";
+let nasupyLocked = false;
+let nasupyTimers = [];
+let nasupyDrag = null;
+
+function nasupyArt(file) {
+  return `${NASUPY_MIX_DIR}/${file}`;
+}
+
+function nasupyClearStorageKey() {
+  return `deepys-nasupy-cleared:${currentUserId || "local"}`;
+}
+
+function isNasupyStoryCleared() {
+  if (currentUserData?.nasupyCleared) return true;
+  if (!progressCanBeSaved()) return false;
+  try {
+    return localStorage.getItem(nasupyClearStorageKey()) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function awardNasupyFriendship() {
+  const already = isNasupyStoryCleared();
+  if (!already) currentUserData.nasupyCleared = true;
+
+  const nextPoints = already
+    ? Math.max(
+        resolvedFriendshipPoints(currentUserData.friendshipPoints),
+        storyFriendshipFloor(),
+      )
+    : Math.min(
+        100,
+        Math.max(
+          resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
+          storyFriendshipFloor(),
+        ),
+      );
+
+  renderUserData({ friendshipPoints: nextPoints, nasupyCleared: true });
+  syncFriendshipPill();
+
+  if (!already && progressCanBeSaved()) {
+    try {
+      localStorage.setItem(nasupyClearStorageKey(), "1");
+    } catch {
+      // 保存できない場合も、この画面の表示は更新済み
+    }
+    writeProfileCache(currentUserId, currentUserData);
+    setDoc(
+      doc(db, "users", currentUserId),
+      { friendshipPoints: nextPoints, nasupyCleared: true },
+      { merge: true },
+    ).catch((error) => {
+      console.error("友情ポイントの保存エラー:", error);
+    });
+  }
+}
+
+function clearNasupyTimers() {
+  nasupyTimers.forEach((id) => window.clearTimeout(id));
+  nasupyTimers = [];
+}
+
+function queueNasupy(action, delay) {
+  const timer = window.setTimeout(() => {
+    nasupyTimers = nasupyTimers.filter((id) => id !== timer);
+    action();
+  }, delay);
+  nasupyTimers.push(timer);
+}
+
+function clearNasupyDrag() {
+  document.removeEventListener("pointermove", moveNasupyDrag);
+  document.removeEventListener("pointerup", endNasupyDrag);
+  document.removeEventListener("pointercancel", endNasupyDrag);
+  nasupyDrag?.ghost?.remove();
+  nasupyDrag = null;
+  nasupyBowlSlot?.classList.remove("is-hot");
+}
+
+function setNasupyBowl(file, alt) {
+  if (!nasupyBowlImage) return;
+  nasupyBowlImage.alt = alt;
+  nasupyBowlImage.src = nasupyArt(file);
+}
+
+function resetNasupyBoard() {
+  clearNasupyTimers();
+  clearNasupyDrag();
+  nasupyLocked = false;
+  nasupyFirstId = "";
+  setNasupyBowl("nasupy-bowl.png", "調合のボウル");
+  nasupyItems?.querySelectorAll(".nasupy-item").forEach((item) => {
+    item.classList.remove("is-used");
+  });
+}
+
+function stopNasupyGame() {
+  nasupyPlaying = false;
+  nasupyLocked = false;
+  clearNasupyTimers();
+  clearNasupyDrag();
+  nasupyStoryView?.classList.remove("is-playing");
+  if (nasupyGame) nasupyGame.hidden = true;
+  if (nasupyFinish) nasupyFinish.hidden = true;
+}
 
 function updateNasupyPrev() {
   if (!nasupyStoryPrev) return;
-  nasupyStoryPrev.hidden = false;
-  nasupyStoryPrev.disabled = nasupyStoryIndex <= 0 && !nasupyAwaitingGame;
+  const inDialogue = !nasupyPlaying && !nasupyShowingClear && nasupyFinish?.hidden !== false;
+  nasupyStoryPrev.hidden = !inDialogue;
+  nasupyStoryPrev.disabled = nasupyStoryIndex <= 0;
+}
+
+function sayNasupy(message, hint = "") {
+  if (!nasupyDialogueText) return;
+  nasupyDialogueText.textContent = message;
+  if (!nasupyDialogueNext) return;
+  nasupyDialogueNext.hidden = !hint;
+  nasupyDialogueNext.textContent = hint;
+  nasupyDialogueNext.classList.remove("is-more");
+  updateNasupyPrev();
 }
 
 function renderNasupyStory() {
   const isLast = nasupyStoryIndex >= nasupyStoryLines.length - 1;
-  const showStart = isLast && !nasupyAwaitingGame;
-  nasupyDialogueText.textContent = nasupyAwaitingGame
-    ? nasupyGamePendingLine
-    : nasupyStoryLines[nasupyStoryIndex];
+  const showStart = isLast && !nasupyPlaying && nasupyFinish?.hidden !== false;
+  nasupyDialogueText.textContent = nasupyStoryLines[nasupyStoryIndex];
   nasupyGameStart.hidden = !showStart;
-  nasupyDialogueNext.hidden = showStart || nasupyAwaitingGame;
+  nasupyDialogueNext.hidden = showStart || nasupyPlaying;
   nasupyDialogueNext.textContent = "click";
   nasupyDialogueNext.classList.toggle(
     "is-more",
-    !isLast && !showStart && !nasupyAwaitingGame,
+    !isLast && !showStart && !nasupyPlaying,
   );
   updateNasupyPrev();
 }
@@ -2820,44 +2957,280 @@ function renderNasupyStory() {
 function startNasupyStory() {
   activeStoryId = "nasupy";
   nasupyStoryIndex = 0;
-  nasupyAwaitingGame = false;
+  nasupyShowingClear = false;
+  stopNasupyGame();
+  resetNasupyBoard();
+  if (nasupyDialogue) nasupyDialogue.hidden = false;
+  if (nasupyClearPanel) nasupyClearPanel.hidden = true;
+  nasupyStoryView?.classList.remove("is-cleared");
   renderNasupyStory();
   switchUndergroundView("story");
 }
 
+function showNasupyClearScreen() {
+  activeStoryId = "nasupy";
+  nasupyShowingClear = true;
+  stopNasupyGame();
+  if (nasupyDialogue) nasupyDialogue.hidden = true;
+  if (nasupyClearPanel) nasupyClearPanel.hidden = false;
+  nasupyStoryView?.classList.add("is-cleared");
+  switchUndergroundView("story");
+}
+
+function openNasupyStory() {
+  if (isNasupyStoryCleared()) {
+    showNasupyClearScreen();
+    return;
+  }
+  startNasupyStory();
+}
+
 function advanceNasupyStory() {
-  if (nasupyAwaitingGame) return;
+  if (nasupyPlaying || nasupyShowingClear || nasupyFinish?.hidden === false) return;
   if (nasupyStoryIndex >= nasupyStoryLines.length - 1) return;
   nasupyStoryIndex += 1;
   renderNasupyStory();
 }
 
 function rewindNasupyStory() {
-  if (nasupyAwaitingGame) {
-    nasupyAwaitingGame = false;
-    renderNasupyStory();
-    return;
-  }
+  if (nasupyPlaying || nasupyShowingClear) return;
   if (nasupyStoryIndex <= 0) return;
   nasupyStoryIndex -= 1;
   renderNasupyStory();
 }
 
-function holdNasupyGame() {
-  nasupyAwaitingGame = true;
-  renderNasupyStory();
+function finishNasupyGame() {
+  if (!nasupyPlaying) return;
+  const already = isNasupyStoryCleared();
+  awardNasupyFriendship();
+  nasupyPlaying = false;
+  nasupyLocked = true;
+  clearNasupyDrag();
+  if (nasupyDialogue) nasupyDialogue.hidden = true;
+  if (nasupyFinishMessage) {
+    nasupyFinishMessage.textContent = already
+      ? "ありがとう。また新しい薬を一緒に作ってくれたね。友情ポイントは、このまえ渡してあるよ。"
+      : "ありがとう。新しい薬ができたよ。友情ポイントを25%あげるね。";
+  }
+  if (nasupyFinish) nasupyFinish.hidden = false;
+  nasupyFinishHome?.focus();
+}
+
+function placeNasupyIngredient(id) {
+  if (nasupyLocked || !nasupyPlaying) return;
+  const item = nasupyItems?.querySelector(`[data-item="${id}"]`);
+  if (!item || item.classList.contains("is-used")) return;
+
+  if (!nasupyFirstId) {
+    nasupyFirstId = id;
+    item.classList.add("is-used");
+    setNasupyBowl(`nasupy-item${id}-mix.png`, "材料が入ったボウル");
+    sayNasupy("ひとつ入った。もうひとつ、ボウルに入れてみて。");
+    return;
+  }
+
+  item.classList.add("is-used");
+  nasupyLocked = true;
+  const success =
+    nasupyFirstId !== id &&
+    (nasupyFirstId === "02" || nasupyFirstId === "03") &&
+    (id === "02" || id === "03");
+  if (!success) {
+    setNasupyBowl("nasupy-error.png", "調合失敗");
+    sayNasupy("これは新しい薬にならなかった。もう一度、ふたつ選んでみて。");
+    queueNasupy(() => {
+      if (!nasupyPlaying) return;
+      resetNasupyBoard();
+      sayNasupy("材料をボウルへドラッグして、ふたつ調合してね。");
+    }, 2200);
+    return;
+  }
+
+  setNasupyBowl("nasupy-thinking.png", "調合を考えている");
+  sayNasupy("この組み合わせだ。少し、考えさせて。");
+  queueNasupy(() => {
+    if (!nasupyPlaying) return;
+    setNasupyBowl("nasupy-success.png", "新しい薬ができた");
+    sayNasupy("できた。植物たちのための、新しい薬だよ。");
+    queueNasupy(finishNasupyGame, 1200);
+  }, 1500);
+}
+
+function nasupyPointerHitsBowl(x, y) {
+  const pad = 72;
+  const rects = [nasupyBowlImage, nasupyBowlSlot]
+    .map((element) => element?.getBoundingClientRect())
+    .filter((rect) => rect && rect.width > 0 && rect.height > 0);
+  return rects.some(
+    (rect) =>
+      x >= rect.left - pad &&
+      x <= rect.right + pad &&
+      y >= rect.top - pad &&
+      y <= rect.bottom + pad,
+  );
+}
+
+function positionNasupyGhost(ghost, x, y) {
+  ghost.style.left = `${x}px`;
+  ghost.style.top = `${y}px`;
+}
+
+function beginNasupyDrag(event) {
+  if (nasupyLocked || !nasupyPlaying) return;
+  if (event.pointerType === "mouse" && event.button !== 0) return;
+  const item = event.currentTarget;
+  if (item.classList.contains("is-used")) return;
+  if (event.pointerType !== "mouse") event.preventDefault();
+  event.stopPropagation();
+  const image = item.querySelector("img");
+  const ghost = image?.cloneNode(true);
+  if (ghost) {
+    ghost.className = "nasupy-drag-ghost";
+    ghost.alt = "";
+    document.body.append(ghost);
+    positionNasupyGhost(ghost, event.clientX, event.clientY);
+  }
+  nasupyDrag = {
+    id: item.dataset.item,
+    ghost,
+    item,
+    pointerId: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    native: false,
+  };
+  document.addEventListener("pointermove", moveNasupyDrag);
+  document.addEventListener("pointerup", endNasupyDrag);
+  document.addEventListener("pointercancel", endNasupyDrag);
+  nasupyBowlSlot?.classList.toggle("is-hot", nasupyPointerHitsBowl(event.clientX, event.clientY));
+}
+
+function moveNasupyDrag(event) {
+  if (!nasupyDrag || event.pointerId !== nasupyDrag.pointerId || nasupyDrag.native) return;
+  nasupyDrag.x = event.clientX;
+  nasupyDrag.y = event.clientY;
+  if (nasupyDrag.ghost) positionNasupyGhost(nasupyDrag.ghost, event.clientX, event.clientY);
+  nasupyBowlSlot?.classList.toggle("is-hot", nasupyPointerHitsBowl(event.clientX, event.clientY));
+}
+
+function endNasupyDrag(event) {
+  if (!nasupyDrag || nasupyDrag.native) return;
+  if (event.pointerId !== undefined && event.pointerId !== nasupyDrag.pointerId) return;
+  const x = event.clientX || nasupyDrag.x;
+  const y = event.clientY || nasupyDrag.y;
+  const id = nasupyDrag.id;
+  const dropped = nasupyPointerHitsBowl(x, y);
+  clearNasupyDrag();
+  if (dropped) placeNasupyIngredient(id);
+}
+
+function beginNasupyNativeDrag(event) {
+  const item = event.currentTarget;
+  if (nasupyLocked || !nasupyPlaying || item.classList.contains("is-used")) {
+    event.preventDefault();
+    return;
+  }
+  event.dataTransfer.setData("application/x-nasupy-item", item.dataset.item);
+  event.dataTransfer.setData("text/plain", item.dataset.item);
+  event.dataTransfer.effectAllowed = "copy";
+  const image = item.querySelector("img");
+  if (image) event.dataTransfer.setDragImage(image, image.width / 2, image.height / 2);
+  if (nasupyDrag?.ghost) nasupyDrag.ghost.remove();
+  nasupyDrag = {
+    id: item.dataset.item,
+    ghost: null,
+    item,
+    pointerId: null,
+    x: 0,
+    y: 0,
+    native: true,
+  };
+}
+
+function allowNasupyDrop(event) {
+  if (!nasupyPlaying || nasupyLocked) return;
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
+  nasupyBowlSlot?.classList.add("is-hot");
+}
+
+function dropNasupyIngredient(event) {
+  if (!nasupyPlaying || nasupyLocked) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const id =
+    event.dataTransfer?.getData("application/x-nasupy-item") ||
+    event.dataTransfer?.getData("text/plain");
+  clearNasupyDrag();
+  if (id) placeNasupyIngredient(id);
+}
+
+function buildNasupyItems() {
+  if (!nasupyItems || nasupyItems.childElementCount) return;
+  NASUPY_INGREDIENTS.forEach((ingredient) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "nasupy-item";
+    button.draggable = true;
+    button.dataset.item = ingredient.id;
+    button.setAttribute("aria-label", ingredient.name);
+    const image = document.createElement("img");
+    image.src = nasupyArt(`nasupy-item${ingredient.id}.png`);
+    image.alt = "";
+    image.draggable = true;
+    button.append(image);
+    button.addEventListener("pointerdown", beginNasupyDrag);
+    button.addEventListener("dragstart", beginNasupyNativeDrag);
+    button.addEventListener("dragend", () => {
+      if (nasupyDrag?.native) clearNasupyDrag();
+    });
+    button.addEventListener("click", (event) => event.stopPropagation());
+    nasupyItems.append(button);
+  });
+  if (!nasupyBowlSlot.dataset.dropReady) {
+    nasupyBowlSlot.dataset.dropReady = "1";
+    nasupyBowlSlot.addEventListener("dragenter", allowNasupyDrop);
+    nasupyBowlSlot.addEventListener("dragover", allowNasupyDrop);
+    nasupyBowlSlot.addEventListener("dragleave", () => nasupyBowlSlot.classList.remove("is-hot"));
+    nasupyBowlSlot.addEventListener("drop", dropNasupyIngredient);
+  }
+}
+
+function startNasupyGame() {
+  buildNasupyItems();
+  nasupyPlaying = true;
+  nasupyShowingClear = false;
+  nasupyStoryView?.classList.add("is-playing");
+  nasupyStoryView?.classList.remove("is-cleared");
+  if (nasupyDialogue) nasupyDialogue.hidden = false;
+  if (nasupyClearPanel) nasupyClearPanel.hidden = true;
+  if (nasupyFinish) nasupyFinish.hidden = true;
+  if (nasupyGame) nasupyGame.hidden = false;
+  if (nasupyGameStart) nasupyGameStart.hidden = true;
+  resetNasupyBoard();
+  sayNasupy("材料をボウルへドラッグして、ふたつ調合してね。");
 }
 
 document
   .querySelectorAll(".character-button[data-character='nasupy']")
   .forEach((button) => {
-    button.addEventListener("click", startNasupyStory);
+    button.addEventListener("click", openNasupyStory);
   });
+
+nasupyStoryView?.addEventListener("dragover", (event) => {
+  if (!nasupyPlaying || nasupyLocked || event.target.closest(".nasupy-item")) return;
+  allowNasupyDrop(event);
+});
+
+nasupyStoryView?.addEventListener("drop", (event) => {
+  if (!nasupyPlaying || event.target.closest(".nasupy-item")) return;
+  dropNasupyIngredient(event);
+});
 
 nasupyStoryView?.addEventListener("click", (event) => {
   if (
     event.target.closest(
-      "#nasupy-story-back, #nasupy-story-prev, #nasupy-game-start",
+      "#nasupy-story-back, #nasupy-story-prev, #nasupy-game-start, #nasupy-game, #nasupy-finish, #nasupy-clear-panel",
     )
   ) {
     return;
@@ -2866,6 +3239,7 @@ nasupyStoryView?.addEventListener("click", (event) => {
 });
 
 nasupyStoryBack?.addEventListener("click", () => {
+  stopNasupyGame();
   switchUndergroundView("home");
 });
 
@@ -2876,7 +3250,18 @@ nasupyStoryPrev?.addEventListener("click", (event) => {
 
 nasupyGameStart?.addEventListener("click", (event) => {
   event.stopPropagation();
-  holdNasupyGame();
+  startNasupyGame();
+});
+
+nasupyReplay?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  startNasupyStory();
+});
+
+nasupyFinishHome?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  stopNasupyGame();
+  switchUndergroundView("home");
 });
 
 document.addEventListener("keydown", (event) => {
@@ -2884,14 +3269,19 @@ document.addEventListener("keydown", (event) => {
   if (event.key !== "Enter" && event.key !== " ") return;
   if (
     event.target.closest?.(
-      "#nasupy-story-back, #nasupy-story-prev, #nasupy-game-start",
+      "#nasupy-story-back, #nasupy-story-prev, #nasupy-game-start, #nasupy-game, #nasupy-finish-home, #nasupy-replay",
     )
   ) {
     return;
   }
   event.preventDefault();
-  if (!nasupyGameStart.hidden) {
-    holdNasupyGame();
+  if (nasupyFinish && !nasupyFinish.hidden) {
+    stopNasupyGame();
+    switchUndergroundView("home");
+    return;
+  }
+  if (nasupyGameStart && !nasupyGameStart.hidden) {
+    startNasupyGame();
     return;
   }
   advanceNasupyStory();

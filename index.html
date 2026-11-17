@@ -46,8 +46,7 @@
       rel="modulepreload"
       href="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js"
     />
-    <link rel="stylesheet" href="./css/style.css?v=20261117-inline-qr" />
-    <link rel="stylesheet" href="./css/style.css?v=20261112-sindan" />
+    <link rel="stylesheet" href="./css/style.css?v=20261117-simpy-orange" />
   </head>
 
   <body>
@@ -565,6 +564,18 @@
             src="./images/purple.png"
             alt="NASUPY"
           />
+          <div id="nasupy-game" class="nasupy-game" hidden>
+            <div class="nasupy-items" id="nasupy-items"></div>
+            <div class="nasupy-bowl-slot" id="nasupy-bowl-slot">
+              <img
+                id="nasupy-bowl-image"
+                class="nasupy-bowl-image"
+                src="./調合ゲーム素材/nasupy-bowl.png"
+                alt="調合のボウル"
+                draggable="false"
+              />
+            </div>
+          </div>
           <div class="chippy-dialogue" id="nasupy-dialogue">
             <p class="chippy-dialogue-name nasupy-dialogue-name">NASUPY</p>
             <p
@@ -593,6 +604,22 @@
               ゲームスタート
             </button>
           </div>
+          <div id="nasupy-finish" class="chippy-finish" hidden>
+            <p id="nasupy-finish-message"></p>
+            <button id="nasupy-finish-home" type="button">クリア</button>
+          </div>
+          <section
+            id="nasupy-clear-panel"
+            class="chippy-clear-panel nasupy-clear-panel"
+            hidden
+          >
+            <p class="chippy-clear-kicker">NASUPY</p>
+            <h2>このストーリーはクリア！</h2>
+            <p>友情ポイントを25%もらったよ。</p>
+            <button id="nasupy-replay" type="button">
+              もう一度<br />暮らしを見てみる？
+            </button>
+          </section>
         </div>
 
         <section id="minigame-view-content" class="minigame-view" hidden>
@@ -1471,6 +1498,6 @@
       </div>
     </section>
 
-    <script type="module" src="./js/main.js?v=20261117-descent-home"></script>
+    <script type="module" src="./js/main.js?v=20261117-nasupy-success"></script>
   </body>
 </html>
