@@ -10,13 +10,12 @@
   box-sizing: border-box;
 }
 
-/* ① ファーストビュー */
+/* ファーストビュー */
 .first-view {
   background-image: url("../images/firstview.webp");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -30,50 +29,7 @@
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
-/* ② ストーリー画面 */
-.story-screen {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: white;
-  padding: 30px;
-}
-
-.story-content {
-  width: min(100%, 960px);
-  text-align: center;
-}
-
-#story-text {
-  min-height: 200px;
-  font-size: clamp(20px, 2.4vw, 30px);
-  line-height: 1.8;
-  white-space: pre-line;
-  text-align: left;
-}
-
-.story-dots {
-  display: flex;
-  justify-content: center;
-  gap: 40px;
-  margin: 45px 0;
-}
-
-.dot {
-  width: 22px;
-  height: 22px;
-  border: 3px solid #222;
-  border-radius: 50%;
-  box-sizing: border-box;
-}
-
-.dot.active {
-  background: #222;
-}
-
-#start-story,
-#next-story,
-#go-underground {
+#start-game {
   border: none;
   border-radius: 50px;
   background: #ff9138;
@@ -83,7 +39,19 @@
   cursor: pointer;
 }
 
-/* ③ 参加方法選択画面 */
+#email-login-shortcut {
+  margin-top: 10px;
+  border: none;
+  background: transparent;
+  color: white;
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  text-shadow: 0 1px 4px #322;
+}
+
+/* 参加方法選択画面 */
 .login-screen {
   display: flex;
   flex-direction: column;
@@ -107,18 +75,9 @@
   background: #ff9138;
 }
 
-@media (max-width: 600px) {
-  .first-view {
-    background-position: center;
-  }
-
-  .story-dots {
-    gap: 25px;
-  }
-
-  #story-text {
-    min-height: 260px;
-  }
+.login-story-link {
+  color: #543622;
+  text-underline-offset: 0.2em;
 }
 
 /* ゲスト参加画面 */
@@ -239,6 +198,8 @@ body {
   font-size: 15px;
   font-weight: 600;
   text-align: left;
+  text-decoration: none;
+  box-sizing: border-box;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -2767,6 +2728,8 @@ body {
 }
 
 .space-view {
+  --space-map-art: url("../images/space-map-bg.webp?v=2");
+  --space-map-ratio: 5 / 6;
   --space-panel-width: 340px;
   --space-panel-inset: 24px;
   position: static;
@@ -2855,51 +2818,14 @@ body {
   cursor: grabbing;
 }
 
-/* 地層キャンバス：上が明るく、下に行くほど暗くなる地層グラデーション */
+/* 背景の3層に合わせ、縦横比を保ったまま表示範囲を調整する。 */
 .space-map-canvas {
   position: relative;
-  width: 3600px;
-  height: 2700px;
-  background:
-    /* 地層の微細な粒子・堆積感 */
-    radial-gradient(circle at 20% 15%, rgba(255, 246, 230, 0.16) 0%, transparent 45%),
-    radial-gradient(circle at 65% 48%, rgba(165, 102, 54, 0.14) 0%, transparent 50%),
-    radial-gradient(circle at 35% 82%, rgba(10, 4, 1, 0.45) 0%, transparent 55%),
-    /* メインの上（明）→下（暗）地層グラデーション */
-    linear-gradient(180deg,
-      #f2d3a8 0%,
-      #e2b682 11%,
-      #cc965f 23%,
-      #b37a45 35%,
-      #965e32 47%,
-      #7a4722 59%,
-      #5c3317 70%,
-      #41210e 81%,
-      #281307 91%,
-      #130803 100%);
-}
-
-/* 地表付近の明るい光のにじみ */
-.stratum-surface-glow {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 260px;
-  background: radial-gradient(ellipse 90% 100% at 42% 0%,
-      rgba(255, 250, 235, 0.62) 0%,
-      rgba(255, 234, 195, 0.25) 55%,
-      transparent 100%);
-  pointer-events: none;
-}
-
-/* SVG波状地層オーバーレイ */
-.stratum-waves-svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
+  display: grid;
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  width: max(clamp(1200px, 128vw, 1680px), 100%, 140dvh);
+  aspect-ratio: var(--space-map-ratio);
+  background: #49323b var(--space-map-art) center / 100% 100% no-repeat;
 }
 
 /* 左側の深度メモリ */
@@ -2935,151 +2861,9 @@ body {
   background: rgba(255, 240, 220, 0.55);
 }
 
-/* 各層（第1層・第2層・第3層）のセクション（直線ボーダーを廃止し自然につなげる） */
 .stratum-layer {
   position: relative;
-  height: 900px;
-  box-sizing: border-box;
-  padding: 120px 24px 100px 80px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
   z-index: 1;
-}
-
-.layer-header-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  align-self: flex-start;
-  background: rgba(38, 22, 12, 0.38);
-  border: 1px solid rgba(255, 238, 216, 0.35);
-  border-radius: 999px;
-  padding: 6px 16px 6px 8px;
-  backdrop-filter: blur(4px);
-}
-
-.layer-1 .layer-header-tag {
-  background: rgba(92, 54, 26, 0.42);
-  border-color: rgba(255, 244, 224, 0.55);
-}
-
-.layer-depth-pill {
-  background: #f6e4cc;
-  color: #462b17;
-  font-size: 12px;
-  font-weight: 800;
-  padding: 4px 11px;
-  border-radius: 999px;
-}
-
-.layer-2 .layer-depth-pill {
-  background: #e4bfa0;
-  color: #3b2210;
-}
-
-.layer-3 .layer-depth-pill {
-  background: #b58d6d;
-  color: #211106;
-}
-
-.layer-desc {
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff5e6;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-}
-
-/* 地層内の小石・鉱石アクセント */
-.stratum-pebbles {
-  position: relative;
-  flex: 1;
-  width: 100%;
-  pointer-events: none;
-}
-
-.pebble {
-  position: absolute;
-  display: block;
-  border-radius: 48% 52% 43% 57% / 54% 45% 55% 46%;
-  opacity: 0.38;
-}
-
-.pebble.p1 {
-  width: 28px;
-  height: 16px;
-  top: 28%;
-  left: 18%;
-  background: #9e6a3c;
-  box-shadow: 120px 65px 0 -3px rgba(255, 242, 220, 0.35);
-}
-
-.pebble.p2 {
-  width: 42px;
-  height: 22px;
-  top: 58%;
-  right: 22%;
-  background: #8a582e;
-}
-
-.pebble.p3 {
-  width: 18px;
-  height: 12px;
-  top: 76%;
-  left: 42%;
-  background: #f7dfc0;
-}
-
-.pebble.p4 {
-  width: 36px;
-  height: 20px;
-  top: 25%;
-  right: 28%;
-  background: #522d15;
-}
-
-.pebble.p5 {
-  width: 24px;
-  height: 15px;
-  top: 55%;
-  left: 25%;
-  background: #d9a577;
-  opacity: 0.25;
-}
-
-.pebble.p6 {
-  width: 46px;
-  height: 24px;
-  top: 74%;
-  right: 16%;
-  background: #3d200d;
-}
-
-.pebble.p7 {
-  width: 34px;
-  height: 18px;
-  top: 30%;
-  left: 30%;
-  background: #140903;
-  opacity: 0.55;
-}
-
-.pebble.p8 {
-  width: 22px;
-  height: 14px;
-  top: 56%;
-  right: 32%;
-  background: #8f6848;
-  opacity: 0.22;
-}
-
-.pebble.p9 {
-  width: 50px;
-  height: 24px;
-  top: 78%;
-  left: 52%;
-  background: #0d0502;
-  opacity: 0.6;
 }
 
 .space-right-panel {
@@ -3561,32 +3345,19 @@ body {
 
 .house-ground {
   position: absolute;
-  top: 170px;
-  bottom: 100px;
-  left: 48px;
-  right: 20px;
+  inset: 13% 6% 15%;
   outline: none;
 }
 
-.is-placing-house .house-ground { cursor: crosshair; }
-.is-placing-house .house-ground::after {
-  content: "好きな場所をクリックして置く";
-  position: absolute;
-  left: 50%;
-  top: 44%;
-  transform: translate(-50%, -50%);
-  color: #fff4df;
-  font-size: 12px;
-  text-shadow: 0 1px 5px #382317;
-  pointer-events: none;
-  white-space: nowrap;
+.is-placing-house .house-ground {
+  cursor: crosshair;
 }
 
 .placed-house {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 220px;
-  height: 210px;
+  width: 180px;
+  height: 176px;
   margin: 0;
   padding: 18px 0 0;
   box-sizing: border-box;
@@ -3595,8 +3366,42 @@ body {
   background: transparent;
   font: inherit;
 }
-.own-house { cursor: pointer; z-index: 2; }
-.resident-house { pointer-events: none; }
+
+.placed-house::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  bottom: 10%;
+  left: 17%;
+  width: 66%;
+  height: 13%;
+  background: radial-gradient(ellipse, #34201755, transparent 72%);
+  pointer-events: none;
+}
+
+.own-house {
+  cursor: pointer;
+}
+
+.resident-house {
+  pointer-events: none;
+}
+
+.resident-house-trigger {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.resident-house-trigger:enabled {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
 .placed-house img {
   width: 100%;
   height: 100%;
@@ -3604,21 +3409,43 @@ body {
   pointer-events: none;
   filter: drop-shadow(0 8px 5px #36201455);
 }
-.own-house:hover img { filter: drop-shadow(0 6px 8px #ffe7a477); }
+
+.own-house:hover img,
+.resident-house-trigger:is(:hover, :focus-visible) img {
+  filter: drop-shadow(0 6px 8px #ffe7a477);
+}
+
 .house-nameplate {
   position: absolute;
   top: -4px;
   left: 50%;
   transform: translateX(-50%);
+  max-width: 12em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #321e16db;
   color: #fff0d5;
   text-shadow: 0 2px 5px #3f2519, 0 0 10px #3f2519;
   font-size: 12px;
   font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.placed-house:has(.house-speech) { z-index: 3; }
-.placed-house:hover, .placed-house:focus-within { z-index: 5; }
+.placed-house:has(.house-speech) {
+  z-index: 3;
+}
+
+.placed-house:hover,
+.placed-house:focus-within {
+  z-index: 5;
+}
+
+.placed-house.own-house {
+  z-index: 6;
+}
+
 .house-speech {
   position: absolute;
   left: 50%;
@@ -3641,6 +3468,7 @@ body {
   user-select: text;
   -webkit-user-select: text;
 }
+
 .house-speech::after {
   content: "";
   position: absolute;
@@ -3653,6 +3481,7 @@ body {
   background: #fff4df;
   transform: rotate(45deg);
 }
+
 .house-speech::before {
   content: "";
   position: absolute;
@@ -3663,6 +3492,7 @@ body {
   background: #d1ac7f;
   pointer-events: none;
 }
+
 .house-speech-text {
   display: block;
   max-height: 8.25em;
@@ -3670,8 +3500,20 @@ body {
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
-.house-speech-time { display: block; margin-top: 6px; font-size: 10px; color: #93785b; }
-.board-house-note { margin: 6px 0 12px; color: #93785b; font-size: 10px; line-height: 1.6; }
+
+.house-speech-time {
+  display: block;
+  margin-top: 6px;
+  font-size: 10px;
+  color: #93785b;
+}
+
+.board-house-note {
+  margin: 6px 0 12px;
+  color: #93785b;
+  font-size: 10px;
+  line-height: 1.6;
+}
 
 .house-map-controls {
   position: absolute;
@@ -3725,6 +3567,7 @@ body {
 .house-toolbar button:disabled { opacity: 0.4; cursor: default; }
 .house-toolbar [hidden] { display: none; }
 .own-house:focus-visible,
+.resident-house-trigger:focus-visible,
 .house-ground:focus-visible,
 .house-toolbar button:focus-visible,
 .house-layer-nav button:focus-visible,
@@ -3737,10 +3580,33 @@ body {
   line-height: 1.7;
 }
 
-.house-preview-art { width: 100%; height: 170px; }
-#house-preview-image { width: 100%; height: 100%; object-fit: contain; padding: 10px 10px 30px; box-sizing: border-box; }
-#house-preview-image[hidden], #house-preview-empty[hidden] { display: none; }
-#house-preview-empty { font-size: 12px; line-height: 1.9; text-align: center; color: #f5dec0; margin: auto 0; padding-bottom: 20px; }
+.house-preview-art {
+  width: 100%;
+  height: 170px;
+}
+
+#house-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 10px 10px 30px;
+  box-sizing: border-box;
+}
+
+#house-preview-image[hidden],
+#house-preview-empty[hidden] {
+  display: none;
+}
+
+#house-preview-empty {
+  font-size: 12px;
+  line-height: 1.9;
+  text-align: center;
+  color: #f5dec0;
+  margin: auto 0;
+  padding-bottom: 20px;
+}
+
 .house-preview { height: 170px; }
 
 .house-picker {
@@ -3757,7 +3623,245 @@ body {
   box-shadow: 0 24px 100px #1b100c66;
 }
 
-.house-picker::backdrop { background: #271b13aa; backdrop-filter: blur(4px); }
+.house-picker::backdrop {
+  background: #271b13aa;
+  backdrop-filter: blur(4px);
+}
+
+.resident-profile-dialog {
+  pointer-events: auto;
+  box-sizing: border-box;
+  width: min(440px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  margin: auto;
+  border: 1px solid #e3c7a2;
+  border-radius: 24px;
+  background: #fff8eb;
+  color: #3b2618;
+  box-shadow: 0 22px 66px #1f110c88;
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
+  opacity: 0;
+  transform: translateY(12px) scale(.98);
+  transition: opacity 160ms ease-in, transform 160ms ease-in,
+    display 160ms allow-discrete, overlay 160ms allow-discrete;
+}
+
+.resident-profile-dialog[open] {
+  opacity: 1;
+  transform: none;
+  transition-duration: 240ms;
+  transition-timing-function: cubic-bezier(.2, .72, .25, 1);
+}
+
+.resident-profile-dialog::backdrop {
+  background: #26170f9c;
+  opacity: 0;
+  transition: opacity 160ms ease-in, display 160ms allow-discrete, overlay 160ms allow-discrete;
+}
+
+.resident-profile-dialog[open]::backdrop {
+  opacity: 1;
+  transition-duration: 240ms;
+  transition-timing-function: ease-out;
+}
+
+@starting-style {
+  .resident-profile-dialog[open] {
+    opacity: 0;
+    transform: translateY(12px) scale(.98);
+  }
+
+  .resident-profile-dialog[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .resident-profile-dialog,
+  .resident-profile-dialog[open],
+  .resident-profile-dialog::backdrop,
+  .resident-profile-dialog[open]::backdrop {
+    transition: none;
+  }
+}
+
+.resident-profile-header {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  min-height: 206px;
+  box-sizing: border-box;
+  padding: 52px clamp(18px, 6vw, 28px) 24px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 79% 68%, #f1cb8f 0%, transparent 57%),
+    linear-gradient(155deg, #edcda2, #dba974);
+  border-bottom: 1px solid #dcba92;
+}
+
+.resident-profile-header::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 22%;
+  right: -12%;
+  width: 70%;
+  height: 108%;
+  border: 1px solid #fff3d75c;
+  border-radius: 50%;
+  box-shadow: 0 0 0 16px #fff3d726, 0 0 0 34px #fff3d71a;
+  pointer-events: none;
+}
+
+.resident-profile-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+}
+
+.resident-profile-close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid #68402530;
+  border-radius: 50%;
+  background: #fff6e1eb;
+  color: #513421;
+  font: inherit;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.resident-profile-close:hover {
+  background: #fffbf0;
+}
+
+.resident-profile-close:focus-visible {
+  outline: 2px solid #593722;
+  outline-offset: 2px;
+}
+
+.resident-profile-house {
+  position: absolute;
+  z-index: -1;
+  right: 8px;
+  bottom: 7px;
+  width: 46%;
+  max-height: 84%;
+  object-fit: contain;
+  object-position: right bottom;
+  filter: drop-shadow(0 8px 9px #7046273d);
+}
+
+.resident-profile-house.is-flipped {
+  transform: scaleX(-1);
+}
+
+.resident-profile-identity {
+  max-width: 58%;
+}
+
+.resident-profile-identity .profile-avatar {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 9px;
+  background: #fff8ec;
+  box-shadow: 0 2px 8px #8d543535;
+}
+
+.resident-profile-identity h2 {
+  margin: 0;
+  font-size: clamp(23px, 6vw, 31px);
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.resident-profile-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 9px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fff3df;
+  color: #5d4d41;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.resident-profile-status::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #857267;
+}
+
+.resident-profile-status.is-online {
+  background: #eaf2da;
+  color: #345333;
+}
+
+.resident-profile-status.is-online::before {
+  background: #4b7443;
+}
+
+.resident-profile-body {
+  padding: 22px clamp(18px, 6vw, 28px) 26px;
+}
+
+.resident-profile-body h3 {
+  margin: 0;
+  color: #6e503c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.resident-profile-body .profile-bio {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.resident-profile-body .profile-tags {
+  margin-top: 0;
+}
+
+#resident-profile-intro:not([hidden])+.profile-tags {
+  margin-top: 16px;
+}
+
+.resident-profile-body .profile-tags:empty {
+  display: none;
+}
+
+.resident-profile-body .tag {
+  padding: 4px 10px;
+  background: #f2e4d0;
+  font-size: 12px;
+}
+
+@media (max-width: 420px) {
+  .resident-profile-header {
+    min-height: 184px;
+    padding-bottom: 20px;
+  }
+
+  .resident-profile-body {
+    padding-top: 19px;
+    padding-bottom: 22px;
+  }
+}
+
 .house-picker-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
 .house-picker h2 { margin: 4px 0 0; font-size: 24px; }
 .house-picker-eyebrow { margin: 0; font-size: 11px; letter-spacing: 0.15em; color: #987857; }
@@ -3783,31 +3887,88 @@ body {
 .house-type-option span { font-size: 10px; line-height: 1.5; }
 
 @media (max-width: 1200px) and (min-width: 951px) {
-  .space-view { --space-panel-width: 285px; }
-  .space-mode .layer-desc, .space-mode .stratum-depth-scale { display: none; }
-  .space-mode .stratum-layer { padding-left: 38px; }
-  .house-toolbar button { padding: 9px 8px; font-size: 11px; }
+  .space-view {
+    --space-panel-width: 285px;
+  }
+
+  .space-mode .stratum-depth-scale {
+    display: none;
+  }
+
+  .house-toolbar button {
+    padding: 9px 8px;
+    font-size: 11px;
+  }
 }
 
 @media (max-width: 950px) {
-  .space-map-hud { right: 16px; }
-  .placeholder-layer-badge { font-size: 11px; padding: 7px 10px; }
-  .house-map-controls { left: 12px; right: 12px; bottom: 12px; }
-  .house-toolbar button { padding: 9px 8px; font-size: 11px; }
-  .space-mode .depth-tick { font-size: 9px; }
-  .space-mode .layer-desc { display: none; }
-  .space-mode .stratum-depth-scale { width: 25px; left: 10px; }
-  .space-mode .depth-tick { writing-mode: vertical-rl; }
+  .space-map-hud {
+    right: 16px;
+  }
+
+  .placeholder-layer-badge {
+    font-size: 11px;
+    padding: 7px 10px;
+  }
+
+  .house-map-controls {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .house-toolbar button {
+    padding: 9px 8px;
+    font-size: 11px;
+  }
+
+  .space-mode .depth-tick {
+    font-size: 9px;
+  }
+
+  .space-mode .stratum-depth-scale {
+    width: 25px;
+    left: 10px;
+  }
+
+  .space-mode .depth-tick {
+    writing-mode: vertical-rl;
+  }
 }
 
 @media (max-width: 550px) {
-  .house-speech { width: 190px; padding: 10px 12px 8px; font-size: 11px; }
+  .placed-house {
+    width: 156px;
+    height: 152px;
+  }
 
-  .house-nameplate { font-size: 10px; padding: 5px 7px; }
-  .house-picker { padding: 20px; }
-  .house-picker-options { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .house-type-option img { height: 110px; }
-  .house-type-option span { font-size: 9px; }
+  .house-speech {
+    width: 190px;
+    padding: 10px 12px 8px;
+    font-size: 11px;
+  }
+
+  .house-nameplate {
+    font-size: 10px;
+    padding: 5px 7px;
+  }
+
+  .house-picker {
+    padding: 20px;
+  }
+
+  .house-picker-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .house-type-option img {
+    height: 110px;
+  }
+
+  .house-type-option span {
+    font-size: 9px;
+  }
 }
 
 @media (max-width: 650px) {
@@ -3819,14 +3980,19 @@ body {
     border-right: 0;
     border-bottom: 1px solid #e2c19e2e;
   }
+
   .space-mode .sidebar-logo,
-  .space-mode .sidebar-footer { display: none; }
+  .space-mode .sidebar-footer {
+    display: none;
+  }
+
   .space-mode .home-nav {
     flex: 0 0 auto;
     flex-direction: row;
     gap: 4px;
     overflow-x: auto;
   }
+
   .space-mode .nav-item {
     width: auto;
     flex: 0 0 auto;
@@ -3834,6 +4000,7 @@ body {
     padding: 8px 10px;
     font-size: 12px;
   }
+
   .space-mode .sidebar-account-action {
     align-self: flex-end;
     padding: 5px 10px;
@@ -3843,7 +4010,9 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .placed-house { transition: none; }
+  .placed-house {
+    transition: none;
+  }
 }
 
 /* Google ログインは新規登録・再訪問どちらにも使える。 */
@@ -3865,12 +4034,34 @@ body {
   cursor: pointer;
   box-shadow: 0 2px 6px #2f211522;
 }
-.google-mark { color: #4285f4; font-family: Arial, sans-serif; font-size: 22px; font-weight: 700; }
-.screen .google-login-button:hover, .modal .google-login-button:hover { background: #f1e9df; }
-.screen .google-login-button:disabled, .modal .google-login-button:disabled { opacity: 0.6; cursor: wait; }
-.google-auth-message { max-width: 420px; font-size: 12px; line-height: 1.7; }
-.google-auth-message:empty { display: none; }
-.first-view .email-login-shortcut { margin-top: 10px; border: none; background: transparent; color: white; text-decoration: underline; cursor: pointer; font: inherit; font-size: 13px; text-shadow: 0 1px 4px #322; }
+
+.google-mark {
+  color: #4285f4;
+  font-family: Arial, sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.screen .google-login-button:hover,
+.modal .google-login-button:hover {
+  background: #f1e9df;
+}
+
+.screen .google-login-button:disabled,
+.modal .google-login-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.google-auth-message {
+  max-width: 420px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.google-auth-message:empty {
+  display: none;
+}
 
 /* 地底のワールドと、カメラの上に浮かぶ操作パネル。 */
 .space-go-home {
@@ -3895,7 +4086,7 @@ body {
   bottom: 108px;
   left: 24px;
   z-index: 10;
-  width: 144px;
+  width: 112px;
   padding: 8px;
   border: 1px solid #bc976f;
   border-radius: 14px;
@@ -3903,18 +4094,31 @@ body {
   box-shadow: 0 4px 14px #28180e44;
 }
 .space-minimap-label { display: block; color: #fbe9cc; font-size: 10px; margin-bottom: 6px; }
-.space-minimap-surface { position: relative; display: flex; flex-direction: column; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 7px; cursor: crosshair; }
-.space-minimap-layer { flex: 1; background: #c39a67; border-bottom: 1px solid #ebc79966; }
-.space-minimap-layer:nth-child(2) { background: #8b5c36; }
-.space-minimap-layer:nth-child(3) { background: #412616; border: 0; }
-.space-minimap-window { position: absolute; border: 1.5px solid #ffedbf; background: #ffedbf22; box-sizing: border-box; pointer-events: none; border-radius: 3px; }
+.space-minimap-surface {
+  position: relative;
+  aspect-ratio: var(--space-map-ratio);
+  background: #49323b var(--space-map-art) center / 100% 100% no-repeat;
+  overflow: hidden;
+  border-radius: 7px;
+  cursor: crosshair;
+}
+
+.space-minimap-window {
+  position: absolute;
+  border: 1.5px solid #ffedbf;
+  background: #ffedbf26;
+  box-shadow: 0 0 0 1px #2d1b15aa;
+  box-sizing: border-box;
+  pointer-events: none;
+  border-radius: 3px;
+}
 .space-view:not(.is-panel-collapsed) .house-map-controls { right: calc(var(--space-panel-width) + var(--space-panel-inset) + 16px); }
 
 @media (max-width: 950px) {
   .space-view { --space-panel-width: 300px; --space-panel-inset: 16px; }
   .space-map-hud { gap: 6px; }
   .space-go-home { font-size: 11px; padding: 6px 8px; }
-  .space-minimap { left: 12px; width: 108px; padding: 6px; bottom: 118px; }
+  .space-minimap { left: 12px; width: 82px; padding: 6px; bottom: 118px; }
   .space-view:not(.is-panel-collapsed) .house-map-controls { visibility: hidden; }
 }
 @media (max-width: 650px) {
@@ -3927,25 +4131,89 @@ body {
 }
 
 /* 同じページをQRコードで開いたときの写真受け取り画面 */
-.photo-receive-view { display: none; }
-.photo-receive-mode body > :not(#photo-receive-view) { display: none !important; }
+.photo-receive-view {
+  display: none;
+}
+
+.photo-receive-mode body> :not(#photo-receive-view) {
+  display: none !important;
+}
+
 .photo-receive-mode body {
   color-scheme: light;
   color: #4b3526;
   background: #f3e8d6;
   padding: 24px 16px;
 }
-.photo-receive-mode .photo-receive-view { display: block; width: min(100%, 560px); margin: 0 auto; text-align: center; }
-.photo-receive-view * { box-sizing: border-box; }
-.photo-receive-view .photo-logo { width: 120px; height: auto; margin: 0 auto 12px; }
-.photo-receive-view h1 { font-size: clamp(20px, 5vw, 28px); margin: 0 0 16px; }
-.photo-receive-view p { font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }
-.photo-receive-view .received-photo { display: block; max-width: 100%; max-height: 65dvh; width: auto; height: auto; margin: 20px auto; }
-.photo-receive-view .receive-actions { display: flex; justify-content: center; gap: 12px; }
-.photo-receive-view button { min-height: 48px; padding: 12px 28px; border: 0; border-radius: 999px; background: #865c3e; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
-.photo-receive-view button:focus-visible { outline: 3px solid #4b3526; outline-offset: 4px; }
-.photo-receive-view .receive-expiry { color: #776354; font-size: 12px; }
-.photo-receive-view [hidden] { display: none !important; }
+
+.photo-receive-mode .photo-receive-view {
+  display: block;
+  width: min(100%, 560px);
+  margin: 0 auto;
+  text-align: center;
+}
+
+.photo-receive-view * {
+  box-sizing: border-box;
+}
+
+.photo-receive-view .photo-logo {
+  width: 120px;
+  height: auto;
+  margin: 0 auto 12px;
+}
+
+.photo-receive-view h1 {
+  font-size: clamp(20px, 5vw, 28px);
+  margin: 0 0 16px;
+}
+
+.photo-receive-view p {
+  font-size: 14px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.photo-receive-view .received-photo {
+  display: block;
+  max-width: 100%;
+  max-height: 65dvh;
+  width: auto;
+  height: auto;
+  margin: 20px auto;
+}
+
+.photo-receive-view .receive-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.photo-receive-view button {
+  min-height: 48px;
+  padding: 12px 28px;
+  border: 0;
+  border-radius: 999px;
+  background: #865c3e;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.photo-receive-view button:focus-visible {
+  outline: 3px solid #4b3526;
+  outline-offset: 4px;
+}
+
+.photo-receive-view .receive-expiry {
+  color: #776354;
+  font-size: 12px;
+}
+
+.photo-receive-view [hidden] {
+  display: none !important;
+}
 
 /* ログイン・登録のあと、またはログイン済みで戻ったとき、地底へ潜ってからホームを開く */
 html.is-descending,
@@ -4031,8 +4299,19 @@ html.is-descending .descent-screen {
   width: 110px;
 }
 
-.sky-cloud-a::before { width: 42px; height: 42px; left: 16px; top: -22px; }
-.sky-cloud-a::after { width: 34px; height: 34px; left: 48px; top: -16px; }
+.sky-cloud-a::before {
+  width: 42px;
+  height: 42px;
+  left: 16px;
+  top: -22px;
+}
+
+.sky-cloud-a::after {
+  width: 34px;
+  height: 34px;
+  left: 48px;
+  top: -16px;
+}
 
 .sky-cloud-b {
   top: 14%;
@@ -4041,8 +4320,19 @@ html.is-descending .descent-screen {
   opacity: 0.85;
 }
 
-.sky-cloud-b::before { width: 30px; height: 30px; left: 14px; top: -16px; }
-.sky-cloud-b::after { width: 24px; height: 24px; left: 40px; top: -12px; }
+.sky-cloud-b::before {
+  width: 30px;
+  height: 30px;
+  left: 14px;
+  top: -16px;
+}
+
+.sky-cloud-b::after {
+  width: 24px;
+  height: 24px;
+  left: 40px;
+  top: -12px;
+}
 
 .grass {
   position: absolute;
@@ -4275,26 +4565,50 @@ html.is-descending .descent-screen {
 }
 
 @keyframes descend-world {
-  from { transform: translateY(0); }
-  to { transform: translateY(calc(-100% + 100vh)); }
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(calc(-100% + 100vh));
+  }
 }
 
 @supports (height: 100dvh) {
   @keyframes descend-world {
-    from { transform: translateY(0); }
-    to { transform: translateY(calc(-100% + 100dvh)); }
+    from {
+      transform: translateY(0);
+    }
+
+    to {
+      transform: translateY(calc(-100% + 100dvh));
+    }
   }
 }
 
 @keyframes descent-fade {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
 }
 
 @media (max-width: 700px) {
-  .shaft-wall { width: max(22px, calc(50% - 150px)); }
-  .sky-sun { width: 52px; height: 52px; }
-  .descent-caption { padding-bottom: 28px; }
+  .shaft-wall {
+    width: max(22px, calc(50% - 150px));
+  }
+
+  .sky-sun {
+    width: 52px;
+    height: 52px;
+  }
+
+  .descent-caption {
+    padding-bottom: 28px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

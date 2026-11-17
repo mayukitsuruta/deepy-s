@@ -54,7 +54,7 @@ export function houseLocation(house) {
   return `第${position.layer}層・${position.x < 0.34 ? "左" : position.x > 0.66 ? "右" : "中央"}${position.y < 0.5 ? "上" : "下"}エリア`;
 }
 
-export function createSpaceHousing({ onChange, canSave, ownerName = () => "私", ownerId = () => null, onPlacementStart = () => {} }) {
+export function createSpaceHousing({ onChange, canSave, ownerName = () => "私", ownerId = () => null, onPlacementStart = () => {}, onResidentSelect }) {
   const byId = (id) => document.getElementById(id);
   const viewport = byId("space-map-viewport");
   const wrapper = byId("space-map-wrapper");
@@ -79,8 +79,9 @@ export function createSpaceHousing({ onChange, canSave, ownerName = () => "私",
   }
 
   function addSpeechBubble(element) {
+    const trigger = element.querySelector(".resident-house-trigger") || element;
     element.querySelector(".house-speech")?.remove();
-    element.removeAttribute("aria-describedby");
+    trigger.removeAttribute("aria-describedby");
     const post = houseMessages.get(element.dataset.ownerId);
     if (!post) return;
     const bubble = document.createElement("span");
@@ -99,7 +100,7 @@ export function createSpaceHousing({ onChange, canSave, ownerName = () => "私",
     }).format(post.createdAtMs);
     bubble.append(text, time);
     element.appendChild(bubble);
-    element.setAttribute("aria-describedby", bubble.id);
+    trigger.setAttribute("aria-describedby", bubble.id);
   }
 
   function refreshHouseMessages() {
@@ -154,24 +155,32 @@ export function createSpaceHousing({ onChange, canSave, ownerName = () => "私",
     const element = document.createElement(own ? "button" : "div");
     element.className = own ? "placed-house own-house" : "placed-house resident-house";
     element.dataset.ownerId = uid || "";
+    const trigger = own ? element : document.createElement("button");
+    trigger.type = "button";
     if (own) {
-      element.type = "button";
-      element.setAttribute("aria-label", `私の家、${type.name}、${houseLocation(house)}`);
-      element.addEventListener("click", (event) => {
+      trigger.setAttribute("aria-label", `私の家、${type.name}、${houseLocation(house)}`);
+      trigger.addEventListener("click", (event) => {
         event.stopPropagation();
         if (mode) return;
         message("あなたの家です。移動やデザイン変更ができます。");
       });
+    } else {
+      trigger.className = "resident-house-trigger";
+      trigger.disabled = Boolean(mode);
+      trigger.setAttribute("aria-label", `${name}の家、プロフィールを見る`);
+      trigger.setAttribute("aria-haspopup", "dialog");
+      trigger.addEventListener("click", () => onResidentSelect(uid, house));
+      element.appendChild(trigger);
     }
     const label = document.createElement("span");
     label.className = "house-nameplate";
     label.textContent = `${name}の家`;
     const image = document.createElement("img");
     image.src = `./images/${house.type}.png`;
-    image.alt = own ? "" : `${name}の${type.name}`;
+    image.alt = "";
     image.draggable = false;
     image.style.transform = house.flipped ? "scaleX(-1)" : "";
-    element.append(label, image);
+    trigger.append(label, image);
     addSpeechBubble(element);
     positionElement(element, house);
     return element;

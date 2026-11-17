@@ -25,13 +25,14 @@
       } catch { /* 保存が読めないときはトップから始める。 */ }
     }
   </script>
+  <link rel="icon" href="/images/deepy.png" />
   <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://identitytoolkit.googleapis.com" />
   <link rel="preconnect" href="https://firestore.googleapis.com" />
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js" />
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js" />
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js" />
-  <link rel="stylesheet" href="./css/style.css?v=20261112-descent-entry" />
+  <link rel="stylesheet" href="./css/style.css?v=20261117-game-splash" />
 </head>
 
 <body>
@@ -66,40 +67,28 @@
     </div>
   </div>
 
-  <!-- ① ファーストビュー -->
+  <!-- ファーストビュー -->
   <section id="first-view" class="screen first-view">
-    <button id="start-story">物語をはじめる</button>
-    <button class="google-login-button" data-google-login type="button"><span class="google-mark" aria-hidden="true">G</span>Google でログイン</button>
-    <button class="email-login-shortcut" data-email-login type="button">メールでログイン</button>
+    <button id="start-game" type="button">ゲームをはじめる</button>
+    <button class="google-login-button" data-google-login type="button"><span class="google-mark"
+        aria-hidden="true">G</span>Google でログイン</button>
+    <button id="email-login-shortcut" type="button">メールでログイン</button>
     <p class="google-auth-message" role="status" aria-live="polite"></p>
   </section>
 
-  <!-- ② ストーリー導入 -->
-  <section id="story-screen" class="screen story-screen" hidden>
-    <div class="story-content">
-      <p id="story-text"></p>
-
-      <div class="story-dots">
-        <span class="dot active"></span>
-        <span class="dot"></span>
-        <span class="dot"></span>
-      </div>
-
-      <button id="next-story">click！</button>
-    </div>
-  </section>
-
-  <!-- ③ ログイン・ゲスト参加 -->
+  <!-- ログイン・ゲスト参加 -->
   <section id="login-screen" class="screen login-screen" hidden>
-    <h2>地底の世界へようこそ！</h2>
+    <h2 id="login-heading" tabindex="-1">地底の世界へようこそ！</h2>
     <p>あなたはどうやって地底生活を始める？</p>
 
-    <button class="google-login-button" data-google-login type="button"><span class="google-mark" aria-hidden="true">G</span>Google でログイン</button>
+    <button class="google-login-button" data-google-login type="button"><span class="google-mark"
+        aria-hidden="true">G</span>Google でログイン</button>
     <p class="google-auth-message" role="status" aria-live="polite"></p>
 
     <button id="guest-button">ゲストとして遊ぶ</button>
     <button id="register-button">新規登録</button>
     <button id="login-button">続きからログイン</button>
+    <a class="login-story-link" href="./lp.html">物語を読む</a>
   </section>
 
   <!-- ④ ゲストのニックネーム入力画面 -->
@@ -155,7 +144,7 @@
           </span>
           <span>交流スペース</span>
         </button>
-        <button class="nav-item" data-view="diagnosis" type="button">
+        <a class="nav-item" href="./sindan.html">
           <span class="nav-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4"
               stroke-linecap="round">
@@ -164,7 +153,7 @@
             </svg>
           </span>
           <span>地底人診断</span>
-        </button>
+        </a>
         <button class="nav-item" data-view="camera" type="button">
           <span class="nav-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
@@ -382,7 +371,8 @@
 
       <div id="nasupy-story-view" class="chippy-story nasupy-story" hidden>
         <button id="nasupy-story-back" class="chippy-story-back" type="button">ホームにもどる</button>
-        <img loading="lazy" class="chippy-story-character nasupy-story-character" src="./images/purple.png" alt="NASUPY" />
+        <img loading="lazy" class="chippy-story-character nasupy-story-character" src="./images/purple.png"
+          alt="NASUPY" />
         <div class="chippy-dialogue" id="nasupy-dialogue">
           <p class="chippy-dialogue-name nasupy-dialogue-name">NASUPY</p>
           <p class="chippy-dialogue-text" id="nasupy-dialogue-text" aria-live="polite"></p>
@@ -434,10 +424,11 @@
 
       <!-- 交流スペース画面コンテンツ -->
       <div id="space-view-content" class="space-view" hidden>
-          <button id="toggle-space-panel" class="space-panel-toggle" type="button" aria-controls="space-right-panel" aria-expanded="true" aria-label="右パネルを閉じる" title="右パネルを閉じる">
-            <span class="space-panel-toggle-icon" aria-hidden="true">›</span>
-            <span class="space-panel-toggle-label">閉じる</span>
-          </button>
+        <button id="toggle-space-panel" class="space-panel-toggle" type="button" aria-controls="space-right-panel"
+          aria-expanded="true" aria-label="右パネルを閉じる" title="右パネルを閉じる">
+          <span class="space-panel-toggle-icon" aria-hidden="true">›</span>
+          <span class="space-panel-toggle-label">閉じる</span>
+        </button>
         <!-- 中央エリア：地層マップエリア -->
         <div class="space-map-wrapper" id="space-map-wrapper">
           <!-- 上部固定ガイドバッジ -->
@@ -456,54 +447,15 @@
 
           <div class="space-minimap" aria-label="全体マップ">
             <span class="space-minimap-label">全体マップ</span>
-            <div id="space-minimap-surface" class="space-minimap-surface" role="button" tabindex="0" aria-label="全体マップ。クリックした場所に移動します。矢印キーでも移動できます。">
-              <span class="space-minimap-layer"></span><span class="space-minimap-layer"></span><span class="space-minimap-layer"></span>
+            <div id="space-minimap-surface" class="space-minimap-surface" role="button" tabindex="0"
+              aria-label="全体マップ。クリックした場所に移動します。矢印キーでも移動できます。">
               <span id="space-minimap-window" class="space-minimap-window"></span>
             </div>
           </div>
 
-          <div class="space-map-viewport" id="space-map-viewport" tabindex="0" aria-label="地層マップ。マウスで上下左右にドラッグ、タッチでスワイプして探索できます">
+          <div class="space-map-viewport" id="space-map-viewport" tabindex="0"
+            aria-label="地層マップ。マウスで上下左右にドラッグ、タッチでスワイプして探索できます">
             <div class="space-map-canvas" id="space-map-canvas">
-              <!-- 地表からの光演出 -->
-              <div class="stratum-surface-glow" aria-hidden="true"></div>
-
-              <!-- 地層の波模様オーバーレイ（SVG：自然なうねりの地層断面） -->
-              <svg class="stratum-waves-svg" viewBox="0 0 1200 1800" preserveAspectRatio="none" aria-hidden="true">
-                <!-- 地表直下の明るい砂質層 -->
-                <path d="M0 0 L 1200 0 L 1200 170 Q 920 210, 620 165 T 0 190 Z" fill="rgba(255, 244, 222, 0.24)" />
-                <path d="M0 150 Q 320 110, 640 155 T 1200 130 L 1200 260 Q 880 295, 560 245 T 0 275 Z"
-                  fill="rgba(238, 198, 148, 0.22)" />
-                <path d="M0 265 Q 300 310, 660 260 T 1200 295 L 1200 440 Q 860 400, 480 450 T 0 420 Z"
-                  fill="rgba(168, 108, 58, 0.18)" />
-                <path d="M0 430 Q 360 395, 720 445 T 1200 415" fill="none" stroke="rgba(255, 240, 215, 0.22)"
-                  stroke-width="2.5" stroke-dasharray="12 10" />
-
-                <!-- 第1層と第2層の自然な地層境界 -->
-                <path d="M0 560 Q 280 520, 610 575 T 1200 545 L 1200 660 Q 890 700, 560 645 T 0 675 Z"
-                  fill="rgba(96, 54, 26, 0.34)" />
-                <path d="M0 585 Q 280 545, 610 600 T 1200 570" fill="none" stroke="rgba(242, 205, 165, 0.3)"
-                  stroke-width="3" />
-
-                <!-- 第2層（中層）の赤土・鉱石うねり層 -->
-                <path d="M0 740 Q 360 790, 720 735 T 1200 770 L 1200 910 Q 840 865, 460 920 T 0 885 Z"
-                  fill="rgba(68, 37, 17, 0.3)" />
-                <path d="M0 900 Q 420 855, 780 915 T 1200 880 L 1200 1040 Q 820 1080, 440 1025 T 0 1060 Z"
-                  fill="rgba(195, 135, 84, 0.1)" />
-                <path d="M0 1050 Q 330 1090, 690 1040 T 1200 1075" fill="none" stroke="rgba(214, 172, 130, 0.16)"
-                  stroke-width="2" stroke-dasharray="16 12" />
-
-                <!-- 第2層と第3層の自然な深層境界 -->
-                <path d="M0 1165 Q 340 1215, 680 1160 T 1200 1195 L 1200 1310 Q 840 1265, 480 1320 T 0 1285 Z"
-                  fill="rgba(28, 14, 6, 0.45)" />
-                <path d="M0 1190 Q 340 1240, 680 1185 T 1200 1220" fill="none" stroke="rgba(175, 126, 86, 0.25)"
-                  stroke-width="2.5" />
-
-                <!-- 第3層（深層）の黒土・深淵層 -->
-                <path d="M0 1370 Q 300 1330, 650 1385 T 1200 1355 L 1200 1520 Q 850 1560, 490 1505 T 0 1540 Z"
-                  fill="rgba(14, 6, 2, 0.45)" />
-                <path d="M0 1560 Q 400 1610, 760 1555 T 1200 1590 L 1200 1800 L 0 1800 Z" fill="rgba(8, 3, 1, 0.55)" />
-              </svg>
-
               <!-- 地勢・深度メモリ（左側） -->
               <div class="stratum-depth-scale" aria-hidden="true">
                 <span class="depth-tick" style="top: 40px">0m</span>
@@ -516,43 +468,13 @@
               </div>
 
               <!-- 第1層：上層（明るい砂土・陽だまり層） -->
-              <section class="stratum-layer layer-1" data-layer-name="第1層（上層）">
-                <div class="layer-header-tag">
-                  <span class="layer-depth-pill">第1層・上層</span>
-                  <span class="layer-desc">あたたかい光が届く砂と土の層</span>
-                </div>
-                <div class="stratum-pebbles" aria-hidden="true">
-                  <span class="pebble p1"></span>
-                  <span class="pebble p2"></span>
-                  <span class="pebble p3"></span>
-                </div>
-              </section>
+              <section class="stratum-layer layer-1" aria-label="第1層（上層）"></section>
 
               <!-- 第2層：中層（赤土と鉱石の回廊） -->
-              <section class="stratum-layer layer-2" data-layer-name="第2層（中層）">
-                <div class="layer-header-tag">
-                  <span class="layer-depth-pill">第2層・中層</span>
-                  <span class="layer-desc">音が反響する赤土と鉱石の層</span>
-                </div>
-                <div class="stratum-pebbles" aria-hidden="true">
-                  <span class="pebble p4"></span>
-                  <span class="pebble p5"></span>
-                  <span class="pebble p6"></span>
-                </div>
-              </section>
+              <section class="stratum-layer layer-2" aria-label="第2層（中層）"></section>
 
               <!-- 第3層：深層（暗い黒土と深淵の層） -->
-              <section class="stratum-layer layer-3" data-layer-name="第3層（深層）">
-                <div class="layer-header-tag">
-                  <span class="layer-depth-pill">第3層・深層</span>
-                  <span class="layer-desc">静かでひんやりした黒土と深淵の層</span>
-                </div>
-                <div class="stratum-pebbles" aria-hidden="true">
-                  <span class="pebble p7"></span>
-                  <span class="pebble p8"></span>
-                  <span class="pebble p9"></span>
-                </div>
-              </section>
+              <section class="stratum-layer layer-3" aria-label="第3層（深層）"></section>
             </div>
           </div>
           <div class="house-map-controls">
@@ -570,11 +492,35 @@
 
         <dialog id="house-picker" class="house-picker" aria-labelledby="house-picker-title">
           <div class="house-picker-heading">
-            <div><p class="house-picker-eyebrow">ちいさな地底暮らし</p><h2 id="house-picker-title">どの家にしよう？</h2></div>
+            <div>
+              <p class="house-picker-eyebrow">ちいさな地底暮らし</p>
+              <h2 id="house-picker-title">どの家にしよう？</h2>
+            </div>
             <button id="house-picker-close" class="icon-btn" type="button" aria-label="家の選択を閉じる">✕</button>
           </div>
           <p id="house-picker-description">ひとりにひとつのおうち。選んだら、マップの好きな場所に置いてね。</p>
           <div id="house-picker-options" class="house-picker-options"></div>
+        </dialog>
+
+        <dialog id="resident-profile-dialog" class="resident-profile-dialog" aria-labelledby="resident-profile-name">
+          <header class="resident-profile-header">
+            <form method="dialog" class="resident-profile-actions">
+              <button class="resident-profile-close" type="submit" aria-label="プロフィールを閉じる" autofocus>✕</button>
+            </form>
+            <img id="resident-profile-house" class="resident-profile-house" alt="" draggable="false" />
+            <div class="resident-profile-identity">
+              <div id="resident-profile-avatar" class="profile-avatar" aria-hidden="true"></div>
+              <h2 id="resident-profile-name"></h2>
+              <span id="resident-profile-status" class="resident-profile-status" role="status"></span>
+            </div>
+          </header>
+          <div id="resident-profile-body" class="resident-profile-body" hidden>
+            <div id="resident-profile-intro" hidden>
+              <h3>ひとこと紹介</h3>
+              <p id="resident-profile-bio" class="profile-bio"></p>
+            </div>
+            <div id="resident-profile-tags" class="profile-tags"></div>
+          </div>
         </dialog>
 
         <!-- 右カラム：私の家・プロフィール・掲示板 -->
@@ -762,13 +708,14 @@
           </div>
           <div class="camera-stage is-square-cornered" id="camera-stage">
             <video id="camera-video" autoplay muted playsinline aria-label="カメラのプレビュー"></video>
-            <img loading="lazy" class="camera-overlay camera-frame" data-frame-image="frame-1" src="./images/frame-1.PNG" alt="" />
-            <img loading="lazy" class="camera-overlay camera-frame" data-frame-image="frame-2" src="./images/frame-2.PNG" alt=""
-              hidden />
-            <img loading="lazy" class="camera-overlay camera-frame" data-frame-image="frame-3" src="./images/frame-3-landscape.PNG"
-              alt="" hidden />
-            <img loading="lazy" class="camera-overlay camera-frame" data-frame-image="frame-4" src="./images/frame-4-landscape.PNG"
-              alt="" hidden />
+            <img loading="lazy" class="camera-overlay camera-frame" data-frame-image="frame-1"
+              src="./images/frame-1.PNG" alt="" />
+            <img loading="lazy" class="camera-overlay camera-frame" data-frame-image="frame-2"
+              src="./images/frame-2.PNG" alt="" hidden />
+            <img loading="lazy" class="camera-overlay camera-frame" data-frame-image="frame-3"
+              src="./images/frame-3-landscape.PNG" alt="" hidden />
+            <img loading="lazy" class="camera-overlay camera-frame" data-frame-image="frame-4"
+              src="./images/frame-4-landscape.PNG" alt="" hidden />
             <img id="camera-result" class="camera-result" alt="撮影した写真" hidden />
           </div>
           <div class="camera-actions">
@@ -787,7 +734,8 @@
             <a id="download-photo" class="camera-button camera-button-secondary camera-download"
               download="deepys-photo.png" hidden>ダウンロード</a>
             <button id="share-photo" class="camera-button" type="button" hidden>スマホで保存</button>
-            <p id="photo-share-note" class="camera-message" hidden>QRコードを読み取って、<br />自分のスマホに写真を保存しよう。<br />リンクは24時間有効です。</p>
+            <p id="photo-share-note" class="camera-message" hidden>QRコードを読み取って、<br />自分のスマホに写真を保存しよう。<br />リンクは24時間有効です。
+            </p>
             <p id="camera-message" class="camera-message" role="status" hidden></p>
           </div>
         </div>
@@ -828,7 +776,8 @@
 
       <h2 id="register-title">地底住民登録</h2>
       <p>登録すると、スマホでも続きから遊べるよ！</p>
-      <button class="google-login-button" data-google-login type="button"><span class="google-mark" aria-hidden="true">G</span>Google で登録・ログイン</button>
+      <button class="google-login-button" data-google-login type="button"><span class="google-mark"
+          aria-hidden="true">G</span>Google で登録・ログイン</button>
       <p class="google-auth-message" role="status" aria-live="polite"></p>
 
       <form id="register-form">
@@ -869,7 +818,8 @@
     <div class="signin-content">
       <h2>おかえりなさい！</h2>
       <p>地底生活の続きをはじめよう！</p>
-      <button class="google-login-button" data-google-login type="button"><span class="google-mark" aria-hidden="true">G</span>Google でログイン</button>
+      <button class="google-login-button" data-google-login type="button"><span class="google-mark"
+          aria-hidden="true">G</span>Google でログイン</button>
       <p class="google-auth-message" role="status" aria-live="polite"></p>
 
       <form id="signin-form">
@@ -901,7 +851,8 @@
     <p id="receive-expiry" class="receive-expiry" hidden></p>
   </main>
 
-  <dialog id="photo-share-dialog" class="photo-share-dialog" aria-labelledby="photo-share-title" aria-describedby="photo-share-status">
+  <dialog id="photo-share-dialog" class="photo-share-dialog" aria-labelledby="photo-share-title"
+    aria-describedby="photo-share-status">
     <h2 id="photo-share-title">スマホに写真を持ち帰ろう</h2>
     <p id="photo-share-status" role="status" aria-live="polite"></p>
     <img id="photo-share-qr" class="photo-share-qr" alt="写真の受け取りページを開くQRコード" hidden />
@@ -910,7 +861,7 @@
     <button id="retry-photo-share" class="camera-button" type="button" hidden>もう一度試す</button>
     <form method="dialog"><button class="camera-button camera-button-secondary" type="submit">閉じる</button></form>
   </dialog>
-  <script type="module" src="./js/main.js?v=20261112-descent-after-auth"></script>
+  <script type="module" src="./js/main.js?v=20261117-game-splash"></script>
 </body>
 
 </html>

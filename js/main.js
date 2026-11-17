@@ -1,5 +1,5 @@
 import { db, auth } from "./firebase.js?v=20261110-persistent-google";
-import { createSpaceHousing, normalizeSpaceHouses, houseLocation, HOUSE_MESSAGE_LIFETIME_MS } from "./space-houses.js?v=20261110-game-map";
+import { createSpaceHousing, normalizeSpaceHouses, houseLocation, HOUSE_MESSAGE_LIFETIME_MS } from "./space-houses.js?v=20261113-resident-card";
 import {
   createUserWithEmailAndPassword,
   EmailAuthProvider,
@@ -37,13 +37,8 @@ console.log("Firestore:", db);
 
 // 画面を取得
 const firstView = document.getElementById("first-view");
-const storyScreen = document.getElementById("story-screen");
 const loginScreen = document.getElementById("login-screen");
 
-const startButton = document.getElementById("start-story");
-const nextButton = document.getElementById("next-story");
-const storyText = document.getElementById("story-text");
-const dots = document.querySelectorAll(".dot");
 // ゲスト参加画面
 const guestScreen = document.getElementById("guest-screen");
 const guestButton = document.getElementById("guest-button");
@@ -138,28 +133,12 @@ async function descendToTop(fresh = false) {
   showScreen(firstView);
   await waitForDescent();
   if (token !== descentGeneration) return;
-  showScreen(firstView);
   await finishDescent();
 }
 
 if (document.documentElement.classList.contains("is-descending")) {
   beginDescent();
 }
-
-// 導入ストーリー（仮の文章）
-const stories = [
-  `実は、地底人はずっと昔から地球の地下で暮らしていた。
-
-ピラミッドができたのも、地底から石を「よいしょ、よいしょ」と
-押し上げていた地底人のおかげ……！？`,
-
-  `新たに地底人が発見され、人間社会と地底社会の交流を図るために
-地底人・地上人交流キャンぺーンが行われることになった。`,
-
-  `両者の環境に適合できるか、
-また文化や生活リズムなどを学び理解を深めるために、
-あなたは交換留学生として地底へと向かう！！！`,
-];
 
 const logoutButton = document.getElementById("logout-button");
 
@@ -180,7 +159,6 @@ const loginButton = document.getElementById("login-button");
 const signinForm = document.getElementById("signin-form");
 const signinMessage = document.getElementById("signin-message");
 const signinBack = document.getElementById("signin-back");
-let storyIndex = 0;
 
 const newRegisterButton = document.getElementById("register-button");
 const registerNicknameArea = document.getElementById("register-nickname-area");
@@ -189,7 +167,6 @@ const registerNickname = document.getElementById("register-nickname");
 // 画面の切り替え
 function showScreen(screen) {
   firstView.hidden = true;
-  storyScreen.hidden = true;
   loginScreen.hidden = true;
   guestScreen.hidden = true;
   homeScreen.hidden = true;
@@ -198,37 +175,10 @@ function showScreen(screen) {
   screen.hidden = false;
 }
 
-// ストーリー表示
-function updateStory() {
-  storyText.textContent = stories[storyIndex];
-
-  dots.forEach((dot, index) => {
-    dot.classList.toggle("active", index === storyIndex);
-  });
-
-  nextButton.textContent =
-    storyIndex === stories.length - 1 ? "地底に行く！" : "click！";
-}
-
-// ファーストビュー → ストーリー
-startButton.addEventListener("click", () => {
-  storyIndex = 0;
-  updateStory();
-  showScreen(storyScreen);
+document.getElementById("start-game").addEventListener("click", () => {
+  showScreen(loginScreen);
+  document.getElementById("login-heading").focus();
 });
-
-// ストーリーを進める
-nextButton.addEventListener("click", () => {
-  if (storyIndex < stories.length - 1) {
-    storyIndex++;
-    updateStory();
-  } else {
-    showScreen(loginScreen);
-  }
-});
-
-// 初期表示
-showScreen(firstView);
 
 // 「ゲストとして遊ぶ」をクリック（1ブラウザ＝1ゲスト：既存データがあればそのまま復帰）
 let pendingGuestDocData = null;
@@ -774,6 +724,8 @@ loginButton.addEventListener("click", () => {
   document.getElementById("signin-email").focus();
 });
 
+document.getElementById("email-login-shortcut").addEventListener("click", () => loginButton.click());
+
 // もどるボタン
 signinBack.addEventListener("click", () => {
   showScreen(loginScreen);
@@ -824,7 +776,7 @@ signinForm.addEventListener("submit", async (event) => {
 // =========================================
 // 交流スペース・オンライン人数・プロフィール・掲示板機能
 // =========================================
-const navItems = document.querySelectorAll(".home-nav .nav-item");
+const navItems = document.querySelectorAll(".home-nav button[data-view]");
 const homeViewContent = document.getElementById("home-view-content");
 const spaceViewContent = document.getElementById("space-view-content");
 const cameraViewContent = document.getElementById("camera-view-content");
@@ -852,6 +804,15 @@ const profileNicknameInput = document.getElementById("profile-nickname-input");
 const profileBioInput = document.getElementById("profile-bio-input");
 const profileTagsInput = document.getElementById("profile-tags-input");
 const cancelProfileEditBtn = document.getElementById("cancel-profile-edit");
+const residentProfileDialog = document.getElementById("resident-profile-dialog");
+const residentProfileAvatar = document.getElementById("resident-profile-avatar");
+const residentProfileName = document.getElementById("resident-profile-name");
+const residentProfileHouse = document.getElementById("resident-profile-house");
+const residentProfileStatus = document.getElementById("resident-profile-status");
+const residentProfileBody = document.getElementById("resident-profile-body");
+const residentProfileIntro = document.getElementById("resident-profile-intro");
+const residentProfileBio = document.getElementById("resident-profile-bio");
+const residentProfileTags = document.getElementById("resident-profile-tags");
 
 // ③ 掲示板
 const boardPostForm = document.getElementById("board-post-form");
@@ -869,7 +830,9 @@ const AVATAR_PALETTE = {
 };
 
 function getAvatarSvg(avatarKey = "pink", size = 24) {
-  const color = AVATAR_PALETTE[avatarKey] || AVATAR_PALETTE.pink;
+  const color = typeof avatarKey === "string" && Object.hasOwn(AVATAR_PALETTE, avatarKey)
+    ? AVATAR_PALETTE[avatarKey]
+    : AVATAR_PALETTE.pink;
   return `
     <svg viewBox="0 0 36 36" width="${size}" height="${size}" aria-hidden="true">
       <circle cx="18" cy="18" r="18" fill="${color}" />
@@ -900,6 +863,7 @@ function resetPlayMemory() {
   profilePrefetch = null;
   profilePrefetchUid = null;
   currentUserData = createBlankUserData();
+  residentProfileDialog.close();
   spaceHousing.reset();
   stopMelodyPlayback();
   stopRhythmGame();
@@ -912,13 +876,17 @@ let unsubscribeHouseMessages = null;
 let unsubscribeOnlineUsers = null;
 let heartbeatTimer = null;
 let latestUsersDocs = [];
+let residentProfileOwnerId = null;
 let mapNeedsInitialFocus = true;
 
 const ONLINE_TIMEOUT_MS = 90 * 1000;
 
 // ホーム画面内のサブビュー切り替え（ホーム / 交流スペース）
 function switchUndergroundView(viewName) {
-  if (viewName !== "space") spaceHousing.cancel();
+  if (viewName !== "space") {
+    residentProfileDialog.close();
+    spaceHousing.cancel();
+  }
   homeScreen.classList.toggle("is-home", viewName === "home");
   homeScreen.classList.toggle("camera-mode", viewName === "camera");
   homeScreen.classList.toggle("space-mode", viewName === "space");
@@ -3211,42 +3179,89 @@ function renderUserData(data) {
   }
 
   if (profileTags) {
-    profileTags.innerHTML = "";
-    const tagsArray = Array.isArray(currentUserData.tags)
+    const tags = Array.isArray(currentUserData.tags)
       ? currentUserData.tags
       : ["デザイン", "カフェ巡り", "音楽"];
-    tagsArray.forEach((tagText) => {
-      const cleanTag = String(tagText).replace(/^#/, "").trim();
-      if (!cleanTag) return;
-      const span = document.createElement("span");
-      span.className = "tag";
-      span.textContent = `#${cleanTag}`;
-      profileTags.appendChild(span);
-    });
+    renderProfileTags(profileTags, tags);
   }
 }
 
+function renderProfileTags(container, tags) {
+  container.replaceChildren();
+  tags.forEach((tagText) => {
+    const cleanTag = String(tagText).replace(/^#/, "").trim();
+    if (!cleanTag) return;
+    const span = document.createElement("span");
+    span.className = "tag";
+    span.textContent = `#${cleanTag}`;
+    container.appendChild(span);
+  });
+}
+
+function openResidentProfile(uid, house) {
+  const resident = latestUsersDocs.find((user) => user.id === uid);
+  if (!resident || residentProfileDialog.open) return;
+  residentProfileOwnerId = uid;
+  residentProfileAvatar.innerHTML = getAvatarSvg(resident.avatar, 36);
+  residentProfileName.textContent = resident.nickname || "地底の住人";
+  residentProfileHouse.src = `./images/${house.type}.png`;
+  residentProfileHouse.classList.toggle("is-flipped", house.flipped);
+  renderResidentStatus(isUserOnline(resident, Date.now()));
+  const bio = typeof resident.bio === "string" ? resident.bio.trim() : "";
+  residentProfileBio.textContent = bio;
+  residentProfileIntro.hidden = !bio;
+  renderProfileTags(residentProfileTags, Array.isArray(resident.tags)
+    ? resident.tags.filter((tag) => typeof tag === "string")
+    : []);
+  residentProfileBody.hidden = !bio && !residentProfileTags.childElementCount;
+  residentProfileDialog.showModal();
+}
+
+residentProfileDialog.addEventListener("click", (event) => {
+  if (event.target !== residentProfileDialog) return;
+  const { left, top, right, bottom } = residentProfileDialog.getBoundingClientRect();
+  if (event.clientX < left || event.clientX >= right || event.clientY < top || event.clientY >= bottom) {
+    residentProfileDialog.close();
+  }
+});
+
+residentProfileDialog.addEventListener("close", () => {
+  if (residentProfileDialog.open) return;
+  const uid = residentProfileOwnerId;
+  residentProfileOwnerId = null;
+  // The users listener can replace the house button while the dialog is open.
+  if (!uid || spaceViewContent.hidden || homeScreen.hidden) return;
+  const focused = document.activeElement;
+  if (focused !== document.body && !residentProfileDialog.contains(focused)) return;
+  const trigger = spaceMapViewport.querySelector(`.resident-house[data-owner-id="${CSS.escape(uid)}"] .resident-house-trigger`);
+  (trigger || spaceMapViewport).focus({ preventScroll: true });
+});
+
 // リアルタイムオンライン人数
+function isUserOnline(user, now) {
+  return user?.isOnline === true &&
+    typeof user.lastActiveMs === "number" &&
+    now - user.lastActiveMs < ONLINE_TIMEOUT_MS;
+}
+
+function renderResidentStatus(online) {
+  const label = online ? "オンライン" : "オフライン";
+  if (residentProfileStatus.textContent === label) return;
+  residentProfileStatus.classList.toggle("is-online", online);
+  residentProfileStatus.textContent = label;
+}
+
 function recalculateOnlineCount() {
   const now = Date.now();
-  let count = 0;
+  const count = latestUsersDocs.filter((user) => isUserOnline(user, now)).length;
 
-  latestUsersDocs.forEach((data) => {
-    if (
-      data.isOnline === true &&
-      typeof data.lastActiveMs === "number" &&
-      now - data.lastActiveMs < ONLINE_TIMEOUT_MS
-    ) {
-      count++;
-    }
-  });
-
-  if (currentUserId && count === 0) {
-    count = 1;
+  if (residentProfileDialog.open) {
+    const resident = latestUsersDocs.find((user) => user.id === residentProfileOwnerId);
+    renderResidentStatus(isUserOnline(resident, now));
   }
 
   if (onlineCountEl) {
-    onlineCountEl.textContent = `${count}人`;
+    onlineCountEl.textContent = `${Math.max(count, currentUserId ? 1 : 0)}人`;
   }
 }
 
@@ -3658,16 +3673,16 @@ if (spaceMapViewport) {
   window.addEventListener("resize", updateMapScrollbar);
   new ResizeObserver(updateMapScrollbar).observe(spaceMapViewport);
 
-  // Capture only after a drag threshold, so a click can still place a house.
+  // Capture only after a drag threshold, so a click can place a house or open a profile.
   let drag = null;
   let suppressMapClick = false;
 
   spaceMapViewport.addEventListener("pointerdown", (event) => {
-    if (event.target.closest("button, a, input, select, textarea, .house-speech")) return;
-    // Native touch scrolling supports both axes and cancels taps after a swipe.
-    if (event.pointerType === "touch") return;
     if (event.button !== 0) return;
     suppressMapClick = false;
+    if (event.target.closest("button:not(.resident-house-trigger), a, input, select, textarea, .house-speech")) return;
+    // Native touch scrolling supports both axes and cancels taps after a swipe.
+    if (event.pointerType === "touch") return;
     drag = {
       id: event.pointerId, x: event.clientX, y: event.clientY,
       left: spaceMapViewport.scrollLeft, top: spaceMapViewport.scrollTop, moved: false,
@@ -3703,7 +3718,7 @@ if (spaceMapViewport) {
   window.addEventListener("blur", () => stopMapDragging());
   spaceMapViewport.addEventListener("lostpointercapture", stopMapDragging);
   spaceMapViewport.addEventListener("click", (event) => {
-    if (!suppressMapClick) return;
+    if (!suppressMapClick || event.detail === 0) return;
     suppressMapClick = false;
     event.preventDefault();
     event.stopImmediatePropagation();
@@ -3715,6 +3730,7 @@ const spaceHousing = createSpaceHousing({
   ownerName: () => currentUserData.nickname || "私",
   ownerId: () => currentUserId,
   onPlacementStart: () => setSpacePanelCollapsed(true),
+  onResidentSelect: openResidentProfile,
   onChange(houses, previousWrite) {
     const uid = currentUserId;
     const version = sessionVersion;
@@ -3768,7 +3784,6 @@ async function restoreAccountSession() {
   const user = auth.currentUser;
   if (!user || user.isAnonymous) {
     cancelDescent();
-    showScreen(firstView);
     return;
   }
   const token = beginDescent();
@@ -3870,10 +3885,6 @@ async function signInWithGoogle() {
 
 document.querySelectorAll("[data-google-login]").forEach((button) => {
   button.addEventListener("click", signInWithGoogle);
-});
-
-document.querySelectorAll("[data-email-login]").forEach((button) => {
-  button.addEventListener("click", () => loginButton.click());
 });
 
 // Other tabs may log out this account; stop showing its private local state too.
