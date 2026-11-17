@@ -4,6 +4,7 @@ const HOUSE_TYPES = [
   { id: "home-3", name: "丸太の家", description: "木のぬくもりに包まれて。" },
   { id: "home-4", name: "きのこの家", description: "きのこの屋根で、ひと休み。" },
   { id: "home-5", name: "花のつぼみの家", description: "やわらかな花びらのおうち。" },
+  { id: "home-6", name: "松ぼっくり屋根の家", description: "木の階段をのぼって、まあるい扉へ。" },
 ];
 const clamp = (value) => Math.min(1, Math.max(0, value));
 export const HOUSE_MESSAGE_LIFETIME_MS = 24 * 60 * 60 * 1000;
@@ -240,9 +241,7 @@ export function createSpaceHousing({ onChange, canSave, ownerName = () => "私",
     }
     byId("house-location-text").textContent = houseLocation(house);
     byId("change-interior-btn").textContent = house ? "家のデザインを変更" : "家を選ぶ";
-    byId("house-save-note").textContent = canSave()
-      ? "あなたの家はひとつ。配置はアカウントに自動保存されます。"
-      : "家はひとりひとつ。Google で登録すると、次回も続きから遊べます。";
+    byId("house-save-note").hidden = canSave();
   }
 
   function save(text) {
