@@ -1433,9 +1433,10 @@ body {
   left: 4%;
   right: 22%;
   top: 18px;
-  bottom: 158px;
+  bottom: 214px;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .hitopy-game .rhythm-play {
@@ -1444,7 +1445,19 @@ body {
 }
 
 .hitopy-game .rhythm-lane {
-  min-height: 220px;
+  min-height: 0;
+}
+
+.hitopy-game .rhythm-hit-zone {
+  height: 64px;
+  bottom: 8px;
+}
+
+@media (max-width: 650px) {
+  .hitopy-game {
+    right: 4%;
+    bottom: 196px;
+  }
 }
 
 .hitopy-game .rhythm-done {
@@ -1487,11 +1500,16 @@ body {
   align-items: flex-end;
   justify-content: center;
   gap: 8px;
-  width: 100%;
-  min-height: 96px;
+  width: min(100%, 740px);
+  margin-top: 120px;
+  padding: 12px 16px 10px;
+  border-radius: 28px;
+  background: #fff;
+  box-sizing: border-box;
 }
 
 .nasupy-item {
+  flex: 1 1 0;
   width: 15%;
   max-width: 108px;
   padding: 0;
