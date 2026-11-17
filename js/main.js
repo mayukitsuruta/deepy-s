@@ -3123,7 +3123,6 @@ takePhotoButton?.addEventListener("click", () => {
   }
   cameraResult.src = canvas.toDataURL("image/png");
   downloadPhotoLink.href = cameraResult.src;
-  photoSharing.setPhoto(cameraResult.src);
   cameraResult.hidden = false;
   takePhotoButton.disabled = true;
   retakePhotoButton.hidden = false;
@@ -3131,6 +3130,7 @@ takePhotoButton?.addEventListener("click", () => {
   photoRewardDialog.hidden = false;
   closePhotoRewardButton.focus();
   setCameraMessage("", false);
+  photoSharing.show(cameraResult.src);
 });
 
 retakePhotoButton?.addEventListener("click", () => {
@@ -3914,12 +3914,12 @@ const MAX_DATA_URL_LENGTH = 900000;
 const SHARE_LIFETIME_MS = 24 * 60 * 60 * 1000;
 const PHOTO_DATA = /^data:image\/(png|webp);base64,[A-Za-z0-9+/]+=*$/;
 
-async function requestSharedPhoto(url, init = {}) {
+async function requestSharedPhoto(url, init) {
   const response = await fetch(url, {
     ...init,
     cache: "no-store",
     referrerPolicy: "no-referrer",
-    signal: AbortSignal.timeout(20000),
+    signal: AbortSignal.any([init.signal, AbortSignal.timeout(20000)]),
   });
   const body = await response.json();
   if (!response.ok) {
@@ -3952,15 +3952,17 @@ async function prepareSharedPhoto(source) {
   throw new Error("写真のサイズを小さくできませんでした。ダウンロードで保存してね。");
 }
 
-async function createPhotoShare(source) {
+async function createPhotoShare(source, signal) {
   const user = auth.currentUser;
   if (!user) throw new Error("通信を確認して、もう一度試してね。");
   const dataUrl = await prepareSharedPhoto(source);
   const token = await user.getIdToken();
+  signal.throwIfAborted();
   const id = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
   const expiresAt = new Date(Date.now() + SHARE_LIFETIME_MS);
   await requestSharedPhoto(`${photoShareEndpoint}?documentId=${id}&key=${photoShareOptions.apiKey}`, {
     method: "POST",
+    signal,
     headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ fields: {
       ownerUid: { stringValue: user.uid },
@@ -3968,106 +3970,48 @@ async function createPhotoShare(source) {
       expiresAt: { timestampValue: expiresAt.toISOString() },
     } }),
   });
-  return { id, expiresAt };
+  return id;
 }
 
 function setupPhotoSharing() {
-  const button = document.getElementById("share-photo");
-  const note = document.getElementById("photo-share-note");
-  const dialog = document.getElementById("photo-share-dialog");
-  const status = document.getElementById("photo-share-status");
   const qr = document.getElementById("photo-share-qr");
-  const expiry = document.getElementById("photo-share-expiry");
   const link = document.getElementById("photo-share-link");
-  const retry = document.getElementById("retry-photo-share");
-  let source = null;
-  let generation = 0;
-  let currentShare = null;
-  let pending = null;
+  let upload = null;
 
-  function clearResult() {
-    qr.hidden = true;
+  function reset() {
+    upload?.abort();
+    upload = null;
     qr.removeAttribute("src");
     link.hidden = true;
     link.removeAttribute("href");
-    expiry.hidden = true;
-    retry.hidden = true;
   }
 
-  function reset() {
-    generation++;
-    source = null;
-    currentShare = null;
-    pending = null;
-    button.hidden = true;
-    note.hidden = true;
-    dialog.close();
-    clearResult();
-    status.textContent = "";
-  }
-
-  async function showShare() {
-    if (!source) return;
-    if (!dialog.open) dialog.showModal();
-    if (pending) return;
-    clearResult();
-    const version = generation;
-    status.textContent = "写真をアップロードして、QRコードを準備しています…";
+  async function show(source) {
+    reset();
+    if (["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)) return;
+    upload = new AbortController();
+    const { signal } = upload;
     try {
-      if (["localhost", "127.0.0.1", "[::1]"].includes(location.hostname) || location.protocol === "file:") {
-        throw new Error("スマホで受け取るには、公開サイトで写真を撮ってね。このパソコン内だけのアドレスはスマホから開けません。");
-      }
-      if (!currentShare || currentShare.expiresAt.getTime() <= Date.now()) {
-        pending = createPhotoShare(source);
-        const result = await pending;
-        if (version !== generation) return;
-        currentShare = result;
-      }
-      const url = new URL("/api/photo", location.origin);
-      url.searchParams.set("id", currentShare.id);
       const { default: qrcode } = await import("https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.mjs");
-      if (version !== generation) return;
+      if (signal.aborted) return;
+      const id = await createPhotoShare(source, signal);
+      if (signal.aborted) return;
+      const url = new URL("/api/photo", location.origin);
+      url.searchParams.set("id", id);
       const code = qrcode(0, "M");
       code.addData(url.href, "Byte");
       code.make();
-      qr.src = code.createDataURL(6, 24);
-      qr.hidden = false;
+      qr.src = code.createDataURL(4, 16);
       link.href = url.href;
       link.hidden = false;
-      expiry.textContent = `${currentShare.expiresAt.toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}まで受け取れます。リンクを知っている人が写真を開けます。`;
-      expiry.hidden = false;
-      status.textContent = "自分のスマホのカメラで読み取ってね。開いた写真を長押しして保存できます。";
     } catch (error) {
-      if (version !== generation) return;
+      if (signal.aborted) return;
       console.error("写真の共有に失敗:", error);
-      status.textContent = error.code === "PERMISSION_DENIED"
-        ? "写真を共有できませんでした。スタッフにお知らせください。ダウンロードボタンからは保存できます。"
-        : error.name === "TimeoutError" || error instanceof TypeError
-          ? "通信できませんでした。インターネット接続を確認して、もう一度試してね。"
-          : error.code
-            ? "写真を共有できませんでした。通信を確認して、もう一度試してね。ダウンロードボタンからも保存できます。"
-            : error.message;
-      retry.hidden = false;
+      setCameraMessage("QRコードを作れませんでした。写真はダウンロードできます。");
     } finally {
-      if (version === generation) pending = null;
+      if (upload?.signal === signal) upload = null;
     }
   }
 
-  button.addEventListener("click", showShare);
-  retry.addEventListener("click", showShare);
-  dialog.addEventListener("click", (event) => {
-    if (event.target === dialog) {
-      const bounds = dialog.getBoundingClientRect();
-      if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
-    }
-  });
-  return {
-    reset,
-    setPhoto(dataUrl) {
-      reset();
-      source = dataUrl;
-      button.hidden = false;
-      note.hidden = false;
-    },
-  };
+  return { reset, show };
 }
