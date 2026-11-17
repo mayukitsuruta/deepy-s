@@ -126,12 +126,9 @@ function cancelDescent() {
   setScreensInert(false);
 }
 
-async function descendToTop(fresh = false) {
-  const token = beginDescent(fresh);
+function returnToTop() {
+  cancelDescent();
   showScreen(firstView);
-  await waitForDescent();
-  if (token !== descentGeneration) return;
-  await finishDescent();
 }
 
 if (document.documentElement.classList.contains("is-descending")) {
@@ -383,7 +380,7 @@ function rememberAndEnter(user, userData, persist = true) {
   enterHomeWithUser(user.uid, userData);
 }
 
-// 初めてのログイン・登録、および再ログインのあと、潜ってからホームへ入る。
+// ログインか新規登録のあと、潜ってからホームへ入る。
 async function enterAfterLogin(user, userData, persist = true) {
   if (!homeScreen.hidden && currentUserId === user.uid) {
     rememberAndEnter(user, userData, persist);
@@ -455,7 +452,7 @@ guestForm.addEventListener("submit", async (event) => {
     };
 
     currentUserData = createBlankUserData();
-    await enterAfterLogin(user, userData, false);
+    rememberAndEnter(user, userData, false);
   } catch (error) {
     console.error("ゲスト登録エラー:", error);
     alert("登録に失敗しました。コンソールを確認してね。");
@@ -481,7 +478,7 @@ logoutButton.addEventListener("click", () => {
   resetPlayMemory();
   guestName.value = "";
   homeNickname.textContent = "ゲストさん";
-  descendToTop(true);
+  returnToTop();
   if (heartbeatTimer) {
     clearInterval(heartbeatTimer);
     heartbeatTimer = null;
@@ -563,7 +560,7 @@ confirmDeleteAccount.addEventListener("click", async () => {
     homeNickname.textContent = "ゲストさん";
     deleteAccountModal.hidden = true;
     deleteAccountMessage.textContent = "";
-    descendToTop(true);
+    returnToTop();
     if (heartbeatTimer) {
       clearInterval(heartbeatTimer);
       heartbeatTimer = null;
@@ -3898,7 +3895,7 @@ onAuthStateChanged(auth, (user) => {
     resetPlayMemory();
     if (heartbeatTimer) clearInterval(heartbeatTimer);
     heartbeatTimer = null;
-    descendToTop(true);
+    returnToTop();
   }
 });
 
