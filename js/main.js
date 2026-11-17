@@ -30,8 +30,6 @@ import {
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
 
-// QRコードから開いたときは、ゲームを開始せず写真だけを表示する。
-function initializeGame() {
 console.log("DEEPY’sのFirebase接続準備ができました！");
 console.log("Firestore:", db);
 
@@ -3907,16 +3905,13 @@ restoreAccountSession().catch((error) => {
   googleAuthMessage("接続を確認してください。ログイン状態の読み込みを再試行できます。");
 });
 
-}
-
-// フレーム付き写真の共有とスマホでの受け取り
+// フレーム付き写真の共有
 // 写真の共有専用。RESTを使い、オフライン時にアップロードを保留しない。
 
 const photoShareOptions = db.app.options;
 const photoShareEndpoint = `https://firestore.googleapis.com/v1/projects/${photoShareOptions.projectId}/databases/(default)/documents/photoShares`;
 const MAX_DATA_URL_LENGTH = 900000;
 const SHARE_LIFETIME_MS = 24 * 60 * 60 * 1000;
-const PHOTO_ID = /^[a-f0-9]{32}$/;
 const PHOTO_DATA = /^data:image\/(png|webp);base64,[A-Za-z0-9+/]+=*$/;
 
 async function requestSharedPhoto(url, init = {}) {
@@ -3933,10 +3928,6 @@ async function requestSharedPhoto(url, init = {}) {
     throw error;
   }
   return body;
-}
-
-function isPhotoId(id) {
-  return PHOTO_ID.test(id || "");
 }
 
 async function prepareSharedPhoto(source) {
@@ -3978,16 +3969,6 @@ async function createPhotoShare(source) {
     } }),
   });
   return { id, expiresAt };
-}
-
-async function readPhotoShare(id) {
-  if (!isPhotoId(id)) throw new Error("INVALID_LINK");
-  const result = await requestSharedPhoto(`${photoShareEndpoint}/${id}?key=${photoShareOptions.apiKey}`);
-  const dataUrl = result.fields?.dataUrl?.stringValue;
-  const expiresAt = new Date(result.fields?.expiresAt?.timestampValue);
-  if (!Number.isFinite(expiresAt.getTime()) || expiresAt.getTime() <= Date.now()) throw new Error("EXPIRED_LINK");
-  if (typeof dataUrl !== "string" || dataUrl.length > MAX_DATA_URL_LENGTH || !PHOTO_DATA.test(dataUrl)) throw new Error("INVALID_PHOTO");
-  return { dataUrl, expiresAt };
 }
 
 function setupPhotoSharing() {
@@ -4042,8 +4023,8 @@ function setupPhotoSharing() {
         if (version !== generation) return;
         currentShare = result;
       }
-      const url = new URL(location.href);
-      url.hash = `photo=${currentShare.id}`;
+      const url = new URL("/api/photo", location.origin);
+      url.searchParams.set("id", currentShare.id);
       const { default: qrcode } = await import("https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.mjs");
       if (version !== generation) return;
       const code = qrcode(0, "M");
@@ -4055,7 +4036,7 @@ function setupPhotoSharing() {
       link.hidden = false;
       expiry.textContent = `${currentShare.expiresAt.toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}まで受け取れます。リンクを知っている人が写真を開けます。`;
       expiry.hidden = false;
-      status.textContent = "自分のスマホのカメラで読み取ってね。開いたページから写真を保存できます。";
+      status.textContent = "自分のスマホのカメラで読み取ってね。開いた写真を長押しして保存できます。";
     } catch (error) {
       if (version !== generation) return;
       console.error("写真の共有に失敗:", error);
@@ -4090,96 +4071,3 @@ function setupPhotoSharing() {
     },
   };
 }
-
-function setupPhotoReceiver() {
-  const status = document.getElementById("receive-status");
-  const photo = document.getElementById("received-photo");
-  const save = document.getElementById("save-received-photo");
-  const retry = document.getElementById("retry-receive-photo");
-  const help = document.getElementById("receive-help");
-  const expiry = document.getElementById("receive-expiry");
-  let file = null;
-  let objectUrl = null;
-  let loadVersion = 0;
-
-  async function loadPhoto() {
-    const version = ++loadVersion;
-    const id = new URLSearchParams(location.hash.slice(1)).get("photo");
-    photo.hidden = save.hidden = retry.hidden = help.hidden = expiry.hidden = true;
-    photo.removeAttribute("src");
-    file = null;
-    if (objectUrl) URL.revokeObjectURL(objectUrl);
-    objectUrl = null;
-    if (!isPhotoId(id)) {
-      status.textContent = "写真のリンクが正しくありません。展示画面のQRコードをもう一度読み取ってね。";
-      return;
-    }
-    status.textContent = "写真を読み込んでいます…";
-    try {
-      const result = await readPhotoShare(id);
-      let blob = await (await fetch(result.dataUrl)).blob();
-      // 受け取り側ではPNGに戻し、スマホの写真アプリにも保存しやすくする。
-      if (blob.type === "image/webp") {
-        const image = new Image();
-        image.src = result.dataUrl;
-        await image.decode();
-        const canvas = document.createElement("canvas");
-        canvas.width = image.naturalWidth;
-        canvas.height = image.naturalHeight;
-        canvas.getContext("2d").drawImage(image, 0, 0);
-        blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
-        if (!blob) throw new Error("INVALID_PHOTO");
-      }
-      if (version !== loadVersion) return;
-      const extension = blob.type === "image/webp" ? "webp" : "png";
-      file = new File([blob], `deepys-photo.${extension}`, { type: blob.type });
-      objectUrl = URL.createObjectURL(file);
-      photo.src = objectUrl;
-      await photo.decode();
-      if (version !== loadVersion) return;
-      photo.hidden = save.hidden = help.hidden = expiry.hidden = false;
-      status.textContent = "遊びに来てくれてありがとう！自分のスマホに保存してね。";
-      expiry.textContent = `このリンクの有効期限：${result.expiresAt.toLocaleString("ja-JP")}。期限までに保存してね。`;
-    } catch (error) {
-      if (version !== loadVersion) return;
-      console.error("写真の受け取りに失敗:", error);
-      const unavailable = ["NOT_FOUND", "PERMISSION_DENIED"].includes(error.code) || ["EXPIRED_LINK", "INVALID_LINK"].includes(error.message);
-      status.textContent = unavailable
-        ? "この写真は有効期限が切れたか、見つかりませんでした。展示画面で新しいQRコードを作ってね。"
-        : "写真を読み込めませんでした。インターネット接続を確認して、もう一度試してね。";
-      retry.hidden = unavailable;
-    }
-  }
-
-  save.addEventListener("click", async () => {
-    if (!file) return;
-    // iPhoneでは共有シートから「画像を保存」を選べる。
-    if (navigator.canShare?.({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file] });
-        return;
-      } catch (error) {
-        if (error.name === "AbortError") return;
-      }
-    }
-    const anchor = document.createElement("a");
-    anchor.href = objectUrl;
-    anchor.download = file.name;
-    document.body.append(anchor);
-    anchor.click();
-    anchor.remove();
-  });
-  retry.addEventListener("click", loadPhoto);
-  window.addEventListener("hashchange", loadPhoto);
-  loadPhoto();
-}
-
-const receivingPhoto = new URLSearchParams(location.hash.slice(1)).has("photo");
-if (receivingPhoto) {
-  setupPhotoReceiver();
-} else {
-  initializeGame();
-}
-window.addEventListener("hashchange", () => {
-  if (new URLSearchParams(location.hash.slice(1)).has("photo") !== receivingPhoto) location.reload();
-});
