@@ -3730,11 +3730,25 @@ let roundedPhotoCorners = false;
 const photoSharing = setupPhotoSharing();
 
 function updateCameraFrameOrientation() {
-  cameraStage?.classList.toggle(
-    "is-landscape",
-    selectedFrame === "frame-3" || selectedFrame === "frame-4",
+  const frameImage = document.querySelector(
+    `[data-frame-image="${selectedFrame}"]`,
+  );
+  // 非表示のフレームが読み込み待ちなら、同じ画像のサムネイルを参照する。
+  const image = frameImage?.naturalWidth > 0 ? frameImage : document.querySelector(
+    `.frame-choice[data-frame="${selectedFrame}"] img`,
+  );
+  if (!image?.naturalWidth || !image.naturalHeight) return;
+  cameraStage?.classList.toggle("is-landscape", image.naturalWidth > image.naturalHeight);
+  cameraStage?.style.setProperty(
+    "--camera-frame-ratio",
+    String(image.naturalWidth / image.naturalHeight),
   );
 }
+
+document.querySelectorAll(".frame-choice img, [data-frame-image]").forEach((image) => {
+  image.addEventListener("load", updateCameraFrameOrientation);
+});
+updateCameraFrameOrientation();
 
 togglePhotoCornersButton?.addEventListener("click", () => {
   roundedPhotoCorners = !roundedPhotoCorners;
@@ -3863,10 +3877,21 @@ frameChoices.forEach((choice) => {
 
 takePhotoButton?.addEventListener("click", () => {
   if (!cameraVideo.videoWidth || !cameraVideo.videoHeight) return;
+  const selectedImage = document.querySelector(
+    `[data-frame-image="${selectedFrame}"]`,
+  );
+  if (!selectedImage?.complete || !selectedImage.naturalWidth) {
+    setCameraMessage(selectedImage?.complete
+      ? "フレームを読み込めませんでした。ページを開き直してね。"
+      : "フレームを読み込んでいます。少し待ってから、もう一度撮ってね。");
+    return;
+  }
   const canvas = document.createElement("canvas");
-  const isLandscape = selectedFrame === "frame-3" || selectedFrame === "frame-4";
+  const isLandscape = selectedImage.naturalWidth > selectedImage.naturalHeight;
   canvas.width = isLandscape ? 1440 : 960;
-  canvas.height = isLandscape ? 966 : 1280;
+  canvas.height = Math.round(
+    canvas.width * selectedImage.naturalHeight / selectedImage.naturalWidth,
+  );
   const context = canvas.getContext("2d");
 
   if (roundedPhotoCorners) {
@@ -3902,39 +3927,7 @@ takePhotoButton?.addEventListener("click", () => {
     canvas.height,
   );
 
-  const selectedImage = document.querySelector(
-    `[data-frame-image="${selectedFrame}"]`,
-  );
-  if (selectedImage?.complete && selectedImage.naturalWidth > 0) {
-    const frameRatio = selectedImage.naturalWidth / selectedImage.naturalHeight;
-    let frameSx = 0;
-    let frameSy = 0;
-    let frameSw = selectedImage.naturalWidth;
-    let frameSh = selectedImage.naturalHeight;
-    if (frameRatio > targetRatio) {
-      frameSw = selectedImage.naturalHeight * targetRatio;
-      frameSx = (selectedImage.naturalWidth - frameSw) / 2;
-    } else {
-      frameSh = selectedImage.naturalWidth / targetRatio;
-      frameSy = (selectedImage.naturalHeight - frameSh) / 2;
-    }
-    context.drawImage(
-      selectedImage,
-      frameSx,
-      frameSy,
-      frameSw,
-      frameSh,
-      0,
-      0,
-      canvas.width,
-      canvas.height,
-    );
-  } else {
-    setCameraMessage(selectedImage?.complete
-      ? "フレームを読み込めませんでした。ページを開き直してね。"
-      : "フレームを読み込んでいます。少し待ってから、もう一度撮ってね。");
-    return;
-  }
+  context.drawImage(selectedImage, 0, 0, canvas.width, canvas.height);
   cameraResult.src = canvas.toDataURL("image/png");
   downloadPhotoLink.href = cameraResult.src;
   cameraResult.hidden = false;
