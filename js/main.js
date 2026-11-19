@@ -292,7 +292,7 @@ async function loadAccountProfile(user) {
     "ゲスト";
 
   if (nickname !== "ゲスト" && user.displayName !== nickname) {
-    updateProfile(user, { displayName: nickname }).catch(() => {});
+    updateProfile(user, { displayName: nickname }).catch(() => { });
   }
 
   return {
@@ -464,7 +464,7 @@ guestForm.addEventListener("submit", async (event) => {
 logoutButton.addEventListener("click", () => {
   const confirmed = confirm(
     "ログアウトしますか？\n" +
-      "ゲストのまま終了すると、進み具合は保存されません。",
+    "ゲストのまま終了すると、進み具合は保存されません。",
   );
 
   if (!confirmed) return;
@@ -489,14 +489,14 @@ logoutButton.addEventListener("click", () => {
     : user.isAnonymous
       ? user.delete()
       : presence
-          .catch((error) => {
-            console.warn("オンライン状態の更新に失敗:", error);
-          })
-          .then(() => signOut(auth));
+        .catch((error) => {
+          console.warn("オンライン状態の更新に失敗:", error);
+        })
+        .then(() => signOut(auth));
 
   ending.catch((error) => {
     console.error("ログアウトエラー:", error);
-    return signOut(auth).catch(() => {});
+    return signOut(auth).catch(() => { });
   });
 });
 
@@ -665,15 +665,15 @@ registerForm.addEventListener("submit", async (event) => {
       registerMode === "guest"
         ? { ...currentUserData, isOnline: true, lastActiveMs: Date.now() }
         : {
-            nickname,
-            avatar: "pink",
-            friendshipPoints: 0,
-            bio: "地底でのんびり暮らしてます。よろしくお願いします！",
-            tags: ["デザイン", "カフェ巡り", "音楽"],
-            houseLocation: "第3層・右下エリア",
-            isOnline: true,
-            lastActiveMs: Date.now(),
-          };
+          nickname,
+          avatar: "pink",
+          friendshipPoints: 0,
+          bio: "地底でのんびり暮らしてます。よろしくお願いします！",
+          tags: ["デザイン", "カフェ巡り", "音楽"],
+          houseLocation: "第3層・右下エリア",
+          isOnline: true,
+          lastActiveMs: Date.now(),
+        };
 
     await setDoc(
       doc(db, "users", user.uid),
@@ -685,7 +685,7 @@ registerForm.addEventListener("submit", async (event) => {
     );
     if (userData.nickname) {
       await updateProfile(user, { displayName: userData.nickname }).catch(
-        () => {},
+        () => { },
       );
     }
 
@@ -936,7 +936,7 @@ function switchUndergroundView(viewName) {
     btn.classList.toggle(
       "active",
       btn.dataset.view === viewName ||
-        (viewName === "story" && btn.dataset.view === "home"),
+      (viewName === "story" && btn.dataset.view === "home"),
     );
   });
 
@@ -1227,18 +1227,16 @@ function renderZukanIndex() {
     button.className = "field-entry";
     button.innerHTML = `
       <span class="field-entry-no">${String(index + 1).padStart(2, "0")}</span>
-      <span class="field-thumb">${
-        entry.image
-          ? `<img src="${entry.image}" alt="" />`
-          : `<span class="field-thumb-empty">？</span>`
+      <span class="field-thumb">${entry.image
+        ? `<img src="${entry.image}" alt="" />`
+        : `<span class="field-thumb-empty">？</span>`
       }</span>
       <span class="field-entry-copy">
         <span class="field-entry-name">${entry.name}</span>
-        <span class="field-entry-meta">${
-          entry.unknown
-            ? "まだ見つけていない"
-            : `${entry.occupation}・${entry.habitat}`
-        }</span>
+        <span class="field-entry-meta">${entry.unknown
+        ? "まだ見つけていない"
+        : `${entry.occupation}・${entry.habitat}`
+      }</span>
       </span>
       <span class="field-entry-open">開く</span>
     `;
@@ -1889,16 +1887,16 @@ function awardSimpyFriendship() {
 
   const nextPoints = already
     ? Math.max(
-        resolvedFriendshipPoints(currentUserData.friendshipPoints),
-        storyFriendshipFloor(),
-      )
+      resolvedFriendshipPoints(currentUserData.friendshipPoints),
+      storyFriendshipFloor(),
+    )
     : Math.min(
-        100,
-        Math.max(
-          resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
-          storyFriendshipFloor(),
-        ),
-      );
+      100,
+      Math.max(
+        resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
+        storyFriendshipFloor(),
+      ),
+    );
 
   renderUserData({ friendshipPoints: nextPoints, simpyCleared: true });
   syncFriendshipPill();
@@ -2242,7 +2240,7 @@ async function playTargetSequence({ replay }) {
     }, Math.max(0, (mark.at - ctx.currentTime) * 1000));
     melodyWaiters.push({
       timer,
-      resolve: () => {},
+      resolve: () => { },
       token,
     });
   });
@@ -2983,16 +2981,16 @@ function awardHitopyFriendship() {
 
   const nextPoints = already
     ? Math.max(
-        resolvedFriendshipPoints(currentUserData.friendshipPoints),
-        storyFriendshipFloor(),
-      )
+      resolvedFriendshipPoints(currentUserData.friendshipPoints),
+      storyFriendshipFloor(),
+    )
     : Math.min(
-        100,
-        Math.max(
-          resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
-          storyFriendshipFloor(),
-        ),
-      );
+      100,
+      Math.max(
+        resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
+        storyFriendshipFloor(),
+      ),
+    );
 
   renderUserData({ friendshipPoints: nextPoints, hitopyCleared: true });
   syncFriendshipPill();
@@ -3266,16 +3264,16 @@ function awardNasupyFriendship() {
 
   const nextPoints = already
     ? Math.max(
-        resolvedFriendshipPoints(currentUserData.friendshipPoints),
-        storyFriendshipFloor(),
-      )
+      resolvedFriendshipPoints(currentUserData.friendshipPoints),
+      storyFriendshipFloor(),
+    )
     : Math.min(
-        100,
-        Math.max(
-          resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
-          storyFriendshipFloor(),
-        ),
-      );
+      100,
+      Math.max(
+        resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
+        storyFriendshipFloor(),
+      ),
+    );
 
   renderUserData({ friendshipPoints: nextPoints, nasupyCleared: true });
   syncFriendshipPill();
@@ -3761,7 +3759,10 @@ function stopCamera() {
   photoSharing.reset();
   cameraStream?.getTracks().forEach((track) => track.stop());
   cameraStream = null;
-  if (cameraVideo) cameraVideo.srcObject = null;
+  if (cameraVideo) {
+    cameraVideo.srcObject = null;
+    cameraVideo.classList.remove("is-mirrored");
+  }
   if (cameraResult) cameraResult.hidden = true;
   if (takePhotoButton) takePhotoButton.disabled = true;
   if (retakePhotoButton) retakePhotoButton.hidden = true;
@@ -3811,6 +3812,8 @@ startCameraButton?.addEventListener("click", async () => {
       audio: false,
       video: { facingMode: "user" },
     });
+    const facingMode = cameraStream.getVideoTracks()[0]?.getSettings().facingMode;
+    cameraVideo.classList.toggle("is-mirrored", !facingMode || facingMode === "user");
     cameraVideo.srcObject = cameraStream;
     await cameraVideo.play();
     cameraResult.hidden = true;
@@ -3915,6 +3918,12 @@ takePhotoButton?.addEventListener("click", () => {
     sh = cameraVideo.videoWidth / targetRatio;
     sy = (cameraVideo.videoHeight - sh) / 2;
   }
+
+  context.save();
+  if (cameraVideo.classList.contains("is-mirrored")) {
+    context.translate(canvas.width, 0);
+    context.scale(-1, 1);
+  }
   context.drawImage(
     cameraVideo,
     sx,
@@ -3926,6 +3935,7 @@ takePhotoButton?.addEventListener("click", () => {
     canvas.width,
     canvas.height,
   );
+  context.restore();
 
   context.drawImage(selectedImage, 0, 0, canvas.width, canvas.height);
   cameraResult.src = canvas.toDataURL("image/png");
@@ -4127,7 +4137,7 @@ function endBrowserSession() {
       doc(db, "users", uid),
       { isOnline: false, lastActiveMs: Date.now() },
       { merge: true },
-    ).catch(() => {});
+    ).catch(() => { });
   }
   if (heartbeatTimer) {
     clearInterval(heartbeatTimer);
@@ -4520,7 +4530,7 @@ profileEditForm.addEventListener("submit", async (event) => {
   closeProfileEditForm();
   toggleProfileEditBtn.focus();
   if (!nicknameChanged) return;
-  updateProfile(user, { displayName: newNickname }).catch(() => {});
+  updateProfile(user, { displayName: newNickname }).catch(() => { });
   touchMelodyProfile();
 });
 
@@ -4938,11 +4948,13 @@ async function createPhotoShare(source, signal) {
     method: "POST",
     signal,
     headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ fields: {
-      ownerUid: { stringValue: user.uid },
-      dataUrl: { stringValue: dataUrl },
-      expiresAt: { timestampValue: expiresAt.toISOString() },
-    } }),
+    body: JSON.stringify({
+      fields: {
+        ownerUid: { stringValue: user.uid },
+        dataUrl: { stringValue: dataUrl },
+        expiresAt: { timestampValue: expiresAt.toISOString() },
+      }
+    }),
   });
   return id;
 }
