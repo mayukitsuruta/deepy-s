@@ -498,20 +498,28 @@ input::file-selector-button {
   --face-angle: calc(var(--slot-angle) + var(--half-turn));
   transform: rotateY(var(--face-angle)) translateZ(var(--radius));
   filter: brightness(calc(.60 + .40 * cos(var(--face-angle) - var(--carousel-rotation))));
-  padding: 12px;
+  padding: 11% 9% 8%;
   color: #4b3028;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background-color: var(--card-color);
+  background-color: #fffdf8;
+  background-image: var(--card-bg);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
   box-shadow: 0 12px 24px rgba(32, 17, 8, .28);
   cursor: pointer;
 }
 
 .carousel-back {
   transform: rotateY(var(--slot-angle)) translateZ(calc(var(--radius) - 1px)) rotateY(180deg);
-  background-color: color-mix(in srgb, var(--card-color) 36%, #47342b);
-  box-shadow: inset 0 0 0 6px rgb(64 43 30 / 18%);
+  background-color: #47342b;
+  background-image: var(--card-bg);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  filter: brightness(0.62);
   cursor: pointer;
 }
 
@@ -543,24 +551,28 @@ input::file-selector-button {
 
 .chippy {
   --card-color: #e9e9b2;
+  --card-bg: url("../キャラクター背景/home-chippy-bg.png");
 }
 
 .simpy {
   --card-color: #ffd4d0;
+  --card-bg: url("../キャラクター背景/home-simpy-bg.png");
 }
 
 .nasupy {
   --card-color: #e5d4f5;
+  --card-bg: url("../キャラクター背景/home-nasupy-bg.png");
 }
 
 .hitopy {
   --card-color: #f3e6d4;
+  --card-bg: url("../キャラクター背景/home-hitopy-bg.png");
 }
 
 .character-portrait {
   height: 210px;
   border-radius: 100px 100px 20px 20px;
-  background: rgba(255, 255, 255, 0.45);
+  background: transparent;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -576,7 +588,7 @@ input::file-selector-button {
 }
 
 .hitopy .character-portrait {
-  background: #5a534e;
+  background: transparent;
 }
 
 .character-info {
@@ -1084,8 +1096,16 @@ input::file-selector-button {
 #simpy-story-view[hidden],
 #nasupy-story-view[hidden],
 #hitopy-story-view[hidden],
-#zukan-view-content[hidden] {
+#zukan-view-content[hidden],
+#diagnosis-view-content[hidden] {
   display: none !important;
+}
+
+.diagnosis-view {
+  flex: 1;
+  min-height: 0;
+  max-height: calc(100dvh - 120px);
+  overflow: auto;
 }
 
 .zukan-view {

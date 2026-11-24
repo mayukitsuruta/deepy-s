@@ -1,5 +1,5 @@
 /* =========================================
-   地底人診断（sindan.html 専用）
+   地底人診断（ホーム画面の中で表示する）
    クラス名はすべて diagnosis- で始め、style.css と競合しないようにする。
    色・フォントは style.css（ホーム画面・図鑑・キャラカード）と同じ値を使う。
    ========================================= */
@@ -23,7 +23,11 @@
 
 .diagnosis-page *,
 .diagnosis-page *::before,
-.diagnosis-page *::after {
+.diagnosis-page *::after,
+.diagnosis-view,
+.diagnosis-view *,
+.diagnosis-view *::before,
+.diagnosis-view *::after {
   box-sizing: border-box;
 }
 
@@ -149,12 +153,14 @@
   cursor: pointer;
 }
 
-.diagnosis-page :focus-visible {
+.diagnosis-page :focus-visible,
+.diagnosis-view :focus-visible {
   outline: 3px solid #ffb067;
   outline-offset: 3px;
 }
 
-.diagnosis-page [data-focus]:focus {
+.diagnosis-page [data-focus]:focus,
+.diagnosis-view [data-focus]:focus {
   outline: none;
 }
 

@@ -1,5 +1,10 @@
 import { db, auth } from "./firebase.js?v=20261110-persistent-google";
-import { createSpaceHousing, normalizeSpaceHouses, houseLocation, HOUSE_MESSAGE_LIFETIME_MS } from "./space-houses.js?v=20261124-house-pointer-preview";
+import {
+  createSpaceHousing,
+  normalizeSpaceHouses,
+  houseLocation,
+  HOUSE_MESSAGE_LIFETIME_MS,
+} from "./space-houses.js?v=20261124-house-pointer-preview";
 import {
   createUserWithEmailAndPassword,
   EmailAuthProvider,
@@ -44,7 +49,10 @@ function initCharacterCarousel(carousel) {
     card.style.setProperty("--slot-angle", `${index * step}deg`);
     for (const offset of [0, 180]) {
       const back = document.createElement("div");
-      back.classList.add("carousel-back", card.querySelector(".character-button").dataset.character);
+      back.classList.add(
+        "carousel-back",
+        card.querySelector(".character-button").dataset.character,
+      );
       back.setAttribute("aria-hidden", "true");
       back.dataset.index = index;
       back.style.setProperty("--slot-angle", `${index * step + offset}deg`);
@@ -60,7 +68,10 @@ function initCharacterCarousel(carousel) {
     carousel.style.setProperty("--carousel-rotation", `${next * step}deg`);
     active.removeAttribute("aria-hidden");
     active.setAttribute("aria-current", "true");
-    if (carousel.querySelector(".character-card:focus-within") && !active.matches(":focus-within")) {
+    if (
+      carousel.querySelector(".character-card:focus-within") &&
+      !active.matches(":focus-within")
+    ) {
       active.querySelector(".character-button").focus({ preventScroll: true });
     }
     cards.forEach((card) => {
@@ -72,31 +83,43 @@ function initCharacterCarousel(carousel) {
   }
 
   rotateTo(0);
-  carousel.querySelector(".carousel-prev").addEventListener("click", () => rotateTo(position - 1));
-  carousel.querySelector(".carousel-next").addEventListener("click", () => rotateTo(position + 1));
+  carousel
+    .querySelector(".carousel-prev")
+    .addEventListener("click", () => rotateTo(position - 1));
+  carousel
+    .querySelector(".carousel-next")
+    .addEventListener("click", () => rotateTo(position + 1));
   carousel.addEventListener("keydown", (event) => {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
     event.preventDefault();
     rotateTo(position + (event.key === "ArrowRight" ? 1 : -1));
   });
 
-  carousel.addEventListener("click", (event) => {
-    if (suppressClick && event.detail > 0) {
-      event.stopPropagation();
-      event.preventDefault();
-      return;
-    }
-    const back = event.target.closest(".carousel-back");
-    const card = back ? cards[Number(back.dataset.index)] : event.target.closest(".character-card");
-    if (!card) return;
-    if (card.hasAttribute("aria-current")) {
-      if (!back && !event.target.closest(".character-button")) card.querySelector(".character-button").click();
-      return;
-    }
-    let distance = (cards.indexOf(card) - position) % cards.length;
-    if (Math.abs(distance) > cards.length / 2) distance -= Math.sign(distance) * cards.length;
-    rotateTo(position + distance);
-  }, true);
+  carousel.addEventListener(
+    "click",
+    (event) => {
+      if (suppressClick && event.detail > 0) {
+        event.stopPropagation();
+        event.preventDefault();
+        return;
+      }
+      const back = event.target.closest(".carousel-back");
+      const card = back
+        ? cards[Number(back.dataset.index)]
+        : event.target.closest(".character-card");
+      if (!card) return;
+      if (card.hasAttribute("aria-current")) {
+        if (!back && !event.target.closest(".character-button"))
+          card.querySelector(".character-button").click();
+        return;
+      }
+      let distance = (cards.indexOf(card) - position) % cards.length;
+      if (Math.abs(distance) > cards.length / 2)
+        distance -= Math.sign(distance) * cards.length;
+      rotateTo(position + distance);
+    },
+    true,
+  );
 
   carousel.addEventListener("pointerdown", (event) => {
     if (!event.isPrimary || event.button !== 0) return;
@@ -106,7 +129,7 @@ function initCharacterCarousel(carousel) {
       id: event.pointerId,
       x: event.clientX,
       y: event.clientY,
-      distance: Math.min(carousel.clientWidth * .50, 280),
+      distance: Math.min(carousel.clientWidth * 0.5, 280),
     };
   });
 
@@ -114,12 +137,19 @@ function initCharacterCarousel(carousel) {
     if (drag?.id !== event.pointerId) return;
     const dx = event.clientX - drag.x;
     if (drag.start === undefined) {
-      if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(event.clientY - drag.y)) return;
-      drag.start = parseFloat(getComputedStyle(carousel).getPropertyValue("--carousel-rotation")) / step;
+      if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(event.clientY - drag.y))
+        return;
+      drag.start =
+        parseFloat(
+          getComputedStyle(carousel).getPropertyValue("--carousel-rotation"),
+        ) / step;
       carousel.setPointerCapture(event.pointerId);
       carousel.classList.add("is-dragging");
     }
-    carousel.style.setProperty("--carousel-rotation", `${(drag.start - dx / drag.distance) * step}deg`);
+    carousel.style.setProperty(
+      "--carousel-rotation",
+      `${(drag.start - dx / drag.distance) * step}deg`,
+    );
   });
 
   function finishDrag(event) {
@@ -128,7 +158,7 @@ function initCharacterCarousel(carousel) {
       carousel.classList.remove("is-dragging");
       suppressClick = true;
       const travel = (drag.x - event.clientX) / drag.distance;
-      const flick = Math.abs(travel) >= .22 && Math.abs(travel) < .5;
+      const flick = Math.abs(travel) >= 0.22 && Math.abs(travel) < 0.5;
       const next = flick
         ? Math.round(drag.start) + Math.sign(travel)
         : Math.round(drag.start + travel);
@@ -142,7 +172,11 @@ function initCharacterCarousel(carousel) {
     if (event.target === carousel) finishDrag(event);
   });
   carousel.addEventListener("pointerleave", (event) => {
-    if (drag?.id === event.pointerId && !carousel.hasPointerCapture(event.pointerId)) drag = null;
+    if (
+      drag?.id === event.pointerId &&
+      !carousel.hasPointerCapture(event.pointerId)
+    )
+      drag = null;
   });
 }
 
@@ -192,7 +226,9 @@ function beginDescent(fresh = false) {
   if (!descentActive || fresh) {
     descentGeneration += 1;
     descentActive = true;
-    descentStartedAt = fresh ? Date.now() : (descentStartedAt || window.__deepysDescentStart || Date.now());
+    descentStartedAt = fresh
+      ? Date.now()
+      : descentStartedAt || window.__deepysDescentStart || Date.now();
     if (fresh) descentScreen.classList.remove("is-leaving");
   }
   document.documentElement.classList.add("is-descending");
@@ -232,7 +268,11 @@ function finishDescent() {
 }
 
 function cancelDescent() {
-  if (!descentActive && !document.documentElement.classList.contains("is-descending")) return;
+  if (
+    !descentActive &&
+    !document.documentElement.classList.contains("is-descending")
+  )
+    return;
   descentGeneration += 1;
   descentActive = false;
   descentStartedAt = 0;
@@ -408,7 +448,7 @@ async function loadAccountProfile(user) {
     "ゲスト";
 
   if (nickname !== "ゲスト" && user.displayName !== nickname) {
-    updateProfile(user, { displayName: nickname }).catch(() => { });
+    updateProfile(user, { displayName: nickname }).catch(() => {});
   }
 
   return {
@@ -491,7 +531,8 @@ function ensureGuestUser() {
 
 function rememberAndEnter(user, userData, persist = true) {
   pendingGuestDocData = userData;
-  if (persist && user && !user.isAnonymous) writeProfileCache(user.uid, userData);
+  if (persist && user && !user.isAnonymous)
+    writeProfileCache(user.uid, userData);
   showAccountActions(user);
   enterHomeWithUser(user.uid, userData);
 }
@@ -505,7 +546,8 @@ async function enterAfterLogin(user, userData, persist = true) {
   const token = beginDescent(true);
   const version = sessionVersion;
   pendingGuestDocData = userData;
-  if (persist && user && !user.isAnonymous) writeProfileCache(user.uid, userData);
+  if (persist && user && !user.isAnonymous)
+    writeProfileCache(user.uid, userData);
   showAccountActions(user);
   enterHomeWithUser(user.uid, userData);
   await waitForDescent();
@@ -580,7 +622,7 @@ guestForm.addEventListener("submit", async (event) => {
 logoutButton.addEventListener("click", () => {
   const confirmed = confirm(
     "ログアウトしますか？\n" +
-    "ゲストのまま終了すると、進み具合は保存されません。",
+      "ゲストのまま終了すると、進み具合は保存されません。",
   );
 
   if (!confirmed) return;
@@ -588,7 +630,9 @@ logoutButton.addEventListener("click", () => {
   stopCamera();
   const user = auth.currentUser;
   const registered = Boolean(user && !user.isAnonymous);
-  const presence = registered ? sendPresenceHeartbeat(false) : Promise.resolve();
+  const presence = registered
+    ? sendPresenceHeartbeat(false)
+    : Promise.resolve();
   sessionVersion += 1;
   clearProfileCache();
   resetPlayMemory();
@@ -605,14 +649,14 @@ logoutButton.addEventListener("click", () => {
     : user.isAnonymous
       ? user.delete()
       : presence
-        .catch((error) => {
-          console.warn("オンライン状態の更新に失敗:", error);
-        })
-        .then(() => signOut(auth));
+          .catch((error) => {
+            console.warn("オンライン状態の更新に失敗:", error);
+          })
+          .then(() => signOut(auth));
 
   ending.catch((error) => {
     console.error("ログアウトエラー:", error);
-    return signOut(auth).catch(() => { });
+    return signOut(auth).catch(() => {});
   });
 });
 
@@ -652,7 +696,10 @@ confirmDeleteAccount.addEventListener("click", async () => {
   const uid = user.uid;
   try {
     try {
-      const postsQuery = query(collection(db, "posts"), where("uid", "==", uid));
+      const postsQuery = query(
+        collection(db, "posts"),
+        where("uid", "==", uid),
+      );
       const posts = await getDocs(postsQuery);
       await Promise.all(posts.docs.map((snapshot) => deleteDoc(snapshot.ref)));
     } catch (error) {
@@ -781,15 +828,15 @@ registerForm.addEventListener("submit", async (event) => {
       registerMode === "guest"
         ? { ...currentUserData, isOnline: true, lastActiveMs: Date.now() }
         : {
-          nickname,
-          avatar: "pink",
-          friendshipPoints: 0,
-          bio: "地底でのんびり暮らしてます。よろしくお願いします！",
-          tags: ["デザイン", "カフェ巡り", "音楽"],
-          houseLocation: "第3層・右下エリア",
-          isOnline: true,
-          lastActiveMs: Date.now(),
-        };
+            nickname,
+            avatar: "pink",
+            friendshipPoints: 0,
+            bio: "地底でのんびり暮らしてます。よろしくお願いします！",
+            tags: ["デザイン", "カフェ巡り", "音楽"],
+            houseLocation: "第3層・右下エリア",
+            isOnline: true,
+            lastActiveMs: Date.now(),
+          };
 
     await setDoc(
       doc(db, "users", user.uid),
@@ -801,7 +848,7 @@ registerForm.addEventListener("submit", async (event) => {
     );
     if (userData.nickname) {
       await updateProfile(user, { displayName: userData.nickname }).catch(
-        () => { },
+        () => {},
       );
     }
 
@@ -835,7 +882,9 @@ loginButton.addEventListener("click", () => {
   document.getElementById("signin-email").focus();
 });
 
-document.getElementById("email-login-shortcut").addEventListener("click", () => loginButton.click());
+document
+  .getElementById("email-login-shortcut")
+  .addEventListener("click", () => loginButton.click());
 
 // もどるボタン
 signinBack.addEventListener("click", () => {
@@ -869,7 +918,8 @@ signinForm.addEventListener("submit", async (event) => {
     profilePrefetchUid = null;
     const initial = await loadAccountProfile(user);
 
-    if (version !== sessionVersion || auth.currentUser?.uid !== user.uid) return;
+    if (version !== sessionVersion || auth.currentUser?.uid !== user.uid)
+      return;
 
     signinForm.reset();
     signinMessage.textContent = "";
@@ -898,6 +948,7 @@ const hitopyStoryView = document.getElementById("hitopy-story-view");
 let activeStoryId = "chippy";
 let rhythmTheme = "music";
 const zukanViewContent = document.getElementById("zukan-view-content");
+const diagnosisViewContent = document.getElementById("diagnosis-view-content");
 const zukanNote = document.getElementById("zukan-note");
 const topbarTitleArea = document.getElementById("topbar-title-area");
 const topbarAvatar = document.getElementById("topbar-avatar");
@@ -915,18 +966,26 @@ const profileEditFields = document.getElementById("profile-edit-fields");
 const profileAvatarInput = document.getElementById("profile-avatar-input");
 const profileAvatarPreview = document.getElementById("profile-avatar-preview");
 const profileAvatarPresets = document.getElementById("profile-avatar-presets");
-const profileAvatarModeButtons = profileEditForm.querySelectorAll(".profile-avatar-actions button");
+const profileAvatarModeButtons = profileEditForm.querySelectorAll(
+  ".profile-avatar-actions button",
+);
 const profileNicknameInput = document.getElementById("profile-nickname-input");
 const profileBioInput = document.getElementById("profile-bio-input");
 const profileTagsInput = document.getElementById("profile-tags-input");
 const profileSaveBtn = document.getElementById("profile-save");
 const cancelProfileEditBtn = document.getElementById("cancel-profile-edit");
 const profileEditStatus = document.getElementById("profile-edit-status");
-const residentProfileDialog = document.getElementById("resident-profile-dialog");
-const residentProfileAvatar = document.getElementById("resident-profile-avatar");
+const residentProfileDialog = document.getElementById(
+  "resident-profile-dialog",
+);
+const residentProfileAvatar = document.getElementById(
+  "resident-profile-avatar",
+);
 const residentProfileName = document.getElementById("resident-profile-name");
 const residentProfileHouse = document.getElementById("resident-profile-house");
-const residentProfileStatus = document.getElementById("resident-profile-status");
+const residentProfileStatus = document.getElementById(
+  "resident-profile-status",
+);
 const residentProfileBody = document.getElementById("resident-profile-body");
 const residentProfileIntro = document.getElementById("resident-profile-intro");
 const residentProfileBio = document.getElementById("resident-profile-bio");
@@ -951,14 +1010,20 @@ const AVATAR_PRESETS = {
 const AVATAR_FILE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_AVATAR_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_AVATAR_DATA_LENGTH = 64000;
-const AVATAR_IMAGE_DATA = /^data:image\/(?:webp|png|jpeg);base64,[A-Za-z0-9+/]+={0,2}$/;
+const AVATAR_IMAGE_DATA =
+  /^data:image\/(?:webp|png|jpeg);base64,[A-Za-z0-9+/]+={0,2}$/;
 
 function isAvatarImage(data) {
-  return typeof data === "string" && data.length <= MAX_AVATAR_DATA_LENGTH && AVATAR_IMAGE_DATA.test(data);
+  return (
+    typeof data === "string" &&
+    data.length <= MAX_AVATAR_DATA_LENGTH &&
+    AVATAR_IMAGE_DATA.test(data)
+  );
 }
 
 function avatarPresetKey(avatarKey) {
-  return typeof avatarKey === "string" && Object.hasOwn(AVATAR_PRESETS, avatarKey)
+  return typeof avatarKey === "string" &&
+    Object.hasOwn(AVATAR_PRESETS, avatarKey)
     ? avatarKey
     : "pink";
 }
@@ -985,11 +1050,15 @@ function renderAvatar(container, { avatar, avatarImage }, size) {
   image.className = "avatar-image";
   if (!uploaded) image.classList.add("avatar-image-preset");
   image.alt = "";
-  image.addEventListener("error", () => {
-    if (container.firstElementChild === image) {
-      container.innerHTML = getAvatarSvg(preset.color, size);
-    }
-  }, { once: true });
+  image.addEventListener(
+    "error",
+    () => {
+      if (container.firstElementChild === image) {
+        container.innerHTML = getAvatarSvg(preset.color, size);
+      }
+    },
+    { once: true },
+  );
   image.src = source;
   container.replaceChildren(image);
 }
@@ -1043,7 +1112,10 @@ function switchUndergroundView(viewName) {
     residentProfileDialog.close();
     spaceHousing.cancel();
   }
-  homeScreen.classList.toggle("is-home", viewName === "home");
+  homeScreen.classList.toggle(
+    "is-home",
+    viewName === "home" || viewName === "diagnosis",
+  );
   homeScreen.classList.toggle("camera-mode", viewName === "camera");
   homeScreen.classList.toggle("space-mode", viewName === "space");
   homeScreen.classList.toggle("story-mode", viewName === "story");
@@ -1051,7 +1123,7 @@ function switchUndergroundView(viewName) {
     btn.classList.toggle(
       "active",
       btn.dataset.view === viewName ||
-      (viewName === "story" && btn.dataset.view === "home"),
+        (viewName === "story" && btn.dataset.view === "home"),
     );
   });
 
@@ -1074,6 +1146,8 @@ function switchUndergroundView(viewName) {
     hitopyStoryView.hidden = !(showingStory && activeStoryId === "hitopy");
   }
   if (zukanViewContent) zukanViewContent.hidden = viewName !== "zukan";
+  if (diagnosisViewContent)
+    diagnosisViewContent.hidden = viewName !== "diagnosis";
   if (viewName === "zukan") renderZukan();
 
   if (viewName === "space") {
@@ -1105,14 +1179,11 @@ navItems.forEach((btn) => {
       view === "home" ||
       view === "space" ||
       view === "camera" ||
-      view === "zukan"
+      view === "zukan" ||
+      view === "diagnosis"
     ) {
       switchUndergroundView(view);
       if (view !== "camera") stopCamera();
-    } else if (view === "diagnosis") {
-      // 地底人診断は別ページ（sindan.html）。同じタブで移動する
-      stopCamera();
-      window.location.href = "./sindan.html";
     } else {
       alert("この画面は現在準備中です！");
     }
@@ -1225,8 +1296,22 @@ let openZukanId = null;
 
 const zukanEntries = [
   {
+    id: "deepy",
+    name: "DEEPY",
+    kana: "ディーピー",
+    image: "./images/deepy.png",
+    occupation: "地底の案内人",
+    likes: "地上に関する本、文化",
+    found: "地底に着いた日",
+    note: "地上から来た人を、地底の暮らしへ案内する。ガイドブックをいつも持っている。",
+    tool: "青いガイドブック",
+    surprise: "案内の途中で、自分も知らない道を見つけることがある。",
+    secret: "ガイドブックのうしろには、まだ白いページが残っている。",
+  },
+  {
     id: "chippy",
     name: "CHIPPY",
+    kana: "チッピー",
     image: "./images/green.png",
     occupation: "土吸収員",
     likes: "きれいな鉱物。とくにクリスタル",
@@ -1239,6 +1324,7 @@ const zukanEntries = [
   {
     id: "simpy",
     name: "SIMPY",
+    kana: "シンピー",
     image: "./images/pink.png",
     occupation: "音の採集家",
     likes: "不思議な音、鈴、音楽、静かな場所、古い楽器",
@@ -1251,6 +1337,7 @@ const zukanEntries = [
   {
     id: "nasupy",
     name: "NASUPY",
+    kana: "ナスピー",
     image: "./images/purple.png",
     occupation: "植物の医者",
     likes: "植物、激辛調理",
@@ -1263,6 +1350,7 @@ const zukanEntries = [
   {
     id: "hitopy",
     name: "HITOPY",
+    kana: "ヒトピー",
     image: "./images/white.png",
     occupation: "建築家",
     likes: "海、海洋生物",
@@ -1271,24 +1359,13 @@ const zukanEntries = [
     tool: "ポケットに入った道具",
     surprise: "完成した家より、まだ建っていない家の話が好き。",
   },
-  {
-    id: "deepy",
-    name: "DEEPY",
-    image: "./images/deepy.png",
-    occupation: "地底の案内人",
-    likes: "地上に関する本、文化",
-    found: "地底に着いた日",
-    note: "地上から来た人を、地底の暮らしへ案内する。ガイドブックをいつも持っている。",
-    tool: "青いガイドブック",
-    surprise: "案内の途中で、自分も知らない道を見つけることがある。",
-    secret: "ガイドブックのうしろには、まだ白いページが残っている。",
-  },
+
   {
     id: "stappy",
     name: "STAPPY",
     kana: "スタッピー",
     image: "./images/stappy.png",
-    occupation: "カリスマ（ファッションデザイナー、インフルエンサー）",
+    occupation: "カリスマ",
     likes: "光るもの、かわいいもの",
     personality:
       "ギャルマインド。基本的に明るくポジティブだけど、こだわりは強め。人の良いところを見つけて褒める、陽のギャル。",
@@ -1302,14 +1379,15 @@ const zukanEntries = [
     name: "ZARPY",
     kana: "ザーピー",
     image: "./images/zarppy.png",
-    occupation: "ザーファー（砂でサーフィンをするサーファー）",
+    occupation: "ザーファー",
     likes: "化石、ザーフボード",
     personality:
       "「楽しそう！」と思ったことに熱中するタイプ。原動力は自分の好奇心。人懐っこく、人と話すことでエネルギーがもらえる。肯定的で、まず自分から話しかける。",
     note: "DEEPYの友達。地底でできる砂のサーフィンを仕事にしている。",
     tool: "ザーフボード",
     surprise: "地底に海はまだないので、砂の上でサーフィンをしている。",
-    secret: "地上の海を、いつか地底にも作るのが夢。小さいころからDEEPYに地上の話を聞いていて、海が地上の7割を占めると知ってから、この遊びを考えた。",
+    secret:
+      "地上の海を、いつか地底にも作るのが夢。小さいころからDEEPYに地上の話を聞いていて、海が地上の7割を占めると知ってから、この遊びを考えた。",
   },
 ];
 
@@ -1346,19 +1424,20 @@ function renderZukanIndex() {
     button.className = "field-entry";
     button.innerHTML = `
       <span class="field-entry-no">${String(index + 1).padStart(2, "0")}</span>
-      <span class="field-thumb">${entry.image
-        ? `<img src="${entry.image}" alt="" />`
-        : `<span class="field-thumb-empty">？</span>`
+      <span class="field-thumb">${
+        entry.image
+          ? `<img src="${entry.image}" alt="" />`
+          : `<span class="field-thumb-empty">？</span>`
       }</span>
       <span class="field-entry-copy">
-        <span class="field-entry-name">${entry.name}${entry.kana
-        ? `<span class="field-entry-kana">${entry.kana}</span>`
-        : ""
-      }</span>
-        <span class="field-entry-meta">${entry.unknown
-        ? "まだ見つけていない"
-        : entry.occupation
-      }</span>
+        <span class="field-entry-name">${entry.name}${
+          entry.kana
+            ? `<span class="field-entry-kana">${entry.kana}</span>`
+            : ""
+        }</span>
+        <span class="field-entry-meta">${
+          entry.unknown ? "まだ見つけていない" : entry.occupation
+        }</span>
       </span>
       <span class="field-entry-open">開く</span>
     `;
@@ -1778,7 +1857,10 @@ const MELODY_THEMES = [
     noteDur: 0.26,
     gap: 0.04,
     measures: [
-      { file: "sheet-music-jemstone01.png", notes: [1318.51, 1567.98, 1975.53] },
+      {
+        file: "sheet-music-jemstone01.png",
+        notes: [1318.51, 1567.98, 1975.53],
+      },
       { file: "sheet-music-jemstone02.png", notes: [987.77, 1174.66, 1479.98] },
       { file: "sheet-music-jemstone03.png", notes: [1567.98, 1174.66, 987.77] },
     ],
@@ -1997,16 +2079,16 @@ function awardSimpyFriendship() {
 
   const nextPoints = already
     ? Math.max(
-      resolvedFriendshipPoints(currentUserData.friendshipPoints),
-      storyFriendshipFloor(),
-    )
-    : Math.min(
-      100,
-      Math.max(
-        resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
+        resolvedFriendshipPoints(currentUserData.friendshipPoints),
         storyFriendshipFloor(),
-      ),
-    );
+      )
+    : Math.min(
+        100,
+        Math.max(
+          resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
+          storyFriendshipFloor(),
+        ),
+      );
 
   renderUserData({ friendshipPoints: nextPoints, simpyCleared: true });
   syncFriendshipPill();
@@ -2083,7 +2165,12 @@ function silenceMelody() {
 function stopMelodyPlayback() {
   const wasPlaying = melodyPlaying;
   silenceMelody();
-  if (wasPlaying && melodyStatusEl && melodyPhase !== "idle" && melodyPhase !== "done") {
+  if (
+    wasPlaying &&
+    melodyStatusEl &&
+    melodyPhase !== "idle" &&
+    melodyPhase !== "done"
+  ) {
     melodyStatusEl.textContent = melodyRevealed
       ? "音を止めたよ。もう一度聴けるよ。"
       : "音を止めたよ。はじめの音を聴くを押してね。";
@@ -2130,7 +2217,10 @@ function shuffledDifferent(list) {
     next = shuffle(list);
     guard += 1;
   }
-  if (next.every((item, index) => item.id === list[index].id) && list.length > 1) {
+  if (
+    next.every((item, index) => item.id === list[index].id) &&
+    list.length > 1
+  ) {
     next = [list[1], list[0], ...list.slice(2)];
   }
   return next;
@@ -2298,7 +2388,9 @@ function updateMelodyControls() {
   if (!melodyListenEl || !melodySubmitEl) return;
   const sorting = melodyPhase === "sort" && melodyRevealed;
   melodyListenEl.disabled = melodyPlaying || melodyPhase === "done";
-  melodyListenEl.textContent = melodyRevealed ? "もう一度聴く" : "はじめの音を聴く";
+  melodyListenEl.textContent = melodyRevealed
+    ? "もう一度聴く"
+    : "はじめの音を聴く";
   melodySubmitEl.disabled = !sorting || melodyPlaying;
 }
 
@@ -2327,7 +2419,8 @@ async function playTargetSequence({ replay }) {
   if (token !== melodyToken) return;
   if (!ctx) {
     melodyPlaying = false;
-    if (melodyStatusEl) melodyStatusEl.textContent = "このブラウザでは音を鳴らせないよ。";
+    if (melodyStatusEl)
+      melodyStatusEl.textContent = "このブラウザでは音を鳴らせないよ。";
     updateMelodyControls();
     return;
   }
@@ -2343,19 +2436,26 @@ async function playTargetSequence({ replay }) {
     return { index, at };
   });
   marks.forEach((mark) => {
-    const timer = setTimeout(() => {
-      if (token !== melodyToken) return;
-      if (melodyStatusEl) melodyStatusEl.textContent = `聴いてね。${mark.index + 1}小節目`;
-      if (!melodyRevealed) renderListenGhosts(mark.index);
-    }, Math.max(0, (mark.at - ctx.currentTime) * 1000));
+    const timer = setTimeout(
+      () => {
+        if (token !== melodyToken) return;
+        if (melodyStatusEl)
+          melodyStatusEl.textContent = `聴いてね。${mark.index + 1}小節目`;
+        if (!melodyRevealed) renderListenGhosts(mark.index);
+      },
+      Math.max(0, (mark.at - ctx.currentTime) * 1000),
+    );
     melodyWaiters.push({
       timer,
-      resolve: () => { },
+      resolve: () => {},
       token,
     });
   });
 
-  const alive = await waitMelody(Math.max(300, (cursor - ctx.currentTime) * 1000), token);
+  const alive = await waitMelody(
+    Math.max(300, (cursor - ctx.currentTime) * 1000),
+    token,
+  );
   if (!alive || token !== melodyToken) return;
   melodyPlaying = false;
   if (replay && melodyRevealed) melodyReplays += 1;
@@ -2366,7 +2466,8 @@ async function playTargetSequence({ replay }) {
   }
   melodyPhase = "sort";
   if (melodyStatusEl) {
-    melodyStatusEl.textContent = "小節を聴いて、最初の並びと同じになるように入れ替えてね。";
+    melodyStatusEl.textContent =
+      "小節を聴いて、最初の並びと同じになるように入れ替えてね。";
   }
   renderMelodyCards();
   updateMelodyControls();
@@ -2384,12 +2485,14 @@ function previewMeasure(measure) {
   markPlaying(measure.id);
   updateMelodyControls();
   const end = scheduleMeasure(measure, ctx.currentTime + 0.04);
-  waitMelody(Math.max(180, (end - ctx.currentTime) * 1000), token).then((alive) => {
-    if (!alive) return;
-    melodyPlaying = false;
-    markPlaying("");
-    updateMelodyControls();
-  });
+  waitMelody(Math.max(180, (end - ctx.currentTime) * 1000), token).then(
+    (alive) => {
+      if (!alive) return;
+      melodyPlaying = false;
+      markPlaying("");
+      updateMelodyControls();
+    },
+  );
 }
 
 function beginRound() {
@@ -2421,19 +2524,31 @@ function startMelodySession() {
 function scoreCurrentRound() {
   const elapsed = roundStartedAt ? (Date.now() - roundStartedAt) / 1000 : 60;
   const timeBonus = Math.max(0, 480 - Math.floor(elapsed * 8));
-  return Math.max(120, 1000 + timeBonus - melodyReplays * 70 - melodyWrongs * 160);
+  return Math.max(
+    120,
+    1000 + timeBonus - melodyReplays * 70 - melodyWrongs * 160,
+  );
 }
 
 function submitMelodyOrder() {
-  if (melodyPhase !== "sort" || !melodyRevealed || melodyPlaying || melodyAwaitingNext) return;
-  const correct = melodyOrder.every((item, index) => item.id === melodyTarget[index].id);
+  if (
+    melodyPhase !== "sort" ||
+    !melodyRevealed ||
+    melodyPlaying ||
+    melodyAwaitingNext
+  )
+    return;
+  const correct = melodyOrder.every(
+    (item, index) => item.id === melodyTarget[index].id,
+  );
   if (!correct) {
     melodyWrongs += 1;
     melodyStaffEl?.classList.remove("is-wrong");
     void melodyStaffEl?.offsetWidth;
     melodyStaffEl?.classList.add("is-wrong");
     if (melodyStatusEl) {
-      melodyStatusEl.textContent = "まだ順番が違うよ。もう一度、音を聴きくらべてみて。";
+      melodyStatusEl.textContent =
+        "まだ順番が違うよ。もう一度、音を聴きくらべてみて。";
     }
     return;
   }
@@ -2449,7 +2564,9 @@ function startStoryMelodyGame() {
   if (simpyClearPanel) simpyClearPanel.hidden = true;
   simpyStoryView?.classList.add("is-playing");
   simpyStoryView?.classList.remove("is-cleared");
-  melodyQueue = [MELODY_THEMES[Math.floor(Math.random() * MELODY_THEMES.length)]];
+  melodyQueue = [
+    MELODY_THEMES[Math.floor(Math.random() * MELODY_THEMES.length)],
+  ];
   melodyRound = 0;
   if (melodyPlayEl) melodyPlayEl.hidden = false;
   updateSimpyPrev();
@@ -2527,11 +2644,13 @@ async function saveMelodyBest(score) {
   }
   renderMelodyScore();
   if (!currentUserId || !auth.currentUser) {
-    if (melodySaveNote) melodySaveNote.textContent = "ログインすると、みんなの記録に残るよ。";
+    if (melodySaveNote)
+      melodySaveNote.textContent = "ログインすると、みんなの記録に残るよ。";
     return;
   }
   if (safeScore < previous) {
-    if (melodySaveNote) melodySaveNote.textContent = `自己ベストは${previous}点のまま。`;
+    if (melodySaveNote)
+      melodySaveNote.textContent = `自己ベストは${previous}点のまま。`;
     return;
   }
   try {
@@ -2551,7 +2670,8 @@ async function saveMelodyBest(score) {
   } catch (error) {
     console.error("ミニゲーム記録の保存エラー:", error);
     if (melodySaveNote) {
-      melodySaveNote.textContent = "記録をサーバーに残せず、この端末にだけ覚えたよ。";
+      melodySaveNote.textContent =
+        "記録をサーバーに残せず、この端末にだけ覚えたよ。";
     }
   }
 }
@@ -2648,9 +2768,11 @@ function openMelodyMinigame() {
   else updateMelodyControls();
 }
 
-document.querySelectorAll(".character-button[data-character='simpy']").forEach((button) => {
-  button.addEventListener("click", openSimpyStory);
-});
+document
+  .querySelectorAll(".character-button[data-character='simpy']")
+  .forEach((button) => {
+    button.addEventListener("click", openSimpyStory);
+  });
 
 simpyStoryView?.addEventListener("click", (event) => {
   if (
@@ -2714,7 +2836,9 @@ simpyFinishHome?.addEventListener("click", (event) => {
   switchUndergroundView("home");
 });
 
-const RHYTHM_SONG = [523.25, 587.33, 659.25, 698.46, 783.99, 698.46, 659.25, 523.25];
+const RHYTHM_SONG = [
+  523.25, 587.33, 659.25, 698.46, 783.99, 698.46, 659.25, 523.25,
+];
 const RHYTHM_CHART = [
   { good: true, lane: 1 },
   { good: true, lane: 0 },
@@ -2746,7 +2870,8 @@ let rhythmSettled = false;
 
 function renderRhythmHud() {
   if (rhythmComboEl) rhythmComboEl.textContent = `COMBO ${rhythmCombo}`;
-  if (rhythmProgressEl) rhythmProgressEl.textContent = `${rhythmCollected} / ${RHYTHM_SONG.length}`;
+  if (rhythmProgressEl)
+    rhythmProgressEl.textContent = `${rhythmCollected} / ${RHYTHM_SONG.length}`;
   if (rhythmPointsEl) rhythmPointsEl.textContent = `${rhythmPoints}点`;
   rhythmComboEl?.classList.toggle("is-hot", rhythmCombo >= 2);
   if (rhythmTheme !== "music") return;
@@ -3077,16 +3202,16 @@ function awardHitopyFriendship() {
 
   const nextPoints = already
     ? Math.max(
-      resolvedFriendshipPoints(currentUserData.friendshipPoints),
-      storyFriendshipFloor(),
-    )
-    : Math.min(
-      100,
-      Math.max(
-        resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
+        resolvedFriendshipPoints(currentUserData.friendshipPoints),
         storyFriendshipFloor(),
-      ),
-    );
+      )
+    : Math.min(
+        100,
+        Math.max(
+          resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
+          storyFriendshipFloor(),
+        ),
+      );
 
   renderUserData({ friendshipPoints: nextPoints, hitopyCleared: true });
   syncFriendshipPill();
@@ -3179,7 +3304,8 @@ function openHitopyStory() {
 }
 
 function advanceHitopyStory() {
-  if (hitopyPlaying || hitopyShowingClear || hitopyFinish?.hidden === false) return;
+  if (hitopyPlaying || hitopyShowingClear || hitopyFinish?.hidden === false)
+    return;
   if (hitopyStoryIndex >= hitopyStoryLines.length - 1) return;
   hitopyStoryIndex += 1;
   renderHitopyStory();
@@ -3224,9 +3350,11 @@ function finishHitopyBuild() {
   hitopyFinishHome?.focus();
 }
 
-document.querySelectorAll(".character-button[data-character='hitopy']").forEach((button) => {
-  button.addEventListener("click", openHitopyStory);
-});
+document
+  .querySelectorAll(".character-button[data-character='hitopy']")
+  .forEach((button) => {
+    button.addEventListener("click", openHitopyStory);
+  });
 
 hitopyStoryView?.addEventListener("click", (event) => {
   if (
@@ -3259,11 +3387,13 @@ hitopyReplay?.addEventListener("click", (event) => {
   startHitopyStory();
 });
 
-document.getElementById("hitopy-rhythm-again")?.addEventListener("click", (event) => {
-  event.stopPropagation();
-  bindRhythmStage(rhythmBuildStage);
-  startRhythmGame();
-});
+document
+  .getElementById("hitopy-rhythm-again")
+  ?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    bindRhythmStage(rhythmBuildStage);
+    startRhythmGame();
+  });
 
 hitopyFinishHome?.addEventListener("click", (event) => {
   event.stopPropagation();
@@ -3359,16 +3489,16 @@ function awardNasupyFriendship() {
 
   const nextPoints = already
     ? Math.max(
-      resolvedFriendshipPoints(currentUserData.friendshipPoints),
-      storyFriendshipFloor(),
-    )
-    : Math.min(
-      100,
-      Math.max(
-        resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
+        resolvedFriendshipPoints(currentUserData.friendshipPoints),
         storyFriendshipFloor(),
-      ),
-    );
+      )
+    : Math.min(
+        100,
+        Math.max(
+          resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
+          storyFriendshipFloor(),
+        ),
+      );
 
   renderUserData({ friendshipPoints: nextPoints, nasupyCleared: true });
   syncFriendshipPill();
@@ -3441,7 +3571,8 @@ function stopNasupyGame() {
 
 function updateNasupyPrev() {
   if (!nasupyStoryPrev) return;
-  const inDialogue = !nasupyPlaying && !nasupyShowingClear && nasupyFinish?.hidden !== false;
+  const inDialogue =
+    !nasupyPlaying && !nasupyShowingClear && nasupyFinish?.hidden !== false;
   nasupyStoryPrev.hidden = !inDialogue;
   nasupyStoryPrev.disabled = nasupyStoryIndex <= 0;
 }
@@ -3502,7 +3633,8 @@ function openNasupyStory() {
 }
 
 function advanceNasupyStory() {
-  if (nasupyPlaying || nasupyShowingClear || nasupyFinish?.hidden === false) return;
+  if (nasupyPlaying || nasupyShowingClear || nasupyFinish?.hidden === false)
+    return;
   if (nasupyStoryIndex >= nasupyStoryLines.length - 1) return;
   nasupyStoryIndex += 1;
   renderNasupyStory();
@@ -3618,20 +3750,33 @@ function beginNasupyDrag(event) {
   document.addEventListener("pointermove", moveNasupyDrag);
   document.addEventListener("pointerup", endNasupyDrag);
   document.addEventListener("pointercancel", endNasupyDrag);
-  nasupyBowlSlot?.classList.toggle("is-hot", nasupyPointerHitsBowl(event.clientX, event.clientY));
+  nasupyBowlSlot?.classList.toggle(
+    "is-hot",
+    nasupyPointerHitsBowl(event.clientX, event.clientY),
+  );
 }
 
 function moveNasupyDrag(event) {
-  if (!nasupyDrag || event.pointerId !== nasupyDrag.pointerId || nasupyDrag.native) return;
+  if (
+    !nasupyDrag ||
+    event.pointerId !== nasupyDrag.pointerId ||
+    nasupyDrag.native
+  )
+    return;
   nasupyDrag.x = event.clientX;
   nasupyDrag.y = event.clientY;
-  if (nasupyDrag.ghost) positionNasupyGhost(nasupyDrag.ghost, event.clientX, event.clientY);
-  nasupyBowlSlot?.classList.toggle("is-hot", nasupyPointerHitsBowl(event.clientX, event.clientY));
+  if (nasupyDrag.ghost)
+    positionNasupyGhost(nasupyDrag.ghost, event.clientX, event.clientY);
+  nasupyBowlSlot?.classList.toggle(
+    "is-hot",
+    nasupyPointerHitsBowl(event.clientX, event.clientY),
+  );
 }
 
 function endNasupyDrag(event) {
   if (!nasupyDrag || nasupyDrag.native) return;
-  if (event.pointerId !== undefined && event.pointerId !== nasupyDrag.pointerId) return;
+  if (event.pointerId !== undefined && event.pointerId !== nasupyDrag.pointerId)
+    return;
   const x = event.clientX || nasupyDrag.x;
   const y = event.clientY || nasupyDrag.y;
   const id = nasupyDrag.id;
@@ -3650,7 +3795,8 @@ function beginNasupyNativeDrag(event) {
   event.dataTransfer.setData("text/plain", item.dataset.item);
   event.dataTransfer.effectAllowed = "copy";
   const image = item.querySelector("img");
-  if (image) event.dataTransfer.setDragImage(image, image.width / 2, image.height / 2);
+  if (image)
+    event.dataTransfer.setDragImage(image, image.width / 2, image.height / 2);
   if (nasupyDrag?.ghost) nasupyDrag.ghost.remove();
   nasupyDrag = {
     id: item.dataset.item,
@@ -3707,7 +3853,9 @@ function buildNasupyItems() {
     nasupyBowlSlot.dataset.dropReady = "1";
     nasupyBowlSlot.addEventListener("dragenter", allowNasupyDrop);
     nasupyBowlSlot.addEventListener("dragover", allowNasupyDrop);
-    nasupyBowlSlot.addEventListener("dragleave", () => nasupyBowlSlot.classList.remove("is-hot"));
+    nasupyBowlSlot.addEventListener("dragleave", () =>
+      nasupyBowlSlot.classList.remove("is-hot"),
+    );
     nasupyBowlSlot.addEventListener("drop", dropNasupyIngredient);
   }
 }
@@ -3734,7 +3882,8 @@ document
   });
 
 nasupyStoryView?.addEventListener("dragover", (event) => {
-  if (!nasupyPlaying || nasupyLocked || event.target.closest(".nasupy-item")) return;
+  if (!nasupyPlaying || nasupyLocked || event.target.closest(".nasupy-item"))
+    return;
   allowNasupyDrop(event);
 });
 
@@ -3812,7 +3961,9 @@ const startCameraButton = document.getElementById("start-camera");
 const takePhotoButton = document.getElementById("take-photo");
 const retakePhotoButton = document.getElementById("retake-photo");
 const downloadPhotoLink = document.getElementById("download-photo");
-const togglePhotoCornersButton = document.getElementById("toggle-photo-corners");
+const togglePhotoCornersButton = document.getElementById(
+  "toggle-photo-corners",
+);
 const photoRewardDialog = document.getElementById("photo-reward-dialog");
 const closePhotoRewardButton = document.getElementById("close-photo-reward");
 const frameChoices = document.querySelectorAll(".frame-choice");
@@ -3827,27 +3978,38 @@ function updateCameraFrameOrientation() {
     `[data-frame-image="${selectedFrame}"]`,
   );
   // 非表示のフレームが読み込み待ちなら、同じ画像のサムネイルを参照する。
-  const image = frameImage?.naturalWidth > 0 ? frameImage : document.querySelector(
-    `.frame-choice[data-frame="${selectedFrame}"] img`,
-  );
+  const image =
+    frameImage?.naturalWidth > 0
+      ? frameImage
+      : document.querySelector(
+          `.frame-choice[data-frame="${selectedFrame}"] img`,
+        );
   if (!image?.naturalWidth || !image.naturalHeight) return;
-  cameraStage?.classList.toggle("is-landscape", image.naturalWidth > image.naturalHeight);
+  cameraStage?.classList.toggle(
+    "is-landscape",
+    image.naturalWidth > image.naturalHeight,
+  );
   cameraStage?.style.setProperty(
     "--camera-frame-ratio",
     String(image.naturalWidth / image.naturalHeight),
   );
 }
 
-document.querySelectorAll(".frame-choice img, [data-frame-image]").forEach((image) => {
-  image.addEventListener("load", updateCameraFrameOrientation);
-});
+document
+  .querySelectorAll(".frame-choice img, [data-frame-image]")
+  .forEach((image) => {
+    image.addEventListener("load", updateCameraFrameOrientation);
+  });
 updateCameraFrameOrientation();
 
 togglePhotoCornersButton?.addEventListener("click", () => {
   roundedPhotoCorners = !roundedPhotoCorners;
   cameraStage?.classList.toggle("is-rounded", roundedPhotoCorners);
   cameraStage?.classList.toggle("is-square-cornered", !roundedPhotoCorners);
-  togglePhotoCornersButton.setAttribute("aria-checked", String(roundedPhotoCorners));
+  togglePhotoCornersButton.setAttribute(
+    "aria-checked",
+    String(roundedPhotoCorners),
+  );
 });
 
 function stopCamera() {
@@ -3907,8 +4069,13 @@ startCameraButton?.addEventListener("click", async () => {
       audio: false,
       video: { facingMode: "user" },
     });
-    const facingMode = cameraStream.getVideoTracks()[0]?.getSettings().facingMode;
-    cameraVideo.classList.toggle("is-mirrored", !facingMode || facingMode === "user");
+    const facingMode = cameraStream
+      .getVideoTracks()[0]
+      ?.getSettings().facingMode;
+    cameraVideo.classList.toggle(
+      "is-mirrored",
+      !facingMode || facingMode === "user",
+    );
     cameraVideo.srcObject = cameraStream;
     await cameraVideo.play();
     cameraResult.hidden = true;
@@ -3979,16 +4146,18 @@ takePhotoButton?.addEventListener("click", () => {
     `[data-frame-image="${selectedFrame}"]`,
   );
   if (!selectedImage?.complete || !selectedImage.naturalWidth) {
-    setCameraMessage(selectedImage?.complete
-      ? "フレームを読み込めませんでした。ページを開き直してね。"
-      : "フレームを読み込んでいます。少し待ってから、もう一度撮ってね。");
+    setCameraMessage(
+      selectedImage?.complete
+        ? "フレームを読み込めませんでした。ページを開き直してね。"
+        : "フレームを読み込んでいます。少し待ってから、もう一度撮ってね。",
+    );
     return;
   }
   const canvas = document.createElement("canvas");
   const isLandscape = selectedImage.naturalWidth > selectedImage.naturalHeight;
   canvas.width = isLandscape ? 1440 : 960;
   canvas.height = Math.round(
-    canvas.width * selectedImage.naturalHeight / selectedImage.naturalWidth,
+    (canvas.width * selectedImage.naturalHeight) / selectedImage.naturalWidth,
   );
   const context = canvas.getContext("2d");
 
@@ -4117,17 +4286,26 @@ function openResidentProfile(uid, house) {
   const bio = typeof resident.bio === "string" ? resident.bio.trim() : "";
   residentProfileBio.textContent = bio;
   residentProfileIntro.hidden = !bio;
-  renderProfileTags(residentProfileTags, Array.isArray(resident.tags)
-    ? resident.tags.filter((tag) => typeof tag === "string")
-    : []);
+  renderProfileTags(
+    residentProfileTags,
+    Array.isArray(resident.tags)
+      ? resident.tags.filter((tag) => typeof tag === "string")
+      : [],
+  );
   residentProfileBody.hidden = !bio && !residentProfileTags.childElementCount;
   residentProfileDialog.showModal();
 }
 
 residentProfileDialog.addEventListener("click", (event) => {
   if (event.target !== residentProfileDialog) return;
-  const { left, top, right, bottom } = residentProfileDialog.getBoundingClientRect();
-  if (event.clientX < left || event.clientX >= right || event.clientY < top || event.clientY >= bottom) {
+  const { left, top, right, bottom } =
+    residentProfileDialog.getBoundingClientRect();
+  if (
+    event.clientX < left ||
+    event.clientX >= right ||
+    event.clientY < top ||
+    event.clientY >= bottom
+  ) {
     residentProfileDialog.close();
   }
 });
@@ -4139,16 +4317,21 @@ residentProfileDialog.addEventListener("close", () => {
   // The users listener can replace the house button while the dialog is open.
   if (!uid || spaceViewContent.hidden || homeScreen.hidden) return;
   const focused = document.activeElement;
-  if (focused !== document.body && !residentProfileDialog.contains(focused)) return;
-  const trigger = spaceMapViewport.querySelector(`.resident-house[data-owner-id="${CSS.escape(uid)}"] .resident-house-trigger`);
+  if (focused !== document.body && !residentProfileDialog.contains(focused))
+    return;
+  const trigger = spaceMapViewport.querySelector(
+    `.resident-house[data-owner-id="${CSS.escape(uid)}"] .resident-house-trigger`,
+  );
   (trigger || spaceMapViewport).focus({ preventScroll: true });
 });
 
 // リアルタイムオンライン人数
 function isUserOnline(user, now) {
-  return user?.isOnline === true &&
+  return (
+    user?.isOnline === true &&
     typeof user.lastActiveMs === "number" &&
-    now - user.lastActiveMs < ONLINE_TIMEOUT_MS;
+    now - user.lastActiveMs < ONLINE_TIMEOUT_MS
+  );
 }
 
 function renderResidentStatus(online) {
@@ -4160,10 +4343,14 @@ function renderResidentStatus(online) {
 
 function recalculateOnlineCount() {
   const now = Date.now();
-  const count = latestUsersDocs.filter((user) => isUserOnline(user, now)).length;
+  const count = latestUsersDocs.filter((user) =>
+    isUserOnline(user, now),
+  ).length;
 
   if (residentProfileDialog.open) {
-    const resident = latestUsersDocs.find((user) => user.id === residentProfileOwnerId);
+    const resident = latestUsersDocs.find(
+      (user) => user.id === residentProfileOwnerId,
+    );
     renderResidentStatus(isUserOnline(resident, now));
   }
 
@@ -4206,8 +4393,11 @@ function startOnlinePresence() {
         snapshot.forEach((docSnap) => {
           latestUsersDocs.push({ id: docSnap.id, ...docSnap.data() });
         });
-        const resident = latestUsersDocs.find((user) => user.id === residentProfileOwnerId);
-        if (residentProfileDialog.open && resident) renderAvatar(residentProfileAvatar, resident, 36);
+        const resident = latestUsersDocs.find(
+          (user) => user.id === residentProfileOwnerId,
+        );
+        if (residentProfileDialog.open && resident)
+          renderAvatar(residentProfileAvatar, resident, 36);
         renderBoardAvatars();
         recalculateOnlineCount();
         spaceHousing.renderResidents(latestUsersDocs, currentUserId);
@@ -4232,7 +4422,7 @@ function endBrowserSession() {
       doc(db, "users", uid),
       { isOnline: false, lastActiveMs: Date.now() },
       { merge: true },
-    ).catch(() => { });
+    ).catch(() => {});
   }
   if (heartbeatTimer) {
     clearInterval(heartbeatTimer);
@@ -4391,22 +4581,36 @@ function renderBoardAvatars() {
   const residents = new Map(latestUsersDocs.map((user) => [user.id, user]));
   boardList.querySelectorAll(".board-avatar").forEach((container) => {
     const uid = container.dataset.uid;
-    const profile = uid === currentUserId ? currentUserData : residents.get(uid);
-    renderAvatar(container, {
-      avatar: profile?.avatar ?? container.dataset.avatar,
-      avatarImage: profile?.avatarImage,
-    }, 30);
+    const profile =
+      uid === currentUserId ? currentUserData : residents.get(uid);
+    renderAvatar(
+      container,
+      {
+        avatar: profile?.avatar ?? container.dataset.avatar,
+        avatarImage: profile?.avatarImage,
+      },
+      30,
+    );
   });
 }
 
 // ホーム画面入場時の共通初期化
+function requestedDiagnosisView() {
+  if (new URLSearchParams(location.search).get("view") !== "diagnosis")
+    return false;
+  const url = new URL(location.href);
+  url.searchParams.delete("view");
+  history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  return true;
+}
+
 function enterHomeWithUser(uid, userData) {
   mapNeedsInitialFocus = true;
   if (uid !== currentUserId) closeProfileEditForm();
   currentUserId = uid;
   renderUserData(userData || {});
   spaceHousing.renderResidents(latestUsersDocs, uid);
-  switchUndergroundView("home");
+  switchUndergroundView(requestedDiagnosisView() ? "diagnosis" : "home");
   showScreen(homeScreen);
   // 画面を出してから通信を始める。人数と掲示板の取得で最初の表示を止めない
   requestAnimationFrame(() => {
@@ -4421,7 +4625,10 @@ let avatarSelection = 0;
 let pendingAvatarFields = null;
 
 function showProfileAvatarPanel(panelId) {
-  if (panelId === profileAvatarPresets.id && !profileAvatarPresets.childElementCount) {
+  if (
+    panelId === profileAvatarPresets.id &&
+    !profileAvatarPresets.childElementCount
+  ) {
     buildProfileAvatarPresets();
   }
   profileAvatarModeButtons.forEach((button) => {
@@ -4435,7 +4642,9 @@ function showProfileAvatarPanel(panelId) {
 function renderProfileAvatarPreview() {
   const profile = { ...currentUserData, ...pendingAvatarFields };
   renderAvatar(profileAvatarPreview, profile, 52);
-  const selected = isAvatarImage(profile.avatarImage) ? null : avatarPresetKey(profile.avatar);
+  const selected = isAvatarImage(profile.avatarImage)
+    ? null
+    : avatarPresetKey(profile.avatar);
   profileAvatarPresets.querySelectorAll("button").forEach((button) => {
     button.setAttribute("aria-pressed", String(button.value === selected));
   });
@@ -4444,7 +4653,9 @@ function renderProfileAvatarPreview() {
 profileAvatarModeButtons.forEach((button) => {
   button.addEventListener("click", () => {
     const expanded = button.getAttribute("aria-expanded") === "true";
-    showProfileAvatarPanel(expanded ? null : button.getAttribute("aria-controls"));
+    showProfileAvatarPanel(
+      expanded ? null : button.getAttribute("aria-controls"),
+    );
   });
 });
 
@@ -4482,10 +4693,19 @@ async function prepareAvatarImage(file) {
     const crop = Math.min(image.naturalWidth, image.naturalHeight);
     canvas.width = size;
     canvas.height = size;
-    canvas.getContext("2d").drawImage(
-      image, (image.naturalWidth - crop) / 2, (image.naturalHeight - crop) / 2,
-      crop, crop, 0, 0, size, size,
-    );
+    canvas
+      .getContext("2d")
+      .drawImage(
+        image,
+        (image.naturalWidth - crop) / 2,
+        (image.naturalHeight - crop) / 2,
+        crop,
+        crop,
+        0,
+        0,
+        size,
+        size,
+      );
     const data = canvas.toDataURL("image/webp", 0.82);
     if (isAvatarImage(data)) return data;
 
@@ -4565,7 +4785,8 @@ profileAvatarInput.addEventListener("change", async () => {
   } catch {
     if (selection !== avatarSelection) return;
     profileAvatarInput.value = "";
-    profileEditStatus.textContent = "画像を読み込めませんでした。別の画像を選んでね。";
+    profileEditStatus.textContent =
+      "画像を読み込めませんでした。別の画像を選んでね。";
   } finally {
     if (selection === avatarSelection) profileSaveBtn.disabled = false;
   }
@@ -4573,7 +4794,12 @@ profileAvatarInput.addEventListener("change", async () => {
 
 profileEditForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  if (profileEditForm.hidden || profileEditFields.disabled || profileSaveBtn.disabled) return;
+  if (
+    profileEditForm.hidden ||
+    profileEditFields.disabled ||
+    profileSaveBtn.disabled
+  )
+    return;
   const newNickname = profileNicknameInput.value.trim();
   const newBio = profileBioInput.value.trim();
   const newTags = profileTagsInput.value
@@ -4610,23 +4836,34 @@ profileEditForm.addEventListener("submit", async (event) => {
     await setDoc(doc(db, "users", uid), updatedFields, { merge: true });
   } catch (error) {
     console.error("プロフィール保存エラー:", error);
-    if (version === sessionVersion && uid === currentUserId && auth.currentUser?.uid === uid) {
+    if (
+      version === sessionVersion &&
+      uid === currentUserId &&
+      auth.currentUser?.uid === uid
+    ) {
       profileEditFields.disabled = false;
       toggleProfileEditBtn.disabled = false;
-      profileEditStatus.textContent = "プロフィールを保存できませんでした。もう一度試してね。";
+      profileEditStatus.textContent =
+        "プロフィールを保存できませんでした。もう一度試してね。";
     }
     return;
   }
 
-  if (version !== sessionVersion || uid !== currentUserId || auth.currentUser?.uid !== uid) return;
+  if (
+    version !== sessionVersion ||
+    uid !== currentUserId ||
+    auth.currentUser?.uid !== uid
+  )
+    return;
   const nicknameChanged = currentUserData.nickname !== newNickname;
   renderUserData(updatedFields);
-  if (pendingGuestDocData) pendingGuestDocData = { ...pendingGuestDocData, ...updatedFields };
+  if (pendingGuestDocData)
+    pendingGuestDocData = { ...pendingGuestDocData, ...updatedFields };
   writeProfileCache(uid, currentUserData);
   closeProfileEditForm();
   toggleProfileEditBtn.focus();
   if (!nicknameChanged) return;
-  updateProfile(user, { displayName: newNickname }).catch(() => { });
+  updateProfile(user, { displayName: newNickname }).catch(() => {});
   touchMelodyProfile();
 });
 
@@ -4674,14 +4911,27 @@ const spaceMinimapWindow = document.getElementById("space-minimap-window");
 function focusMapOnHome() {
   const house = spaceMapViewport.querySelector(".own-house");
   if (!house) {
-    spaceMapViewport.scrollTo({ left: (spaceMapViewport.scrollWidth - spaceMapViewport.clientWidth) / 2, top: 0 });
+    spaceMapViewport.scrollTo({
+      left: (spaceMapViewport.scrollWidth - spaceMapViewport.clientWidth) / 2,
+      top: 0,
+    });
     return;
   }
   const viewportRect = spaceMapViewport.getBoundingClientRect();
   const houseRect = house.getBoundingClientRect();
   spaceMapViewport.scrollTo({
-    left: spaceMapViewport.scrollLeft + houseRect.left - viewportRect.left + houseRect.width / 2 - spaceMapViewport.clientWidth * 0.42,
-    top: spaceMapViewport.scrollTop + houseRect.top - viewportRect.top + houseRect.height / 2 - spaceMapViewport.clientHeight * 0.55,
+    left:
+      spaceMapViewport.scrollLeft +
+      houseRect.left -
+      viewportRect.left +
+      houseRect.width / 2 -
+      spaceMapViewport.clientWidth * 0.42,
+    top:
+      spaceMapViewport.scrollTop +
+      houseRect.top -
+      viewportRect.top +
+      houseRect.height / 2 -
+      spaceMapViewport.clientHeight * 0.55,
     behavior: "auto",
   });
 }
@@ -4708,24 +4958,37 @@ function updateMapScrollbar() {
   }
   currentLayerIndicator.textContent = `${layerText}｜地下 -${depthMeters}m`;
   if (spaceMapViewport.scrollWidth && scrollHeight) {
-    spaceMinimapWindow.style.width = `${spaceMapViewport.clientWidth / spaceMapViewport.scrollWidth * 100}%`;
-    spaceMinimapWindow.style.height = `${viewportHeight / scrollHeight * 100}%`;
-    spaceMinimapWindow.style.left = `${spaceMapViewport.scrollLeft / spaceMapViewport.scrollWidth * 100}%`;
-    spaceMinimapWindow.style.top = `${scrollTop / scrollHeight * 100}%`;
+    spaceMinimapWindow.style.width = `${(spaceMapViewport.clientWidth / spaceMapViewport.scrollWidth) * 100}%`;
+    spaceMinimapWindow.style.height = `${(viewportHeight / scrollHeight) * 100}%`;
+    spaceMinimapWindow.style.left = `${(spaceMapViewport.scrollLeft / spaceMapViewport.scrollWidth) * 100}%`;
+    spaceMinimapWindow.style.top = `${(scrollTop / scrollHeight) * 100}%`;
   }
 }
 
-document.getElementById("space-go-home").addEventListener("click", focusMapOnHome);
+document
+  .getElementById("space-go-home")
+  .addEventListener("click", focusMapOnHome);
 spaceMinimapSurface.addEventListener("click", (event) => {
   const rect = spaceMinimapSurface.getBoundingClientRect();
   spaceMapViewport.scrollTo({
-    left: (event.clientX - rect.left) / rect.width * spaceMapViewport.scrollWidth - spaceMapViewport.clientWidth / 2,
-    top: (event.clientY - rect.top) / rect.height * spaceMapViewport.scrollHeight - spaceMapViewport.clientHeight / 2,
+    left:
+      ((event.clientX - rect.left) / rect.width) *
+        spaceMapViewport.scrollWidth -
+      spaceMapViewport.clientWidth / 2,
+    top:
+      ((event.clientY - rect.top) / rect.height) *
+        spaceMapViewport.scrollHeight -
+      spaceMapViewport.clientHeight / 2,
     behavior: "auto",
   });
 });
 spaceMinimapSurface.addEventListener("keydown", (event) => {
-  const directions = { ArrowLeft: [-200, 0], ArrowRight: [200, 0], ArrowUp: [0, -200], ArrowDown: [0, 200] };
+  const directions = {
+    ArrowLeft: [-200, 0],
+    ArrowRight: [200, 0],
+    ArrowUp: [0, -200],
+    ArrowDown: [0, 200],
+  };
   const direction = directions[event.key];
   if (direction) {
     event.preventDefault();
@@ -4751,12 +5014,21 @@ if (spaceMapViewport) {
   spaceMapViewport.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
     suppressMapClick = false;
-    if (event.target.closest("button:not(.resident-house-trigger), a, input, select, textarea, .house-speech")) return;
+    if (
+      event.target.closest(
+        "button:not(.resident-house-trigger), a, input, select, textarea, .house-speech",
+      )
+    )
+      return;
     // Native touch scrolling supports both axes and cancels taps after a swipe.
     if (event.pointerType === "touch") return;
     drag = {
-      id: event.pointerId, x: event.clientX, y: event.clientY,
-      left: spaceMapViewport.scrollLeft, top: spaceMapViewport.scrollTop, moved: false,
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      left: spaceMapViewport.scrollLeft,
+      top: spaceMapViewport.scrollTop,
+      moved: false,
     };
   });
 
@@ -4776,24 +5048,33 @@ if (spaceMapViewport) {
   });
 
   const stopMapDragging = (event) => {
-    if (!drag || (event?.pointerId !== undefined && event.pointerId !== drag.id)) return;
+    if (
+      !drag ||
+      (event?.pointerId !== undefined && event.pointerId !== drag.id)
+    )
+      return;
     suppressMapClick = drag.moved;
     const pointerId = drag.id;
     drag = null;
     spaceMapViewport.classList.remove("is-dragging");
-    if (spaceMapViewport.hasPointerCapture(pointerId)) spaceMapViewport.releasePointerCapture(pointerId);
+    if (spaceMapViewport.hasPointerCapture(pointerId))
+      spaceMapViewport.releasePointerCapture(pointerId);
   };
 
   window.addEventListener("pointerup", stopMapDragging);
   window.addEventListener("pointercancel", stopMapDragging);
   window.addEventListener("blur", () => stopMapDragging());
   spaceMapViewport.addEventListener("lostpointercapture", stopMapDragging);
-  spaceMapViewport.addEventListener("click", (event) => {
-    if (!suppressMapClick || event.detail === 0) return;
-    suppressMapClick = false;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-  }, true);
+  spaceMapViewport.addEventListener(
+    "click",
+    (event) => {
+      if (!suppressMapClick || event.detail === 0) return;
+      suppressMapClick = false;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    },
+    true,
+  );
 }
 
 const spaceHousing = createSpaceHousing({
@@ -4810,7 +5091,8 @@ const spaceHousing = createSpaceHousing({
       houseLocation: houseLocation(houses[0]),
     };
     currentUserData = { ...currentUserData, ...fields };
-    if (pendingGuestDocData) pendingGuestDocData = { ...pendingGuestDocData, ...fields };
+    if (pendingGuestDocData)
+      pendingGuestDocData = { ...pendingGuestDocData, ...fields };
     if (!progressCanBeSaved()) return Promise.resolve();
     writeProfileCache(uid, currentUserData);
     // Serialize complete layouts so a slow earlier write cannot replace a later edit.
@@ -4826,15 +5108,18 @@ const spaceRightPanel = document.getElementById("space-right-panel");
 const SPACE_PANEL_PREF_KEY = "deepys-space-panel-collapsed";
 
 function setSpacePanelCollapsed(collapsed) {
-  if (collapsed && spaceRightPanel.contains(document.activeElement)) toggleSpacePanel.focus();
+  if (collapsed && spaceRightPanel.contains(document.activeElement))
+    toggleSpacePanel.focus();
   spaceViewContent.classList.toggle("is-panel-collapsed", collapsed);
   spaceRightPanel.hidden = collapsed;
   toggleSpacePanel.setAttribute("aria-expanded", String(!collapsed));
   const label = collapsed ? "右パネルを開く" : "右パネルを閉じる";
   toggleSpacePanel.setAttribute("aria-label", label);
   toggleSpacePanel.title = label;
-  toggleSpacePanel.querySelector(".space-panel-toggle-icon").textContent = collapsed ? "‹" : "›";
-  toggleSpacePanel.querySelector(".space-panel-toggle-label").textContent = collapsed ? "開く" : "閉じる";
+  toggleSpacePanel.querySelector(".space-panel-toggle-icon").textContent =
+    collapsed ? "‹" : "›";
+  toggleSpacePanel.querySelector(".space-panel-toggle-label").textContent =
+    collapsed ? "開く" : "閉じる";
   requestAnimationFrame(updateMapScrollbar);
 }
 
@@ -4842,12 +5127,18 @@ let savedPanelCollapsed = window.matchMedia("(max-width: 950px)").matches;
 try {
   const preference = localStorage.getItem(SPACE_PANEL_PREF_KEY);
   if (preference !== null) savedPanelCollapsed = preference === "1";
-} catch { /* Use the default layout. */ }
+} catch {
+  /* Use the default layout. */
+}
 setSpacePanelCollapsed(savedPanelCollapsed);
 toggleSpacePanel.addEventListener("click", () => {
   const collapsed = !spaceRightPanel.hidden;
   setSpacePanelCollapsed(collapsed);
-  try { localStorage.setItem(SPACE_PANEL_PREF_KEY, collapsed ? "1" : "0"); } catch { /* The panel still works without storage. */ }
+  try {
+    localStorage.setItem(SPACE_PANEL_PREF_KEY, collapsed ? "1" : "0");
+  } catch {
+    /* The panel still works without storage. */
+  }
 });
 
 function returningFromSindan() {
@@ -4886,7 +5177,8 @@ async function restoreAccountSession() {
     cancelDescent();
     const version = sessionVersion;
     const profile = await loadAccountProfile(user);
-    if (version !== sessionVersion || auth.currentUser?.uid !== user.uid) return;
+    if (version !== sessionVersion || auth.currentUser?.uid !== user.uid)
+      return;
     currentUserData = createBlankUserData();
     rememberAndEnter(user, profile);
     return;
@@ -4923,7 +5215,9 @@ function googleAuthMessage(text) {
 
 async function signInWithGoogle() {
   const buttons = document.querySelectorAll("[data-google-login]");
-  buttons.forEach((button) => { button.disabled = true; });
+  buttons.forEach((button) => {
+    button.disabled = true;
+  });
   googleAuthMessage("Google に接続しています…");
   const version = ++sessionVersion;
   try {
@@ -4949,7 +5243,8 @@ async function signInWithGoogle() {
     }
     const user = result.user;
     const snapshot = await getDoc(doc(db, "users", user.uid));
-    if (version !== sessionVersion || auth.currentUser?.uid !== user.uid) return;
+    if (version !== sessionVersion || auth.currentUser?.uid !== user.uid)
+      return;
     const saved = snapshot.exists() ? snapshot.data() : null;
     const guestAvatar = guestProfile && {
       avatar: avatarPresetKey(guestProfile.avatar),
@@ -4959,18 +5254,31 @@ async function signInWithGoogle() {
       ...createBlankUserData(),
       ...(saved || guestProfile || {}),
       ...guestAvatar,
-      nickname: savedNickname(saved) || savedNickname(guestProfile) || user.displayName || "地底の住人",
+      nickname:
+        savedNickname(saved) ||
+        savedNickname(guestProfile) ||
+        user.displayName ||
+        "地底の住人",
     };
     if (!snapshot.exists()) {
-      await setDoc(doc(db, "users", user.uid), {
-        ...profile,
-        spaceHouses: normalizeSpaceHouses(profile.spaceHouses),
-        createdAt: serverTimestamp(),
-      }, { merge: true });
-    } else if (guestAvatar && (guestAvatar.avatar !== saved.avatar || guestAvatar.avatarImage !== (saved.avatarImage ?? null))) {
+      await setDoc(
+        doc(db, "users", user.uid),
+        {
+          ...profile,
+          spaceHouses: normalizeSpaceHouses(profile.spaceHouses),
+          createdAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
+    } else if (
+      guestAvatar &&
+      (guestAvatar.avatar !== saved.avatar ||
+        guestAvatar.avatarImage !== (saved.avatarImage ?? null))
+    ) {
       await setDoc(doc(db, "users", user.uid), guestAvatar, { merge: true });
     }
-    if (version !== sessionVersion || auth.currentUser?.uid !== user.uid) return;
+    if (version !== sessionVersion || auth.currentUser?.uid !== user.uid)
+      return;
     guestUserPromise = null;
     profilePrefetch = null;
     profilePrefetchUid = null;
@@ -4981,17 +5289,29 @@ async function signInWithGoogle() {
   } catch (error) {
     console.warn("Google ログインに失敗:", error);
     const messages = {
-      "auth/popup-closed-by-user": "ログインをキャンセルしました。もう一度試せます。",
-      "auth/cancelled-popup-request": "別のログイン画面が開いています。そちらで続けてね。",
-      "auth/popup-blocked": "ポップアップを許可してから、もう一度 Google ログインを押してね。",
-      "auth/operation-not-allowed": "Google ログインの設定がまだ有効になっていません。管理者は Firebase の Authentication で Google を有効にしてください。",
-      "auth/unauthorized-domain": "このサイトのドメインが未登録です。Firebase の Authentication → 設定 → 承認済みドメインに追加してください。",
-      "auth/account-exists-with-different-credential": "このメールのアカウントがすでにあります。メールとパスワードでログインしてください。",
-      "auth/network-request-failed": "通信できませんでした。接続を確認して、もう一度試してね。",
+      "auth/popup-closed-by-user":
+        "ログインをキャンセルしました。もう一度試せます。",
+      "auth/cancelled-popup-request":
+        "別のログイン画面が開いています。そちらで続けてね。",
+      "auth/popup-blocked":
+        "ポップアップを許可してから、もう一度 Google ログインを押してね。",
+      "auth/operation-not-allowed":
+        "Google ログインの設定がまだ有効になっていません。管理者は Firebase の Authentication で Google を有効にしてください。",
+      "auth/unauthorized-domain":
+        "このサイトのドメインが未登録です。Firebase の Authentication → 設定 → 承認済みドメインに追加してください。",
+      "auth/account-exists-with-different-credential":
+        "このメールのアカウントがすでにあります。メールとパスワードでログインしてください。",
+      "auth/network-request-failed":
+        "通信できませんでした。接続を確認して、もう一度試してね。",
     };
-    googleAuthMessage(messages[error.code] || "ログインを完了できませんでした。もう一度試してね。");
+    googleAuthMessage(
+      messages[error.code] ||
+        "ログインを完了できませんでした。もう一度試してね。",
+    );
   } finally {
-    buttons.forEach((button) => { button.disabled = false; });
+    buttons.forEach((button) => {
+      button.disabled = false;
+    });
   }
 }
 
@@ -5016,7 +5336,9 @@ restoreAccountSession().catch((error) => {
   console.warn("ログイン状態の復元に失敗:", error);
   showScreen(firstView);
   cancelDescent();
-  googleAuthMessage("接続を確認してください。ログイン状態の読み込みを再試行できます。");
+  googleAuthMessage(
+    "接続を確認してください。ログイン状態の読み込みを再試行できます。",
+  );
 });
 
 // フレーム付き写真の共有
@@ -5037,7 +5359,9 @@ async function requestSharedPhoto(url, init) {
   });
   const body = await response.json();
   if (!response.ok) {
-    const error = new Error(body.error?.message || "写真を取得できませんでした。");
+    const error = new Error(
+      body.error?.message || "写真を取得できませんでした。",
+    );
     error.code = body.error?.status;
     throw error;
   }
@@ -5045,7 +5369,8 @@ async function requestSharedPhoto(url, init) {
 }
 
 async function prepareSharedPhoto(source) {
-  if (source.length <= MAX_DATA_URL_LENGTH && PHOTO_DATA.test(source)) return source;
+  if (source.length <= MAX_DATA_URL_LENGTH && PHOTO_DATA.test(source))
+    return source;
   const image = new Image();
   image.src = source;
   await image.decode();
@@ -5060,10 +5385,13 @@ async function prepareSharedPhoto(source) {
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
     for (const quality of [0.94, 0.85, 0.75]) {
       const data = canvas.toDataURL("image/webp", quality);
-      if (data.length <= MAX_DATA_URL_LENGTH && PHOTO_DATA.test(data)) return data;
+      if (data.length <= MAX_DATA_URL_LENGTH && PHOTO_DATA.test(data))
+        return data;
     }
   }
-  throw new Error("写真のサイズを小さくできませんでした。ダウンロードで保存してね。");
+  throw new Error(
+    "写真のサイズを小さくできませんでした。ダウンロードで保存してね。",
+  );
 }
 
 async function createPhotoShare(source, signal) {
@@ -5072,20 +5400,28 @@ async function createPhotoShare(source, signal) {
   const dataUrl = await prepareSharedPhoto(source);
   const token = await user.getIdToken();
   signal.throwIfAborted();
-  const id = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
+  const id = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) =>
+    b.toString(16).padStart(2, "0"),
+  ).join("");
   const expiresAt = new Date(Date.now() + SHARE_LIFETIME_MS);
-  await requestSharedPhoto(`${photoShareEndpoint}?documentId=${id}&key=${photoShareOptions.apiKey}`, {
-    method: "POST",
-    signal,
-    headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      fields: {
-        ownerUid: { stringValue: user.uid },
-        dataUrl: { stringValue: dataUrl },
-        expiresAt: { timestampValue: expiresAt.toISOString() },
-      }
-    }),
-  });
+  await requestSharedPhoto(
+    `${photoShareEndpoint}?documentId=${id}&key=${photoShareOptions.apiKey}`,
+    {
+      method: "POST",
+      signal,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        fields: {
+          ownerUid: { stringValue: user.uid },
+          dataUrl: { stringValue: dataUrl },
+          expiresAt: { timestampValue: expiresAt.toISOString() },
+        },
+      }),
+    },
+  );
   return id;
 }
 
@@ -5108,7 +5444,8 @@ function setupPhotoSharing() {
     upload = new AbortController();
     const { signal } = upload;
     try {
-      const { default: qrcode } = await import("https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.mjs");
+      const { default: qrcode } =
+        await import("https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.mjs");
       if (signal.aborted) return;
       const id = await createPhotoShare(source, signal);
       if (signal.aborted) return;
@@ -5123,7 +5460,9 @@ function setupPhotoSharing() {
     } catch (error) {
       if (signal.aborted) return;
       console.error("写真の共有に失敗:", error);
-      setCameraMessage("QRコードを作れませんでした。写真はダウンロードできます。");
+      setCameraMessage(
+        "QRコードを作れませんでした。写真はダウンロードできます。",
+      );
     } finally {
       if (upload?.signal === signal) upload = null;
     }

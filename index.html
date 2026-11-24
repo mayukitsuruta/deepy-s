@@ -54,8 +54,9 @@
     />
     <link
       rel="stylesheet"
-      href="./css/style.css?v=20261124-hanging-signs-zukan"
+      href="./css/style.css?v=20261124-char-bg"
     />
+    <link rel="stylesheet" href="./css/sindan.css?v=20261124-sindan-view" />
     <link rel="stylesheet" href="./css/font-preview.css?v=20261123-hover" />
     <script src="./js/font-preview.js?v=20261123-custom-only"></script>
   </head>
@@ -211,7 +212,7 @@
             </span>
             <span>交流スペース</span>
           </button>
-          <a class="nav-item" href="./sindan.html">
+          <button class="nav-item" data-view="diagnosis" type="button">
             <span class="nav-icon" aria-hidden="true">
               <svg
                 viewBox="0 0 24 24"
@@ -227,7 +228,7 @@
               </svg>
             </span>
             <span>地底人診断</span>
-          </a>
+          </button>
           <button class="nav-item" data-view="camera" type="button">
             <span class="nav-icon" aria-hidden="true">
               <svg
@@ -447,6 +448,43 @@
 
         <div id="zukan-view-content" class="zukan-view" hidden>
           <div class="field-note" id="zukan-note"></div>
+        </div>
+
+        <div id="diagnosis-view-content" class="diagnosis-view" hidden>
+          <div class="diagnosis-main">
+            <section id="diagnosis-start" class="diagnosis-screen">
+              <div class="diagnosis-card diagnosis-start-card">
+                <p class="diagnosis-kicker">DEEPY’s</p>
+                <h1 class="diagnosis-title" tabindex="-1" data-focus>地底人診断</h1>
+                <p class="diagnosis-lead">
+                  10個の質問に答えると、7匹の地底人の中から<br class="diagnosis-br-pc" />
+                  あなたと相性ぴったりの子がわかるよ！
+                </p>
+                <p class="diagnosis-meta">全10問・4つの中から選んでね</p>
+                <button id="diagnosis-start-button" class="diagnosis-button is-primary" type="button">診断をはじめる</button>
+              </div>
+            </section>
+
+            <section id="diagnosis-question" class="diagnosis-screen" hidden>
+              <div class="diagnosis-progress">
+                <p id="diagnosis-progress-text" class="diagnosis-progress-text">1 / 10</p>
+                <div class="diagnosis-progress-track" role="progressbar" aria-label="質問の進み具合" aria-valuemin="1"
+                  aria-valuemax="10" aria-valuenow="1">
+                  <span id="diagnosis-progress-bar" class="diagnosis-progress-bar"></span>
+                </div>
+              </div>
+
+              <div class="diagnosis-card diagnosis-question-card">
+                <p id="diagnosis-question-number" class="diagnosis-question-number">Q1</p>
+                <h1 id="diagnosis-question-text" class="diagnosis-question-text" tabindex="-1" data-focus></h1>
+                <ol id="diagnosis-options" class="diagnosis-options"></ol>
+              </div>
+
+              <button id="diagnosis-back" class="diagnosis-text-button" type="button">はじめの画面にもどる</button>
+            </section>
+
+            <section id="diagnosis-result" class="diagnosis-screen diagnosis-result" hidden aria-live="polite"></section>
+          </div>
         </div>
 
         <div id="story-view-content" class="chippy-story" hidden>
@@ -1627,13 +1665,7 @@
       </div>
     </section>
 
-    <<<<<<< HEAD
-    <script type="module" src="./js/main.js?v=20261124-no-minigame"></script>
-    =======
-    <script
-      type="module"
-      src="./js/main.js?v=20261124-cylinder-sindan-return2"
-    ></script>
-    >>>>>>> 1aa74906cc61f67dace2aeb776f8b9d093d4f30c
+    <script type="module" src="./js/main.js?v=20261124-sindan-view"></script>
+    <script type="module" src="./js/sindan/sindan.js?v=20261124-sindan-view"></script>
   </body>
 </html>

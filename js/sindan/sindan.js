@@ -49,11 +49,17 @@ function isEmpty(value) {
   return value === null || value === undefined || (Array.isArray(value) && value.length === 0) || value === "";
 }
 
+function scrollDiagnosis() {
+  const view = document.getElementById("diagnosis-view-content");
+  if (view) view.scrollTo({ top: 0 });
+  else window.scrollTo({ top: 0 });
+}
+
 function showScreen(name) {
   Object.entries(screens).forEach(([key, screen]) => {
     screen.hidden = key !== name;
   });
-  window.scrollTo({ top: 0 });
+  scrollDiagnosis();
   const heading = screens[name].querySelector("[data-focus]");
   if (heading) heading.focus({ preventScroll: true });
 }
@@ -88,7 +94,7 @@ function selectOption(index) {
   if (currentIndex < QUESTIONS.length - 1) {
     currentIndex += 1;
     renderQuestion();
-    window.scrollTo({ top: 0 });
+    scrollDiagnosis();
     questionText.focus({ preventScroll: true });
   } else {
     showResult();
@@ -264,9 +270,7 @@ function renderActions() {
   const retry = el("button", "diagnosis-button is-primary", "もう一度診断する");
   retry.type = "button";
   retry.addEventListener("click", restart);
-  const home = el("a", "diagnosis-button is-secondary", "サイトへもどる");
-  home.href = "./index.html?from=sindan";
-  actions.append(retry, home);
+  actions.append(retry);
   return actions;
 }
 
