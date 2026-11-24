@@ -994,8 +994,7 @@ input::file-selector-button {
 #simpy-story-view[hidden],
 #nasupy-story-view[hidden],
 #hitopy-story-view[hidden],
-#zukan-view-content[hidden],
-#minigame-view-content[hidden] {
+#zukan-view-content[hidden] {
   display: none !important;
 }
 
@@ -2073,52 +2072,10 @@ input::file-selector-button {
   }
 }
 
-.minigame-view {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
-  gap: 18px;
-  align-items: start;
-  width: min(100%, 1080px);
-  margin: 0 auto;
-}
-
-.minigame-stage,
-.minigame-board {
-  border-radius: 28px;
-  background: rgba(255, 248, 238, 0.96);
-  color: #4b3028;
-  box-shadow: 0 10px 28px rgba(28, 14, 6, 0.22);
-}
-
-.minigame-stage {
-  padding: 26px 24px 22px;
-}
-
-.minigame-kicker {
-  display: inline-block;
-  margin: 0;
-  padding: 2px 12px;
-  border-radius: 999px;
-  background: #ffd0cc;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-}
-
-.minigame-stage h2 {
-  margin: 12px 0 8px;
-  font-size: clamp(26px, 3vw, 34px);
-}
-
-.minigame-lead,
 .melody-hint,
 .melody-save-note {
   margin: 0;
   line-height: 1.7;
-}
-
-.minigame-lead {
-  color: #6d4b38;
 }
 
 .melody-status {
@@ -2307,32 +2264,11 @@ input::file-selector-button {
   line-height: 1.7;
 }
 
-.minigame-board {
-  padding: 20px 18px;
-}
-
-.minigame-score-line {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 0 0 8px;
-  font-weight: 800;
-}
-
-.minigame-score-line strong {
-  font-size: 22px;
-}
-
 .melody-save-note {
   min-height: 1.4em;
   margin: 8px 0 16px;
   color: #7a5642;
   font-size: 13px;
-}
-
-.minigame-board h3 {
-  margin: 0 0 10px;
-  font-size: 16px;
 }
 
 .melody-ranking {
@@ -2384,14 +2320,6 @@ input::file-selector-button {
 }
 
 @media (max-width: 800px) {
-  .minigame-view {
-    grid-template-columns: 1fr;
-  }
-
-  .minigame-stage {
-    padding: 16px 12px;
-  }
-
   .melody-staff {
     gap: 6px;
     padding: 8px;

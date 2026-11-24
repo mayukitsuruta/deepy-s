@@ -52,8 +52,8 @@
       rel="modulepreload"
       href="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js"
     />
-    <link rel="stylesheet" href="./css/style.css?v=20261124-zukan" />
-    <link rel="stylesheet" href="./css/style.css?v=20261119-camera-borderless" />
+    <link rel="stylesheet" href="./css/style.css?v=20261124-no-minigame" />
+    <link rel="stylesheet" href="./css/style.css?v=20261124-no-minigame" />
   </head>
 
   <body>
@@ -243,21 +243,6 @@
               </svg>
             </span>
             <span>カメラ</span>
-          </button>
-          <button class="nav-item" data-view="minigame" type="button">
-            <span class="nav-icon" aria-hidden="true">
-              <svg
-                viewBox="0 0 24 24"
-                width="20"
-                height="20"
-                fill="currentColor"
-              >
-                <path
-                  d="M14 3.2v9.1a3.4 3.4 0 1 1-2-3.1V6.1L6.2 7.8v6.7a3.4 3.4 0 1 1-2-3.1V6.4L14 3.2Z"
-                />
-              </svg>
-            </span>
-            <span>ミニゲーム</span>
           </button>
         </nav>
 
@@ -711,56 +696,6 @@
             </button>
           </section>
         </div>
-
-        <section id="minigame-view-content" class="minigame-view" hidden>
-          <div class="minigame-stage">
-            <p class="minigame-kicker">SIMPY</p>
-            <h2>音をあつめて</h2>
-            <p class="minigame-lead">
-              落ちてくる音符が光る輪に重なったらクリック。変な音は押さないで。点数で競おう。
-            </p>
-            <div id="rhythm-intro" class="rhythm-intro">
-              <button id="rhythm-start" class="melody-primary" type="button">
-                はじめる
-              </button>
-            </div>
-            <div id="rhythm-play" class="rhythm-play" hidden>
-              <div class="rhythm-hud">
-                <p id="rhythm-combo">COMBO 0</p>
-                <p id="rhythm-progress">0 / 8</p>
-                <p id="rhythm-points">0点</p>
-              </div>
-              <div id="rhythm-lane" class="rhythm-lane">
-                <div
-                  id="rhythm-hit-zone"
-                  class="rhythm-hit-zone"
-                  aria-hidden="true"
-                ></div>
-              </div>
-              <p id="rhythm-judge" class="rhythm-judge" aria-live="polite"></p>
-            </div>
-            <div id="rhythm-done" class="rhythm-done" hidden>
-              <p id="rhythm-done-text"></p>
-              <button id="rhythm-again" class="melody-primary" type="button">
-                もう一度
-              </button>
-            </div>
-          </div>
-
-          <aside class="minigame-board">
-            <p class="minigame-score-line">
-              いまの点数 <strong id="rhythm-score">0</strong>
-            </p>
-            <p class="minigame-score-line">
-              自己ベスト <strong id="rhythm-best">—</strong>
-            </p>
-            <p id="rhythm-save-note" class="melody-save-note"></p>
-            <h3>みんなの記録</h3>
-            <ol id="rhythm-ranking" class="melody-ranking">
-              <li class="melody-rank-empty">読み込み中...</li>
-            </ol>
-          </aside>
-        </section>
 
         <!-- 交流スペース画面コンテンツ -->
         <div id="space-view-content" class="space-view" hidden>
@@ -1644,6 +1579,6 @@
       </div>
     </section>
 
-    <script type="module" src="./js/main.js?v=20261124-sindan-return2"></script>
+    <script type="module" src="./js/main.js?v=20261124-no-minigame"></script>
   </body>
 </html>

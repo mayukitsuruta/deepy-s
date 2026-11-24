@@ -782,7 +782,6 @@ const hitopyStoryView = document.getElementById("hitopy-story-view");
 let activeStoryId = "chippy";
 let rhythmTheme = "music";
 const zukanViewContent = document.getElementById("zukan-view-content");
-const minigameViewContent = document.getElementById("minigame-view-content");
 const zukanNote = document.getElementById("zukan-note");
 const topbarTitleArea = document.getElementById("topbar-title-area");
 const topbarAvatar = document.getElementById("topbar-avatar");
@@ -945,7 +944,7 @@ function switchUndergroundView(viewName) {
   cameraViewContent.hidden = viewName !== "camera";
   const showingStory = viewName === "story";
   if (!(showingStory && activeStoryId === "simpy")) stopMelodyPlayback();
-  if (viewName !== "minigame" || rhythmTheme === "build") stopRhythmGame();
+  if (!(showingStory && activeStoryId === "hitopy")) stopRhythmGame();
   if (storyViewContent) {
     storyViewContent.hidden = !(showingStory && activeStoryId === "chippy");
   }
@@ -959,7 +958,6 @@ function switchUndergroundView(viewName) {
     hitopyStoryView.hidden = !(showingStory && activeStoryId === "hitopy");
   }
   if (zukanViewContent) zukanViewContent.hidden = viewName !== "zukan";
-  if (minigameViewContent) minigameViewContent.hidden = viewName !== "minigame";
   if (viewName === "zukan") renderZukan();
 
   if (viewName === "space") {
@@ -974,10 +972,6 @@ function switchUndergroundView(viewName) {
   } else if (viewName === "camera") {
     if (topbarTitleArea)
       topbarTitleArea.textContent = "地底の思い出を写真に残そう。";
-  } else if (viewName === "minigame") {
-    if (topbarTitleArea)
-      topbarTitleArea.textContent = "落ちてくる音を、輪に重なったら集めよう。";
-    openRhythmMinigame();
   } else if (topbarTitleArea) {
     topbarTitleArea.textContent = "";
   }
@@ -995,8 +989,7 @@ navItems.forEach((btn) => {
       view === "home" ||
       view === "space" ||
       view === "camera" ||
-      view === "zukan" ||
-      view === "minigame"
+      view === "zukan"
     ) {
       switchUndergroundView(view);
       if (view !== "camera") stopCamera();
@@ -1730,20 +1723,6 @@ let rhythmProgressEl = document.getElementById("rhythm-progress");
 let rhythmPointsEl = document.getElementById("rhythm-points");
 let rhythmJudgeEl = document.getElementById("rhythm-judge");
 let rhythmGoodSpawn = 0;
-
-const rhythmMusicStage = {
-  theme: "music",
-  intro: rhythmIntroEl,
-  play: rhythmPlayEl,
-  done: rhythmDoneEl,
-  doneText: rhythmDoneText,
-  lane: rhythmLaneEl,
-  hitZone: rhythmHitZoneEl,
-  combo: rhythmComboEl,
-  progress: rhythmProgressEl,
-  points: rhythmPointsEl,
-  judge: rhythmJudgeEl,
-};
 
 const rhythmBuildStage = {
   theme: "build",
@@ -2943,20 +2922,6 @@ function startRhythmGame() {
   rhythmRaf = requestAnimationFrame(stepRhythmGame);
 }
 
-function openRhythmMinigame() {
-  bindRhythmStage(rhythmMusicStage);
-  startMelodyRanking();
-  loadOwnMelodyBest();
-  if (rhythmPhase === "idle") {
-    if (rhythmIntroEl) rhythmIntroEl.hidden = false;
-    if (rhythmPlayEl) rhythmPlayEl.hidden = true;
-    if (rhythmDoneEl) rhythmDoneEl.hidden = true;
-  }
-}
-
-document.getElementById("rhythm-start")?.addEventListener("click", startRhythmGame);
-document.getElementById("rhythm-again")?.addEventListener("click", startRhythmGame);
-
 const hitopyStoryLines = [
   "建築現場へようこそ。ぼくはHITOPY。地底に住むみんなの家を建てているんだ。",
   "地底の建築には、地上の建築とは違うルールがあるよ。",
@@ -3037,7 +3002,6 @@ function awardHitopyFriendship() {
 function stopHitopyGame() {
   hitopyPlaying = false;
   if (rhythmTheme === "build") stopRhythmGame();
-  bindRhythmStage(rhythmMusicStage);
   hitopyStoryView?.classList.remove("is-playing");
   if (hitopyGame) hitopyGame.hidden = true;
   if (hitopyFinish) hitopyFinish.hidden = true;
