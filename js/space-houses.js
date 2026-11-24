@@ -62,6 +62,9 @@ export function createSpaceHousing({ onChange, canSave, ownerName = () => "私",
   const picker = byId("house-picker");
   const status = byId("house-map-status");
   const grounds = [];
+  const movePreview = document.createElement("div");
+  movePreview.className = "placed-house house-move-preview";
+  movePreview.setAttribute("aria-hidden", "true");
   let houses = [];
   let residents = [];
   let recentPosts = [];
@@ -78,6 +81,20 @@ export function createSpaceHousing({ onChange, canSave, ownerName = () => "私",
     element.style.left = `clamp(95px, ${house.x * 100}%, calc(100% - 95px))`;
     element.style.top = `clamp(100px, ${house.y * 100}%, calc(100% - 100px))`;
   }
+
+  function groundPosition(ground, clientX, clientY) {
+    const rect = ground.getBoundingClientRect();
+    return { x: clamp((clientX - rect.left) / rect.width), y: clamp((clientY - rect.top) / rect.height) };
+  }
+
+  function followMovePointer(event) {
+    if (mode !== "move" || !houses[0] || event.pointerType === "touch") return;
+    movePreview.style.left = `${event.clientX}px`;
+    movePreview.style.top = `${event.clientY}px`;
+    if (!movePreview.isConnected) wrapper.before(movePreview);
+  }
+
+  document.addEventListener("pointermove", followMovePointer, { capture: true, passive: true });
 
   function addSpeechBubble(element) {
     const trigger = element.querySelector(".resident-house-trigger") || element;
@@ -159,11 +176,15 @@ export function createSpaceHousing({ onChange, canSave, ownerName = () => "私",
     const trigger = own ? element : document.createElement("button");
     trigger.type = "button";
     if (own) {
+      trigger.disabled = mode === "move";
       trigger.setAttribute("aria-label", `私の家、${type.name}、${houseLocation(house)}`);
       trigger.addEventListener("click", (event) => {
         event.stopPropagation();
         if (mode) return;
-        message("あなたの家です。移動やデザイン変更ができます。");
+        message("家をダブルクリックすると移動できます。「家を着せ替える」でデザインも変えられます。");
+      });
+      trigger.addEventListener("dblclick", (event) => {
+        if (!event.target.closest(".house-speech")) startMove(event);
       });
     } else {
       trigger.className = "resident-house-trigger";
@@ -173,6 +194,13 @@ export function createSpaceHousing({ onChange, canSave, ownerName = () => "私",
       trigger.addEventListener("click", () => onResidentSelect(uid, house));
       element.appendChild(trigger);
     }
+    appendHouseArt(trigger, house, name);
+    addSpeechBubble(element);
+    positionElement(element, house);
+    return element;
+  }
+
+  function appendHouseArt(container, house, name) {
     const label = document.createElement("span");
     label.className = "house-nameplate";
     label.textContent = `${name}の家`;
@@ -181,10 +209,7 @@ export function createSpaceHousing({ onChange, canSave, ownerName = () => "私",
     image.alt = "";
     image.draggable = false;
     image.style.transform = house.flipped ? "scaleX(-1)" : "";
-    trigger.append(label, image);
-    addSpeechBubble(element);
-    positionElement(element, house);
-    return element;
+    container.append(label, image);
   }
 
   document.querySelectorAll(".stratum-layer").forEach((layer, index) => {
@@ -193,15 +218,15 @@ export function createSpaceHousing({ onChange, canSave, ownerName = () => "私",
     ground.dataset.houseLayerArea = String(index + 1);
     ground.addEventListener("click", (event) => {
       if (!mode || event.target.closest(".placed-house")) return;
-      const rect = ground.getBoundingClientRect();
-      placeHouse(index + 1, clamp((event.clientX - rect.left) / rect.width), clamp((event.clientY - rect.top) / rect.height));
+      const { x, y } = groundPosition(ground, event.clientX, event.clientY);
+      placeHouse(index + 1, x, y);
     });
     ground.addEventListener("keydown", (event) => {
       if (!mode || event.target !== ground || !["Enter", " "].includes(event.key)) return;
       event.preventDefault();
-      const rect = ground.getBoundingClientRect();
       const view = viewport.getBoundingClientRect();
-      placeHouse(index + 1, clamp((view.left + view.width / 2 - rect.left) / rect.width), clamp((view.top + view.height / 2 - rect.top) / rect.height));
+      const { x, y } = groundPosition(ground, view.left + view.width / 2, view.top + view.height / 2);
+      placeHouse(index + 1, x, y);
     });
     layer.appendChild(ground);
     grounds.push(ground);
@@ -209,6 +234,12 @@ export function createSpaceHousing({ onChange, canSave, ownerName = () => "私",
 
   function render() {
     const house = houses[0];
+    if (mode === "move" && house) {
+      movePreview.replaceChildren();
+      appendHouseArt(movePreview, house, ownerName());
+    } else {
+      movePreview.remove();
+    }
     wrapper.classList.toggle("is-placing-house", Boolean(mode));
     grounds.forEach((ground, index) => {
       ground.replaceChildren();
@@ -327,20 +358,23 @@ export function createSpaceHousing({ onChange, canSave, ownerName = () => "私",
     message("配置をキャンセルしました。");
   }
 
-  function startMove() {
-    if (!houses[0]) return;
+  function startMove(event) {
+    if (mode || !houses[0]) return;
     mode = "move";
     render();
     onPlacementStart();
-    message("移動したい場所をクリックしてね。1〜3層の好きな場所へ移動できます。");
+    if (event.detail > 0) followMovePointer(event);
+    message("マウスを動かして、家を置きたい場所をクリックしてね。タッチならタップで移動できます。");
     viewport.focus({ preventScroll: true });
-    viewport.querySelector(".own-house")?.scrollIntoView({ block: "center", inline: "center", behavior: "auto" });
   }
 
   ["house-add", "edit-house-btn", "change-interior-btn"].forEach((id) => byId(id).addEventListener("click", openPicker));
   byId("house-picker-close").addEventListener("click", () => picker.close());
   picker.addEventListener("click", (event) => { if (event.target === picker) picker.close(); });
-  ["house-move", "move-house-btn"].forEach((id) => byId(id).addEventListener("click", startMove));
+  ["house-move", "move-house-btn"].forEach((id) => byId(id).addEventListener("click", (event) => {
+    startMove(event);
+    viewport.querySelector(".own-house")?.scrollIntoView({ block: "center", inline: "center", behavior: "auto" });
+  }));
   byId("house-flip").addEventListener("click", () => {
     if (!houses[0]) return;
     houses[0].flipped = !houses[0].flipped;

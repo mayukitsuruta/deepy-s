@@ -1,5 +1,5 @@
 import { db, auth } from "./firebase.js?v=20261110-persistent-google";
-import { createSpaceHousing, normalizeSpaceHouses, houseLocation, HOUSE_MESSAGE_LIFETIME_MS } from "./space-houses.js?v=20261117-guest-house-note";
+import { createSpaceHousing, normalizeSpaceHouses, houseLocation, HOUSE_MESSAGE_LIFETIME_MS } from "./space-houses.js?v=20261124-house-pointer-preview";
 import {
   createUserWithEmailAndPassword,
   EmailAuthProvider,
@@ -29,6 +29,122 @@ import {
   onSnapshot,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js";
+
+function initCharacterCarousel(carousel) {
+  const cards = Array.from(carousel.querySelectorAll(".character-card"));
+  const status = carousel.querySelector(".carousel-status");
+  const ring = carousel.querySelector(".carousel-ring");
+  // Repeat the four characters around the drum so the neighbours are visible from the front.
+  const step = 180 / cards.length;
+  let position = 0;
+  let drag = null;
+  let suppressClick = false;
+
+  cards.forEach((card, index) => {
+    card.style.setProperty("--slot-angle", `${index * step}deg`);
+    for (const offset of [0, 180]) {
+      const back = document.createElement("div");
+      back.classList.add("carousel-back", card.querySelector(".character-button").dataset.character);
+      back.setAttribute("aria-hidden", "true");
+      back.dataset.index = index;
+      back.style.setProperty("--slot-angle", `${index * step + offset}deg`);
+      ring.append(back);
+    }
+  });
+
+  function rotateTo(next) {
+    // Keep whole turns so the last-to-first animation continues in the same direction.
+    position = next;
+    const index = ((next % cards.length) + cards.length) % cards.length;
+    const active = cards[index];
+    carousel.style.setProperty("--carousel-rotation", `${next * step}deg`);
+    active.removeAttribute("aria-hidden");
+    active.setAttribute("aria-current", "true");
+    if (carousel.querySelector(".character-card:focus-within") && !active.matches(":focus-within")) {
+      active.querySelector(".character-button").focus({ preventScroll: true });
+    }
+    cards.forEach((card) => {
+      if (card === active) return;
+      card.setAttribute("aria-hidden", "true");
+      card.removeAttribute("aria-current");
+    });
+    status.textContent = `${active.querySelector("h3").textContent}（${index + 1} / ${cards.length}）`;
+  }
+
+  rotateTo(0);
+  carousel.querySelector(".carousel-prev").addEventListener("click", () => rotateTo(position - 1));
+  carousel.querySelector(".carousel-next").addEventListener("click", () => rotateTo(position + 1));
+  carousel.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    rotateTo(position + (event.key === "ArrowRight" ? 1 : -1));
+  });
+
+  carousel.addEventListener("click", (event) => {
+    if (suppressClick && event.detail > 0) {
+      event.stopPropagation();
+      event.preventDefault();
+      return;
+    }
+    const back = event.target.closest(".carousel-back");
+    const card = back ? cards[Number(back.dataset.index)] : event.target.closest(".character-card");
+    if (!card) return;
+    if (card.hasAttribute("aria-current")) {
+      if (!back && !event.target.closest(".character-button")) card.querySelector(".character-button").click();
+      return;
+    }
+    let distance = (cards.indexOf(card) - position) % cards.length;
+    if (Math.abs(distance) > cards.length / 2) distance -= Math.sign(distance) * cards.length;
+    rotateTo(position + distance);
+  }, true);
+
+  carousel.addEventListener("pointerdown", (event) => {
+    if (!event.isPrimary || event.button !== 0) return;
+    suppressClick = false;
+    if (event.target.closest(".carousel-arrow")) return;
+    drag = {
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      distance: Math.min(carousel.clientWidth * .50, 280),
+    };
+  });
+
+  carousel.addEventListener("pointermove", (event) => {
+    if (drag?.id !== event.pointerId) return;
+    const dx = event.clientX - drag.x;
+    if (drag.start === undefined) {
+      if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(event.clientY - drag.y)) return;
+      drag.start = parseFloat(getComputedStyle(carousel).getPropertyValue("--carousel-rotation")) / step;
+      carousel.setPointerCapture(event.pointerId);
+      carousel.classList.add("is-dragging");
+    }
+    carousel.style.setProperty("--carousel-rotation", `${(drag.start - dx / drag.distance) * step}deg`);
+  });
+
+  function finishDrag(event) {
+    if (drag?.id !== event.pointerId) return;
+    if (drag.start !== undefined) {
+      carousel.classList.remove("is-dragging");
+      suppressClick = true;
+      const travel = (drag.x - event.clientX) / drag.distance;
+      const flick = Math.abs(travel) >= .22 && Math.abs(travel) < .5;
+      const next = flick
+        ? Math.round(drag.start) + Math.sign(travel)
+        : Math.round(drag.start + travel);
+      rotateTo(event.type === "pointerup" ? next : position);
+    }
+    drag = null;
+  }
+  carousel.addEventListener("pointerup", finishDrag);
+  carousel.addEventListener("pointercancel", finishDrag);
+  carousel.addEventListener("lostpointercapture", (event) => {
+    if (event.target === carousel) finishDrag(event);
+  });
+  carousel.addEventListener("pointerleave", (event) => {
+    if (drag?.id === event.pointerId && !carousel.hasPointerCapture(event.pointerId)) drag = null;
+  });
+}
 
 console.log("DEEPY’sのFirebase接続準備ができました！");
 console.log("Firestore:", db);
@@ -1559,14 +1675,7 @@ document
     button.addEventListener("click", openChippyStory);
   });
 
-document.querySelectorAll(".character-card").forEach((card) => {
-  const button = card.querySelector(".character-button:not(:disabled)");
-  if (!button) return;
-  card.addEventListener("click", (event) => {
-    if (event.target.closest(".character-button")) return;
-    button.click();
-  });
-});
+initCharacterCarousel(document.querySelector(".character-carousel"));
 
 storyViewContent?.addEventListener("click", (event) => {
   if (
