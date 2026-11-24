@@ -1137,6 +1137,22 @@ input::file-selector-button {
   letter-spacing: 0.08em;
 }
 
+.field-entry-kana,
+.field-reading {
+  color: #8a5a42;
+  letter-spacing: 0.08em;
+}
+
+.field-entry-kana {
+  margin-left: 8px;
+  font-size: 13px;
+}
+
+.field-reading {
+  margin: 2px 0 0;
+  font-size: 14px;
+}
+
 .field-entry-meta {
   margin-top: 2px;
   font-size: 13px;

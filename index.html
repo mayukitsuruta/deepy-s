@@ -18,10 +18,16 @@
         // ログイン済みで戻った人だけ、トップが見える前から潜る画面を出す。
         // 初めての人はトップをすぐ見せ、ログインや登録のあとに潜る。
         try {
+          const fromSindan =
+            new URLSearchParams(location.search).get("from") === "sindan" ||
+            sessionStorage.getItem("deepys-from-sindan") === "1" ||
+            sessionStorage.getItem("deepys-skip-descent") === "1";
+          window.__deepysSkipDescent = fromSindan;
           const cached = JSON.parse(
             localStorage.getItem("deepys-profile") || "null",
           );
-          if (cached && cached.uid && cached.data) {
+          // 地底人診断から戻ったときは、潜る画面を出さずホームへ直行する
+          if (!fromSindan && cached && cached.uid && cached.data) {
             document.documentElement.classList.add("is-descending");
             window.__deepysDescentStart = Date.now();
           }
@@ -46,7 +52,7 @@
       rel="modulepreload"
       href="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js"
     />
-    <link rel="stylesheet" href="./css/style.css?v=20261117-nasupy-items3" />
+    <link rel="stylesheet" href="./css/style.css?v=20261124-zukan" />
     <link rel="stylesheet" href="./css/style.css?v=20261119-camera-borderless" />
   </head>
 
@@ -352,7 +358,6 @@
                   力持ちでまっすぐな性格。
                 </p>
                 <p class="character-detail">職業：土吸収員</p>
-                <p class="character-detail">住んでいる地層：上層</p>
                 <button class="character-button" data-character="chippy">
                   この子の暮らしをのぞく →
                 </button>
@@ -370,7 +375,6 @@
                   地底に響くいろんな音を集めているよ。 歌うことや音楽が大好き。
                 </p>
                 <p class="character-detail">職業：音の採集家</p>
-                <p class="character-detail">住んでいる地層：中層</p>
                 <button class="character-button" data-character="simpy">
                   この子の暮らしをのぞく →
                 </button>
@@ -388,7 +392,6 @@
                   地底の植物たちの健康を守るお医者さん。 植物と話せるよ。
                 </p>
                 <p class="character-detail">職業：植物の医者</p>
-                <p class="character-detail">住んでいる地層：深層</p>
                 <button class="character-button" data-character="nasupy">
                   この子の暮らしをのぞく →
                 </button>
@@ -407,7 +410,6 @@
                   土を叩くリズムがずれると、地層が崩れちゃう。
                 </p>
                 <p class="character-detail">職業：建築家</p>
-                <p class="character-detail">住んでいる地層：？？？</p>
                 <button class="character-button" data-character="hitopy">
                   この子の暮らしをのぞく →
                 </button>
@@ -1642,6 +1644,6 @@
       </div>
     </section>
 
-    <script type="module" src="./js/main.js?v=20261119-camera-mirror"></script>
+    <script type="module" src="./js/main.js?v=20261124-sindan-return2"></script>
   </body>
 </html>

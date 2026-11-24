@@ -6,15 +6,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>地底人診断 | DEEPY’s - 地底人との暮らし</title>
   <link rel="stylesheet" href="./css/style.css?v=20261112-sindan" />
-  <link rel="stylesheet" href="./css/sindan.css?v=20261112-sindan" />
+  <link rel="stylesheet" href="./css/sindan.css?v=20261124-home-bg" />
+  <script>
+    function markReturnFromSindan() {
+      try {
+        sessionStorage.setItem("deepys-from-sindan", "1");
+      } catch {
+        /* 保存できないときは、戻るリンクの ?from=sindan で判断する。 */
+      }
+    }
+    document.addEventListener("click", (event) => {
+      const link = event.target.closest && event.target.closest("a[href]");
+      if (!link) return;
+      if (link.pathname.endsWith("/index.html") || link.pathname.endsWith("/index.html/")) {
+        markReturnFromSindan();
+      }
+    });
+    window.addEventListener("pagehide", markReturnFromSindan);
+  </script>
 </head>
 
 <body class="diagnosis-page">
   <header class="diagnosis-header">
-    <a class="diagnosis-logo" href="./index.html">
+    <a class="diagnosis-logo" href="./index.html?from=sindan">
       <img src="./images/Deepy's-logo.png" alt="DEEPY’s トップへ" />
     </a>
-    <a class="diagnosis-header-link" href="./index.html">サイトへもどる</a>
+    <a class="diagnosis-header-link" href="./index.html?from=sindan">サイトへもどる</a>
   </header>
 
   <main class="diagnosis-main">
@@ -59,7 +76,7 @@
     </noscript>
   </main>
 
-  <script type="module" src="./js/sindan/sindan.js?v=20261112-sindan"></script>
+  <script type="module" src="./js/sindan/sindan.js?v=20261124-sindan-return2"></script>
 </body>
 
 </html>

@@ -8,7 +8,10 @@
   min-height: 100vh;
   min-height: 100dvh;
   background-color: #2a1a10;
-  background-image: radial-gradient(circle at 45% 35%, #5c3d28 0%, #3b2518 70%, #2a1a10 100%);
+  background-image: url("../images/home-bg.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   background-attachment: fixed;
   color: #f9efe3;
   font-family: "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
@@ -45,9 +48,11 @@
   padding: 8px 16px;
   border: 1px solid rgba(214, 182, 148, 0.45);
   border-radius: 999px;
+  background: rgba(42, 26, 16, 0.45);
   color: #e5cdb4;
   font-size: 13px;
   text-decoration: none;
+  text-shadow: 0 1px 2px rgba(28, 14, 8, 0.9);
   transition: background 0.2s ease;
 }
 
@@ -122,8 +127,9 @@
 
 .diagnosis-button.is-secondary {
   border: 1.5px solid #d6b694;
-  background: transparent;
+  background: rgba(42, 26, 16, 0.45);
   color: #f9efe3;
+  text-shadow: 0 1px 2px rgba(28, 14, 8, 0.9);
 }
 
 .diagnosis-button.is-secondary:hover {
@@ -137,6 +143,7 @@
   background: transparent;
   color: #e5cdb4;
   font: inherit;
+  text-shadow: 0 1px 2px rgba(28, 14, 8, 0.9);
   font-size: 14px;
   text-decoration: underline;
   cursor: pointer;
@@ -188,6 +195,7 @@
   font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.06em;
+  text-shadow: 0 1px 2px rgba(28, 14, 8, 0.9);
 }
 
 .diagnosis-progress-track {

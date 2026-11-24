@@ -13,7 +13,6 @@ import { rankCharacters } from "./compatibility.js";
 // 結果画面に出すプロフィール項目（この順番で表示。null や空の項目は出さない）
 const PROFILE_FIELDS = [
   { key: "occupation", label: "職業", format: "text" },
-  { key: "habitat", label: "生息地", format: "text" },
   { key: "likes", label: "好きなもの", format: "chips" },
   { key: "personality", label: "性格", format: "list" },
   { key: "background", label: "誕生の背景・ストーリー", format: "list" },
@@ -229,7 +228,9 @@ function renderProfile(character) {
     } else {
       dd.textContent = value;
     }
-    list.append(el("dt", "", field.label), dd);
+    const label =
+      character.id === "deepy" && field.key === "foundAt" ? "発見日" : field.label;
+    list.append(el("dt", "", label), dd);
   });
   note.append(el("p", "diagnosis-note-kicker", "地底調査ノート"), el("h2", "diagnosis-note-title", "プロフィール"), list);
   return note;
@@ -264,7 +265,7 @@ function renderActions() {
   retry.type = "button";
   retry.addEventListener("click", restart);
   const home = el("a", "diagnosis-button is-secondary", "サイトへもどる");
-  home.href = "./index.html";
+  home.href = "./index.html?from=sindan";
   actions.append(retry, home);
   return actions;
 }

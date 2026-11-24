@@ -1120,7 +1120,6 @@ const zukanEntries = [
     name: "CHIPPY",
     image: "./images/green.png",
     occupation: "土吸収員",
-    habitat: "上層",
     likes: "きれいな鉱物。とくにクリスタル",
     found: "上層の道ぞい",
     note: "地底で家を作るために、土を除去する仕事をしている。力持ちで、まっすぐな性格。",
@@ -1133,7 +1132,6 @@ const zukanEntries = [
     name: "SIMPY",
     image: "./images/pink.png",
     occupation: "音の採集家",
-    habitat: "中層",
     likes: "不思議な音、鈴、音楽、静かな場所、古い楽器",
     found: "音の多い中層",
     note: "地底に響くいろんな音を集めている。歌うことや音楽が大好き。",
@@ -1146,7 +1144,6 @@ const zukanEntries = [
     name: "NASUPY",
     image: "./images/purple.png",
     occupation: "植物の医者",
-    habitat: "深層",
     likes: "植物、激辛調理",
     found: "深層の植え込み",
     note: "地底の植物たちの健康を守るお医者さん。植物と話せる。",
@@ -1159,20 +1156,17 @@ const zukanEntries = [
     name: "HITOPY",
     image: "./images/white.png",
     occupation: "建築家",
-    habitat: "？？？",
     likes: "海、海洋生物",
-    found: "日付はまだうっていない",
+    found: "まだうっていない",
     note: "地底に素敵な家を建てるのが夢。みんなの暮らしをつなぐ建築家。",
     tool: "ポケットに入った道具",
     surprise: "完成した家より、まだ建っていない家の話が好き。",
-    secret: "住む地層は、自分でもまだ決めていない。",
   },
   {
     id: "deepy",
     name: "DEEPY",
     image: "./images/deepy.png",
     occupation: "地底の案内人",
-    habitat: "地上と地底のあいだ",
     likes: "地上に関する本、文化",
     found: "地底に着いた日",
     note: "地上から来た人を、地底の暮らしへ案内する。ガイドブックをいつも持っている。",
@@ -1181,16 +1175,32 @@ const zukanEntries = [
     secret: "ガイドブックのうしろには、まだ白いページが残っている。",
   },
   {
-    id: "unknown-1",
-    name: "？？？",
-    unknown: true,
-    note: "このページは白紙。画像とキャラ設定が決まったら、ここに書き足すよ。",
+    id: "stappy",
+    name: "STAPPY",
+    kana: "スタッピー",
+    image: "./images/stappy.png",
+    occupation: "カリスマ（ファッションデザイナー、インフルエンサー）",
+    likes: "光るもの、かわいいもの",
+    personality:
+      "ギャルマインド。基本的に明るくポジティブだけど、こだわりは強め。人の良いところを見つけて褒める、陽のギャル。",
+    note: "地底のインフルエンサー兼デザイナー。DEEPYたちのチャームポイントになる服や、流行のアイテムを生み出している。",
+    tool: "自分の作品をデコるための道具",
+    surprise: "趣味で始めたデコが、人に頼まれるうちに仕事になった。",
+    secret: "地底人が身に着けているアイテムは、すべてスタッピーが作っている。",
   },
   {
-    id: "unknown-2",
-    name: "？？？",
-    unknown: true,
-    note: "このページは白紙。画像とキャラ設定が決まったら、ここに書き足すよ。",
+    id: "zarpy",
+    name: "ZARPY",
+    kana: "ザーピー",
+    image: "./images/zarppy.png",
+    occupation: "ザーファー（砂でサーフィンをするサーファー）",
+    likes: "化石、ザーフボード",
+    personality:
+      "「楽しそう！」と思ったことに熱中するタイプ。原動力は自分の好奇心。人懐っこく、人と話すことでエネルギーがもらえる。肯定的で、まず自分から話しかける。",
+    note: "DEEPYの友達。地底でできる砂のサーフィンを仕事にしている。",
+    tool: "ザーフボード",
+    surprise: "地底に海はまだないので、砂の上でサーフィンをしている。",
+    secret: "地上の海を、いつか地底にも作るのが夢。小さいころからDEEPYに地上の話を聞いていて、海が地上の7割を占めると知ってから、この遊びを考えた。",
   },
 ];
 
@@ -1232,10 +1242,13 @@ function renderZukanIndex() {
         : `<span class="field-thumb-empty">？</span>`
       }</span>
       <span class="field-entry-copy">
-        <span class="field-entry-name">${entry.name}</span>
+        <span class="field-entry-name">${entry.name}${entry.kana
+        ? `<span class="field-entry-kana">${entry.kana}</span>`
+        : ""
+      }</span>
         <span class="field-entry-meta">${entry.unknown
         ? "まだ見つけていない"
-        : `${entry.occupation}・${entry.habitat}`
+        : entry.occupation
       }</span>
       </span>
       <span class="field-entry-open">開く</span>
@@ -1276,34 +1289,45 @@ function renderZukanFile(entryId) {
       </div>
     `;
   } else {
-    const secret = open
-      ? `
+    const facts = [
+      ["職業", entry.occupation],
+      ["好きなもの", entry.likes],
+      ["性格", entry.personality],
+      [entry.id === "deepy" ? "発見日" : "発見場所", entry.found],
+    ].filter(([, value]) => value);
+    const secretBlocks = [
+      ["仕事道具", entry.tool],
+      ["意外な一面", entry.surprise],
+      ["秘密の情報", entry.secret],
+    ].filter(([, value]) => value);
+    const secretLabels = secretBlocks.map(([label]) => label).join("・");
+    const secret = secretBlocks.length
+      ? open
+        ? `
         <section class="field-secret">
           <p class="field-stamp">開封済み</p>
           <h3>秘密ファイル</h3>
+          ${secretBlocks
+            .map(
+              ([label, value]) => `
           <div class="field-secret-block">
-            <p class="field-secret-label">仕事道具</p>
-            <p>${entry.tool}</p>
-          </div>
-          <div class="field-secret-block">
-            <p class="field-secret-label">意外な一面</p>
-            <p>${entry.surprise}</p>
-          </div>
-          <div class="field-secret-block">
-            <p class="field-secret-label">秘密の情報</p>
-            <p>${entry.secret}</p>
-          </div>
+            <p class="field-secret-label">${label}</p>
+            <p>${value}</p>
+          </div>`,
+            )
+            .join("")}
         </section>
       `
-      : `
+        : `
         <section class="field-secret">
           <h3>秘密ファイル</h3>
           <div class="field-sealed">
             <p class="field-stamp">未開封</p>
-            <p>友情ポイントが25%になると、仕事道具・意外な一面・秘密の情報が読めるよ。</p>
+            <p>友情ポイントが25%になると、${secretLabels}が読めるよ。</p>
           </div>
         </section>
-      `;
+      `
+      : "";
     page.innerHTML = `
       <div class="field-photo">
         <img src="${entry.image}" alt="${entry.name}" />
@@ -1311,11 +1335,9 @@ function renderZukanFile(entryId) {
       <div>
         <p class="field-file-kicker">調査ページ</p>
         <h2>${entry.name}</h2>
+        ${entry.kana ? `<p class="field-reading">${entry.kana}</p>` : ""}
         <dl class="field-facts">
-          <dt>職業</dt><dd>${entry.occupation}</dd>
-          <dt>生息地</dt><dd>${entry.habitat}</dd>
-          <dt>好きなもの</dt><dd>${entry.likes}</dd>
-          <dt>発見日</dt><dd>${entry.found}</dd>
+          ${facts.map(([label, value]) => `<dt>${label}</dt><dd>${value}</dd>`).join("")}
         </dl>
         <p>${entry.note}</p>
         ${secret}
@@ -4153,6 +4175,7 @@ window.addEventListener("pageshow", (event) => {
   if (!event.persisted) return;
   const user = auth.currentUser;
   if (user && user.uid === currentUserId && !homeScreen.hidden) {
+    returningFromSindan();
     startOnlinePresence();
   } else {
     restoreAccountSession();
@@ -4754,11 +4777,45 @@ toggleSpacePanel.addEventListener("click", () => {
   try { localStorage.setItem(SPACE_PANEL_PREF_KEY, collapsed ? "1" : "0"); } catch { /* The panel still works without storage. */ }
 });
 
+function returningFromSindan() {
+  let skip = window.__deepysSkipDescent === true;
+  try {
+    if (
+      sessionStorage.getItem("deepys-from-sindan") === "1" ||
+      sessionStorage.getItem("deepys-skip-descent") === "1"
+    ) {
+      skip = true;
+    }
+    sessionStorage.removeItem("deepys-from-sindan");
+    sessionStorage.removeItem("deepys-skip-descent");
+  } catch {
+    /* 保存が読めないときは、URL の印だけを見る。 */
+  }
+  if (new URLSearchParams(location.search).get("from") === "sindan") {
+    skip = true;
+    const url = new URL(location.href);
+    url.searchParams.delete("from");
+    history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }
+  window.__deepysSkipDescent = false;
+  return skip;
+}
+
 async function restoreAccountSession() {
   await authReady;
   const user = auth.currentUser;
+  const skipDescent = returningFromSindan();
   if (!user || user.isAnonymous) {
     cancelDescent();
+    return;
+  }
+  if (skipDescent) {
+    cancelDescent();
+    const version = sessionVersion;
+    const profile = await loadAccountProfile(user);
+    if (version !== sessionVersion || auth.currentUser?.uid !== user.uid) return;
+    currentUserData = createBlankUserData();
+    rememberAndEnter(user, profile);
     return;
   }
   const token = beginDescent();

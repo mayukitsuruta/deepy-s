@@ -62,7 +62,7 @@ export const HOMESTAY = {
       { label: "夜", text: "今日の思い出を、フレームつき写真でパシャリ。地上の本や文化の話で盛り上がろう！", source: "index.html カメラ／好きなもの" },
     ],
   },
-  zappy: {
+  zarpy: {
     format: "timeline",
     status: "final",
     items: [
