@@ -261,7 +261,7 @@ function renderRanking(ranking) {
     );
     list.append(item);
   });
-  card.append(el("h2", "diagnosis-section-title", "7匹との相性ランキング"), list);
+  card.append(el("h2", "diagnosis-section-title", "7人との相性ランキング"), list);
   return card;
 }
 
