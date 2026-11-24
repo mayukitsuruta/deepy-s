@@ -52,8 +52,9 @@
       rel="modulepreload"
       href="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js"
     />
-    <link rel="stylesheet" href="./css/style.css?v=20261124-zukan" />
-    <link rel="stylesheet" href="./css/style.css?v=20261119-camera-borderless" />
+    <link rel="stylesheet" href="./css/style.css?v=20261124-hanging-signs-zukan" />
+    <link rel="stylesheet" href="./css/font-preview.css?v=20261123-hover" />
+    <script src="./js/font-preview.js?v=20261123-custom-only"></script>
   </head>
 
   <body>
@@ -345,77 +346,92 @@
           </p>
 
           <!-- キャラクターカード -->
-          <div class="character-list">
-            <article class="character-card chippy">
-              <div class="character-portrait">
-                <img loading="lazy" src="./images/green.png" alt="CHIPPY" />
-              </div>
-              <div class="character-info">
-                <h3>CHIPPY</h3>
-                <p class="character-subtitle">〜 土を掘る人 〜</p>
-                <p class="character-description">
-                  地底で家を作るために、土を除去する仕事をしているよ。
-                  力持ちでまっすぐな性格。
-                </p>
-                <p class="character-detail">職業：土吸収員</p>
-                <button class="character-button" data-character="chippy">
-                  この子の暮らしをのぞく →
-                </button>
-              </div>
-            </article>
+          <section class="character-carousel" aria-label="地底人を選ぶ" aria-roledescription="カルーセル">
+            <button class="carousel-arrow carousel-prev" type="button" aria-label="前の地底人">
+              <span aria-hidden="true">‹</span>
+            </button>
+            <div class="carousel-scene">
+              <div class="carousel-ring">
+                <article class="character-card chippy">
+                  <div class="character-portrait">
+                    <img loading="lazy" src="./images/green.png" alt="CHIPPY" />
+                  </div>
+                  <div class="character-info">
+                    <h3>CHIPPY</h3>
+                    <p class="character-subtitle">〜 土を掘る人 〜</p>
+                    <p class="character-description">
+                      地底で家を作るために、土を除去する仕事をしているよ。
+                      力持ちでまっすぐな性格。
+                    </p>
+                    <p class="character-detail">職業：土吸収員</p>
+                    <p class="character-detail">住んでいる地層：上層</p>
+                    <button class="character-button" data-character="chippy">
+                      この子の暮らしをのぞく →
+                    </button>
+                  </div>
+                </article>
 
-            <article class="character-card simpy">
-              <div class="character-portrait">
-                <img loading="lazy" src="./images/pink.png" alt="SIMPY" />
-              </div>
-              <div class="character-info">
-                <h3>SIMPY</h3>
-                <p class="character-subtitle">〜 音を集める人 〜</p>
-                <p class="character-description">
-                  地底に響くいろんな音を集めているよ。 歌うことや音楽が大好き。
-                </p>
-                <p class="character-detail">職業：音の採集家</p>
-                <button class="character-button" data-character="simpy">
-                  この子の暮らしをのぞく →
-                </button>
-              </div>
-            </article>
+                <article class="character-card simpy">
+                  <div class="character-portrait">
+                    <img loading="lazy" src="./images/pink.png" alt="SIMPY" />
+                  </div>
+                  <div class="character-info">
+                    <h3>SIMPY</h3>
+                    <p class="character-subtitle">〜 音を集める人 〜</p>
+                    <p class="character-description">
+                      地底に響くいろんな音を集めているよ。 歌うことや音楽が大好き。
+                    </p>
+                    <p class="character-detail">職業：音の採集家</p>
+                    <p class="character-detail">住んでいる地層：中層</p>
+                    <button class="character-button" data-character="simpy">
+                      この子の暮らしをのぞく →
+                    </button>
+                  </div>
+                </article>
 
-            <article class="character-card nasupy">
-              <div class="character-portrait">
-                <img loading="lazy" src="./images/purple.png" alt="NASUPY" />
-              </div>
-              <div class="character-info">
-                <h3>NASUPY</h3>
-                <p class="character-subtitle">〜 植物のお医者さん 〜</p>
-                <p class="character-description">
-                  地底の植物たちの健康を守るお医者さん。 植物と話せるよ。
-                </p>
-                <p class="character-detail">職業：植物の医者</p>
-                <button class="character-button" data-character="nasupy">
-                  この子の暮らしをのぞく →
-                </button>
-              </div>
-            </article>
+                <article class="character-card nasupy">
+                  <div class="character-portrait">
+                    <img loading="lazy" src="./images/purple.png" alt="NASUPY" />
+                  </div>
+                  <div class="character-info">
+                    <h3>NASUPY</h3>
+                    <p class="character-subtitle">〜 植物のお医者さん 〜</p>
+                    <p class="character-description">
+                      地底の植物たちの健康を守るお医者さん。 植物と話せるよ。
+                    </p>
+                    <p class="character-detail">職業：植物の医者</p>
+                    <p class="character-detail">住んでいる地層：深層</p>
+                    <button class="character-button" data-character="nasupy">
+                      この子の暮らしをのぞく →
+                    </button>
+                  </div>
+                </article>
 
-            <article class="character-card hitopy">
-              <div class="character-portrait">
-                <img loading="lazy" src="./images/white.png" alt="HITOPY" />
+                <article class="character-card hitopy">
+                  <div class="character-portrait">
+                    <img loading="lazy" src="./images/white.png" alt="HITOPY" />
+                  </div>
+                  <div class="character-info">
+                    <h3>HITOPY</h3>
+                    <p class="character-subtitle">〜 建築家 〜</p>
+                    <p class="character-description">
+                      地底に住むみんなの家を建てているよ。
+                      土を叩くリズムがずれると、地層が崩れちゃう。
+                    </p>
+                    <p class="character-detail">職業：建築家</p>
+                    <p class="character-detail">住んでいる地層：？？？</p>
+                    <button class="character-button" data-character="hitopy">
+                      この子の暮らしをのぞく →
+                    </button>
+                  </div>
+                </article>
               </div>
-              <div class="character-info">
-                <h3>HITOPY</h3>
-                <p class="character-subtitle">〜 建築家 〜</p>
-                <p class="character-description">
-                  地底に住むみんなの家を建てているよ。
-                  土を叩くリズムがずれると、地層が崩れちゃう。
-                </p>
-                <p class="character-detail">職業：建築家</p>
-                <button class="character-button" data-character="hitopy">
-                  この子の暮らしをのぞく →
-                </button>
-              </div>
-            </article>
-          </div>
+            </div>
+            <button class="carousel-arrow carousel-next" type="button" aria-label="次の地底人">
+              <span aria-hidden="true">›</span>
+            </button>
+            <span class="carousel-status" role="status" aria-atomic="true"></span>
+          </section>
 
           <p class="home-message">まずは気になる子を選んでみてね！</p>
         </div>
@@ -1644,6 +1660,6 @@
       </div>
     </section>
 
-    <script type="module" src="./js/main.js?v=20261124-sindan-return2"></script>
+    <script type="module" src="./js/main.js?v=20261124-cylinder-sindan-return2"></script>
   </body>
 </html>

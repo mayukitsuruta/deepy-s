@@ -401,28 +401,126 @@ input::file-selector-button {
 }
 
 /* キャラクターカード */
-.character-list {
+@property --carousel-rotation {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 0deg;
+}
+
+.character-carousel {
+  container-type: inline-size;
+  position: relative;
+  width: min(100%, 1000px);
+  margin-inline: auto;
+  overflow: clip;
+  touch-action: pan-y pinch-zoom;
+  user-select: none;
+  transition: --carousel-rotation 520ms cubic-bezier(.22, .75, .25, 1);
+}
+
+.carousel-scene {
+  --card-width: min(65cqi, clamp(260px, 29cqi, 300px));
+  --radius: calc(var(--card-width) * 1.32);
+  padding-block: 56px 22px;
+  perspective: 1650px;
+  perspective-origin: 50% -12%;
+}
+
+.carousel-ring {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 15px;
+  grid-template-columns: var(--card-width);
+  justify-content: center;
+  transform-style: preserve-3d;
+  transform: translateZ(calc(0px - var(--radius))) rotateY(calc(0deg - var(--carousel-rotation)));
+}
+
+.character-carousel.is-dragging {
+  transition: none;
+  cursor: grabbing;
+}
+
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 1px solid #d9bc96;
+  border-radius: 50%;
+  padding: 0;
+  background: #463022;
+  color: #fff5e4;
+  box-shadow: 0 3px 12px #28190c55;
+  cursor: pointer;
+}
+
+.carousel-arrow span {
+  font: 36px/.8 system-ui, sans-serif;
+  translate: 0 -2px;
+}
+
+.carousel-prev { left: max(6px, calc(50% - 430px)); }
+.carousel-next { right: max(6px, calc(50% - 430px)); }
+
+.carousel-arrow:hover {
+  background: #634530;
+}
+
+.carousel-arrow:focus-visible,
+.character-button:focus-visible {
+  outline: 3px solid #fff5db;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px #573e2f;
+}
+
+.carousel-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.character-card,
+.carousel-back {
+  grid-area: 1 / 1;
+  backface-visibility: hidden;
+  box-sizing: border-box;
+  border-radius: 100px 100px 30px 30px;
 }
 
 .character-card {
-  border-radius: 100px 100px 30px 30px;
+  /* Use the nearer of the two opposite slots for each character's single interactive face. */
+  --half-turn: round(nearest, calc(var(--carousel-rotation) - var(--slot-angle)), 180deg);
+  --face-angle: calc(var(--slot-angle) + var(--half-turn));
+  transform: rotateY(var(--face-angle)) translateZ(var(--radius));
+  filter: brightness(calc(.60 + .40 * cos(var(--face-angle) - var(--carousel-rotation))));
   padding: 12px;
   color: #4b3028;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  transition: transform 0.15s ease;
-}
-
-.character-card:has(.character-button:not(:disabled)) {
+  background-color: var(--card-color);
+  box-shadow: 0 12px 24px rgba(32, 17, 8, .28);
   cursor: pointer;
 }
 
-.character-card:has(.character-button:not(:disabled)):hover {
-  transform: translateY(-6px);
+.carousel-back {
+  transform: rotateY(var(--slot-angle)) translateZ(calc(var(--radius) - 1px)) rotateY(180deg);
+  background-color: color-mix(in srgb, var(--card-color) 36%, #47342b);
+  box-shadow: inset 0 0 0 6px rgb(64 43 30 / 18%);
+  cursor: pointer;
+}
+
+.character-carousel.is-dragging .character-card {
+  cursor: grabbing;
+}
+
+.character-card[aria-hidden="true"] .character-button {
+  visibility: hidden;
 }
 
 .character-button {
@@ -430,37 +528,33 @@ input::file-selector-button {
   border: 1px solid currentColor;
   border-radius: 30px;
   padding: 10px 5px;
-  background: transparent;
-  color: inherit;
+  background: #4b3028;
+  color: #fff6ea;
   cursor: pointer;
   font-size: 12px;
   transition: background 0.15s ease, transform 0.15s ease;
 }
 
 .character-button:hover:not(:disabled),
-.character-card:hover .character-button:not(:disabled) {
-  background: #4b3028;
+.character-card[aria-current="true"]:hover .character-button:not(:disabled) {
+  background: #684737;
   color: #fff6ea;
 }
 
 .chippy {
-  background: rgba(233, 233, 178, 0.88);
+  --card-color: #e9e9b2;
 }
 
 .simpy {
-  background: rgba(255, 212, 208, 0.88);
+  --card-color: #ffd4d0;
 }
 
 .nasupy {
-  background: rgba(229, 212, 245, 0.88);
+  --card-color: #e5d4f5;
 }
 
 .hitopy {
-  background: rgba(243, 230, 212, 0.92);
-}
-
-.hitopy .character-portrait {
-  background: #5a534e;
+  --card-color: #f3e6d4;
 }
 
 .character-portrait {
@@ -478,6 +572,7 @@ input::file-selector-button {
   width: 100%;
   object-fit: contain;
   object-position: center bottom;
+  pointer-events: none;
 }
 
 .hitopy .character-portrait {
@@ -528,21 +623,24 @@ input::file-selector-button {
 }
 
 .home-message {
-  margin-top: 30px;
+  margin-top: 8px;
   text-align: center;
   font-size: 18px;
   text-shadow: 0 1px 2px rgba(28, 14, 8, 0.9), 0 0 14px rgba(28, 14, 8, 0.65);
 }
 
-/* タブレット */
-@media (max-width: 1100px) {
-  .character-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (prefers-reduced-motion: reduce) {
+  .character-carousel {
+    transition: none;
   }
 }
 
 /* スマホ */
 @media (max-width: 650px) {
+  .character-portrait {
+    height: 250px;
+  }
+
   .home-screen {
     flex-direction: column;
   }
@@ -554,14 +652,6 @@ input::file-selector-button {
 
   .home-main {
     padding: 20px 15px;
-  }
-
-  .character-list {
-    grid-template-columns: 1fr;
-  }
-
-  .character-portrait {
-    height: 250px;
   }
 
   .home-screen.camera-mode,
@@ -3045,16 +3135,46 @@ input::file-selector-button {
   flex-wrap: wrap;
 }
 
+.placeholder-layer-badge,
+.house-layer-nav button,
+.space-go-home {
+  position: relative;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 11px 16px 2px;
+  background: transparent;
+  border: 1px solid transparent;
+  /* 両端の縄と彫刻を固定し、文字に合わせて中央の石面を伸ばす。 */
+  border-image: url("../images/space-hud-hanging-sign.webp") 0 16% fill / 0 18px stretch;
+  color: #39220f;
+}
+
+.space-map-hud :is(.placeholder-layer-badge, button)::before,
+.space-map-hud :is(.placeholder-layer-badge, button)::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 30%, #dcb67b, #785233 45%, #352214 75%);
+  pointer-events: none;
+}
+
+.space-map-hud :is(.placeholder-layer-badge, button)::before {
+  left: 6px;
+}
+
+.space-map-hud :is(.placeholder-layer-badge, button)::after {
+  right: 6px;
+}
+
 .placeholder-layer-badge {
-  background: rgba(58, 36, 20, 0.72);
-  backdrop-filter: blur(8px);
-  border: 1.5px solid rgba(235, 204, 170, 0.65);
-  border-radius: 999px;
-  padding: 7px 16px;
   font-size: 13px;
   font-weight: 700;
-  color: #fff6ea;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
 }
 
 /* スクロール＆ドラッグ用ビューポート */
@@ -3758,19 +3878,18 @@ input::file-selector-button {
 }
 
 .house-layer-nav button,
+.space-go-home,
 .house-toolbar button {
   font: inherit;
   font-size: 12px;
   font-weight: 700;
-  color: #fff2db;
-  border: 1px solid #b58b64;
-  background: #543622;
   cursor: pointer;
 }
 
-.house-layer-nav button {
-  border-radius: 20px;
-  padding: 6px 12px;
+.house-toolbar button {
+  color: #fff2db;
+  border: 1px solid #b58b64;
+  background: #543622;
 }
 
 .house-ground {
@@ -3779,7 +3898,11 @@ input::file-selector-button {
   outline: none;
 }
 
-.is-placing-house .house-ground {
+body:has(#space-map-wrapper.is-placing-house) * {
+  cursor: url("../images/house-placement-blocked.svg") 12 12, not-allowed;
+}
+
+#space-map-wrapper.is-placing-house .space-map-viewport:not(.is-dragging) .house-ground {
   cursor: crosshair;
 }
 
@@ -3811,6 +3934,26 @@ input::file-selector-button {
 
 .own-house {
   cursor: pointer;
+}
+
+.house-move-preview {
+  position: fixed;
+  z-index: 950;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.house-move-preview + .space-map-wrapper .own-house {
+  visibility: hidden;
+}
+
+.own-house:disabled {
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.own-house:disabled .house-speech {
+  display: none;
 }
 
 .resident-house {
@@ -3998,9 +4141,13 @@ input::file-selector-button {
   padding: 10px 13px;
 }
 
-.house-toolbar button:hover:not(:disabled),
-.house-layer-nav button:hover {
+.house-toolbar button:hover:not(:disabled) {
   background: #805938;
+}
+
+.house-layer-nav button:hover,
+.space-go-home:hover {
+  filter: brightness(1.1);
 }
 
 #house-add {
@@ -4406,7 +4553,6 @@ input::file-selector-button {
 
   .placeholder-layer-badge {
     font-size: 11px;
-    padding: 7px 10px;
   }
 
   .house-map-controls {
@@ -4565,20 +4711,7 @@ input::file-selector-button {
 /* 地底のワールドと、カメラの上に浮かぶ操作パネル。 */
 .space-go-home {
   pointer-events: auto;
-  border: 1px solid #b58b64;
-  border-radius: 20px;
-  background: #543622;
-  color: #fff2db;
-  padding: 6px 12px;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-}
-
-.space-go-home:hover {
-  background: #805938;
 }
 
 .map-drag-hint {
@@ -4654,7 +4787,6 @@ input::file-selector-button {
 
   .space-go-home {
     font-size: 11px;
-    padding: 6px 8px;
   }
 
   .space-minimap {
@@ -4685,7 +4817,7 @@ input::file-selector-button {
   }
 
   .space-map-hud {
-    top: 122px;
+    top: 140px;
     left: 12px;
     right: 12px;
   }
