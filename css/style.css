@@ -489,7 +489,6 @@ input::file-selector-button {
   grid-area: 1 / 1;
   backface-visibility: hidden;
   box-sizing: border-box;
-  border-radius: 100px 100px 30px 30px;
 }
 
 .character-card {
@@ -503,22 +502,21 @@ input::file-selector-button {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background-color: #fffdf8;
+  background-color: transparent;
   background-image: var(--card-bg);
   background-repeat: no-repeat;
-  background-position: center;
-  background-size: 100% 100%;
-  box-shadow: 0 12px 24px rgba(32, 17, 8, .28);
+  background-position: var(--card-bg-position, center);
+  background-size: var(--card-bg-size, 100% 100%);
   cursor: pointer;
 }
 
 .carousel-back {
   transform: rotateY(var(--slot-angle)) translateZ(calc(var(--radius) - 1px)) rotateY(180deg);
-  background-color: #47342b;
+  background-color: transparent;
   background-image: var(--card-bg);
   background-repeat: no-repeat;
-  background-position: center;
-  background-size: 100% 100%;
+  background-position: var(--card-bg-position, center);
+  background-size: var(--card-bg-size, 100% 100%);
   filter: brightness(0.62);
   cursor: pointer;
 }
@@ -552,21 +550,29 @@ input::file-selector-button {
 .chippy {
   --card-color: #e9e9b2;
   --card-bg: url("../キャラクター背景/home-chippy-bg.png");
+  --card-bg-size: 164.5% 111.1%;
+  --card-bg-position: 53% 34%;
 }
 
 .simpy {
   --card-color: #ffd4d0;
   --card-bg: url("../キャラクター背景/home-simpy-bg.png");
+  --card-bg-size: 120.1% 108.2%;
+  --card-bg-position: 42.4% 97.5%;
 }
 
 .nasupy {
   --card-color: #e5d4f5;
   --card-bg: url("../キャラクター背景/home-nasupy-bg.png");
+  --card-bg-size: 120% 109.9%;
+  --card-bg-position: 52.2% 85%;
 }
 
 .hitopy {
   --card-color: #f3e6d4;
   --card-bg: url("../キャラクター背景/home-hitopy-bg.png");
+  --card-bg-size: 163.9% 108.9%;
+  --card-bg-position: 49.7% 81.1%;
 }
 
 .character-portrait {
@@ -1505,12 +1511,13 @@ input::file-selector-button {
 }
 
 .hitopy-story {
-  background-color: #8d6b52;
-  background-image: url("../キャラクター背景/home-hitopy-bg.png");
-  background-position: center bottom;
-  background-repeat: no-repeat;
-  background-size: auto 92%;
+  background: #6a432c url("../images/hitopy-bg01.png") center / cover no-repeat;
   cursor: pointer;
+}
+
+.hitopy-story.is-built {
+  background-color: #f4e2c4;
+  background-image: url("../images/hitopy-bg02.png");
 }
 
 .hitopy-story-character {

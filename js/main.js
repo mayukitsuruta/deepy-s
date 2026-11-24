@@ -3280,7 +3280,7 @@ function startHitopyStory() {
   stopHitopyGame();
   if (hitopyDialogue) hitopyDialogue.hidden = false;
   if (hitopyClearPanel) hitopyClearPanel.hidden = true;
-  hitopyStoryView?.classList.remove("is-cleared");
+  hitopyStoryView?.classList.remove("is-cleared", "is-built");
   renderHitopyStory();
   switchUndergroundView("story");
 }
@@ -3291,7 +3291,7 @@ function showHitopyClearScreen() {
   stopHitopyGame();
   if (hitopyDialogue) hitopyDialogue.hidden = true;
   if (hitopyClearPanel) hitopyClearPanel.hidden = false;
-  hitopyStoryView?.classList.add("is-cleared");
+  hitopyStoryView?.classList.add("is-cleared", "is-built");
   switchUndergroundView("story");
 }
 
@@ -3322,7 +3322,7 @@ function startHitopyGame() {
   hitopyPlaying = true;
   hitopyShowingClear = false;
   hitopyStoryView?.classList.add("is-playing");
-  hitopyStoryView?.classList.remove("is-cleared");
+  hitopyStoryView?.classList.remove("is-cleared", "is-built");
   if (hitopyDialogue) hitopyDialogue.hidden = false;
   if (hitopyClearPanel) hitopyClearPanel.hidden = true;
   if (hitopyFinish) hitopyFinish.hidden = true;
@@ -3339,6 +3339,7 @@ function finishHitopyBuild() {
   awardHitopyFriendship();
   hitopyPlaying = false;
   hitopyStoryView?.classList.remove("is-playing");
+  hitopyStoryView?.classList.add("is-built");
   if (hitopyGame) hitopyGame.hidden = true;
   if (hitopyDialogue) hitopyDialogue.hidden = true;
   if (hitopyFinishMessage) {
