@@ -303,6 +303,9 @@
 .diagnosis-hero.is-simpy { background: rgba(255, 212, 208, 0.96); }
 .diagnosis-hero.is-nasupy { background: rgba(229, 212, 245, 0.96); }
 .diagnosis-hero.is-hitopy { background: rgba(119, 112, 108, 0.96); color: #fff; }
+.diagnosis-hero.is-deepy { background: rgba(255, 214, 168, 0.96); } /* うすいオレンジ */
+.diagnosis-hero.is-stappy { background: rgba(200, 234, 245, 0.96); } /* うすい水色 */
+/* ZARPY は共通のクリーム色（.diagnosis-card）のまま */
 
 .diagnosis-hero-portrait {
   display: flex;
@@ -573,7 +576,7 @@
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: #f4e7d0;
+  background: #5c3d28; /* 薄い色のキャラ（ZARPY・HITOPYなど）も見えるように、サイトのこげ茶 */
   overflow: hidden;
 }
 
@@ -584,6 +587,7 @@
 }
 
 .diagnosis-ranking-thumb.is-empty .diagnosis-portrait-empty {
+  color: #f4e7d0;
   font-size: 9px;
   letter-spacing: 0;
   text-align: center;
