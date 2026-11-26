@@ -55,9 +55,11 @@
     <link rel="stylesheet" href="./css/fonts.css" />
     <link
       rel="stylesheet"
-      href="./css/style.css?v=20261126-card-fit"
+      href="./css/style.css"
     />
     <link rel="stylesheet" href="./css/sindan.css?v=20261124-keifont-diagnosis" />
+    <link rel="stylesheet" href="./css/responsive-menu.css" />
+    <script src="./js/responsive-menu.js" defer></script>
   </head>
 
   <body>
@@ -96,6 +98,24 @@
         <p class="descent-title">地底に潜っています</p>
       </div>
     </div>
+
+    <header class="entry-menu responsive-menu">
+      <img class="menu-mobile-logo responsive-menu-logo" src="./images/Deepy's-logo.png" alt="DEEPY’s" loading="lazy" />
+      <button
+        class="responsive-menu-toggle"
+        type="button"
+        aria-label="メニュー"
+        aria-expanded="false"
+        aria-controls="entry-menu-panel"
+      >
+        <span class="responsive-menu-icon" aria-hidden="true"></span>
+      </button>
+      <nav id="entry-menu-panel" class="responsive-menu-panel public-menu-links" aria-label="サイトナビゲーション">
+        <a href="./index.html">トップ</a>
+        <a href="./lp.html#story">物語を読む</a>
+        <a href="./index.html?view=diagnosis">地底人診断</a>
+      </nav>
+    </header>
 
     <!-- ファーストビュー -->
     <section id="first-view" class="screen first-view">
@@ -148,126 +168,142 @@
     <!-- ⑤ 地底ホーム画面 -->
     <section id="home-screen" class="screen home-screen is-home" hidden>
       <!-- 左側メニュー -->
-      <aside class="home-sidebar">
+      <aside class="home-sidebar responsive-menu">
         <div class="sidebar-logo">
           <img
             loading="lazy"
-            class="sidebar-logo-image"
+            class="sidebar-logo-image responsive-menu-logo"
             src="./images/Deepy's-logo.png"
             alt="DEEPY’s"
           />
         </div>
-
-        <nav class="home-nav">
-          <button class="nav-item active" data-view="home" type="button">
-            <span class="nav-icon" aria-hidden="true">
-              <svg
-                viewBox="0 0 24 24"
-                width="20"
-                height="20"
-                fill="currentColor"
-              >
-                <path
-                  d="M12 3.2 3 10.5V20a1 1 0 0 0 1 1h5.5v-6h5v6H20a1 1 0 0 0 1-1v-9.5L12 3.2Z"
-                />
-              </svg>
-            </span>
-            <span>ホーム</span>
-          </button>
-          <button class="nav-item" data-view="zukan" type="button">
-            <span class="nav-icon" aria-hidden="true">
-              <svg
-                viewBox="0 0 24 24"
-                width="20"
-                height="20"
-                fill="currentColor"
-              >
-                <path
-                  d="M5 4.2A2.2 2.2 0 0 1 7.2 2H19v15H7.2A2.2 2.2 0 0 0 5 19.2V4.2Z"
-                />
-                <path
-                  d="M8 6.2h7v1.6H8V6.2Zm0 3.2h7v1.6H8V9.4Z"
-                  fill="#3b2518"
-                />
-              </svg>
-            </span>
-            <span>地底人図鑑</span>
-          </button>
-          <button class="nav-item" data-view="space" type="button">
-            <span class="nav-icon" aria-hidden="true">
-              <svg
-                viewBox="0 0 24 24"
-                width="20"
-                height="20"
-                fill="currentColor"
-              >
-                <circle cx="9" cy="8" r="3.5" />
-                <path d="M3 19c0-3.1 2.7-5.5 6-5.5s6 2.4 6 5.5v1H3v-1Z" />
-                <circle cx="17" cy="9" r="2.8" />
-                <path
-                  d="M15.5 14.2c2.8.3 5 2.3 5 4.8v1h-4v-1c0-1.9-.4-3.5-1-4.8Z"
-                />
-              </svg>
-            </span>
-            <span>交流スペース</span>
-          </button>
-          <button class="nav-item" data-view="diagnosis" type="button">
-            <span class="nav-icon" aria-hidden="true">
-              <svg
-                viewBox="0 0 24 24"
-                width="20"
-                height="20"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.4"
-                stroke-linecap="round"
-              >
-                <circle cx="10.5" cy="10.5" r="6.5" />
-                <path d="m15.5 15.5 5 5" />
-              </svg>
-            </span>
-            <span>地底人診断</span>
-          </button>
-          <button class="nav-item" data-view="camera" type="button">
-            <span class="nav-icon" aria-hidden="true">
-              <svg
-                viewBox="0 0 24 24"
-                width="20"
-                height="20"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path
-                  d="M4 7h3l1.5-2h7L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"
-                />
-                <circle cx="12" cy="13" r="4" />
-              </svg>
-            </span>
-            <span>カメラ</span>
-          </button>
-        </nav>
-
-        <div class="sidebar-footer">
-          <p class="deepy-speech">ようこそ<br />ディーピーズの<br />世界へ！</p>
-          <img
-            loading="lazy"
-            class="deepy-menu"
-            src="./images/deepy.png"
-            alt="DEEPY"
-          />
-        </div>
-
         <button
-          id="delete-account"
-          class="sidebar-account-action"
+          class="responsive-menu-toggle"
           type="button"
-          hidden
+          aria-label="メニュー"
+          aria-expanded="false"
+          aria-controls="home-menu-panel"
         >
-          このアカウントを消す
+          <span class="responsive-menu-icon" aria-hidden="true"></span>
         </button>
+        <div id="home-menu-panel" class="home-menu-panel responsive-menu-panel">
+          <nav class="home-nav" aria-label="地底のナビゲーション">
+            <button
+              class="nav-item active"
+              data-view="home"
+              type="button"
+              aria-label="ホーム"
+              aria-current="page"
+            >
+              <span class="nav-icon" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M12 3.2 3 10.5V20a1 1 0 0 0 1 1h5.5v-6h5v6H20a1 1 0 0 0 1-1v-9.5L12 3.2Z"
+                  />
+                </svg>
+              </span>
+              <span>ホーム</span>
+            </button>
+            <button class="nav-item" data-view="zukan" type="button">
+              <span class="nav-icon" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M5 4.2A2.2 2.2 0 0 1 7.2 2H19v15H7.2A2.2 2.2 0 0 0 5 19.2V4.2Z"
+                  />
+                  <path
+                    d="M8 6.2h7v1.6H8V6.2Zm0 3.2h7v1.6H8V9.4Z"
+                    fill="#3b2518"
+                  />
+                </svg>
+              </span>
+              <span>地底人図鑑</span>
+            </button>
+            <button class="nav-item" data-view="space" type="button">
+              <span class="nav-icon" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  fill="currentColor"
+                >
+                  <circle cx="9" cy="8" r="3.5" />
+                  <path d="M3 19c0-3.1 2.7-5.5 6-5.5s6 2.4 6 5.5v1H3v-1Z" />
+                  <circle cx="17" cy="9" r="2.8" />
+                  <path
+                    d="M15.5 14.2c2.8.3 5 2.3 5 4.8v1h-4v-1c0-1.9-.4-3.5-1-4.8Z"
+                  />
+                </svg>
+              </span>
+              <span>交流スペース</span>
+            </button>
+            <button class="nav-item" data-view="diagnosis" type="button">
+              <span class="nav-icon" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.4"
+                  stroke-linecap="round"
+                >
+                  <circle cx="10.5" cy="10.5" r="6.5" />
+                  <path d="m15.5 15.5 5 5" />
+                </svg>
+              </span>
+              <span>地底人診断</span>
+            </button>
+            <button class="nav-item" data-view="camera" type="button">
+              <span class="nav-icon" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M4 7h3l1.5-2h7L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"
+                  />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+              </span>
+              <span>カメラ</span>
+            </button>
+          </nav>
+
+          <div class="sidebar-footer">
+            <p class="deepy-speech">ようこそ<br />ディーピーズの<br />世界へ！</p>
+            <img
+              loading="lazy"
+              class="deepy-menu"
+              src="./images/deepy.png"
+              alt="DEEPY"
+            />
+          </div>
+
+          <button
+            id="delete-account"
+            class="sidebar-account-action"
+            type="button"
+            hidden
+          >
+            このアカウントを消す
+          </button>
+        </div>
       </aside>
 
       <!-- メインエリア -->
@@ -335,7 +371,19 @@
               type="button"
               aria-label="前の地底人"
             >
-              <span aria-hidden="true">‹</span>
+              <svg
+                aria-hidden="true"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M14.5 6 L8.5 12 L14.5 18" />
+              </svg>
             </button>
             <div class="carousel-scene">
               <div class="carousel-ring">
@@ -424,7 +472,19 @@
               type="button"
               aria-label="次の地底人"
             >
-              <span aria-hidden="true">›</span>
+              <svg
+                aria-hidden="true"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M9.5 6 L15.5 12 L9.5 18" />
+              </svg>
             </button>
             <span
               class="carousel-status"
@@ -1020,6 +1080,32 @@
               </div>
               <div id="resident-profile-tags" class="profile-tags"></div>
             </div>
+            <footer id="resident-profile-visit" class="resident-profile-visit" hidden>
+              <button class="interior-badge-btn" type="button" aria-haspopup="dialog">
+                おうちを見に行く
+              </button>
+            </footer>
+          </dialog>
+
+          <dialog
+            id="house-interior"
+            class="house-interior"
+            aria-labelledby="house-interior-title"
+          >
+            <div class="house-interior-scene">
+              <div id="house-interior-art"></div>
+              <header class="house-interior-header">
+                <h2 id="house-interior-title"></h2>
+                <form method="dialog">
+                  <button class="house-interior-exit" type="submit" autofocus>← 外に出る</button>
+                </form>
+              </header>
+              <button
+                id="house-interior-light"
+                class="house-interior-light"
+                type="button"
+              ></button>
+            </div>
           </dialog>
 
           <!-- 右カラム：私の家・プロフィール・掲示板 -->
@@ -1050,7 +1136,16 @@
 
               <div class="house-preview" id="house-preview-box">
                 <div class="house-preview-art">
-                  <img id="house-preview-image" alt="" hidden />
+                  <button
+                    id="house-preview-enter"
+                    class="house-preview-enter"
+                    type="button"
+                    aria-label="私の家に入る"
+                    aria-haspopup="dialog"
+                    hidden
+                  >
+                    <img id="house-preview-image" alt="" draggable="false" />
+                  </button>
                   <p id="house-preview-empty">
                     ここから、あなたの地底暮らし。<br />お気に入りの家を置いてみよう。
                   </p>
@@ -1350,70 +1445,21 @@
         <section id="camera-view-content" class="camera-view" hidden>
           <div class="camera-stage-wrap">
             <div
-              class="camera-frame-picker"
-              role="group"
-              aria-label="フレームを選択"
-            >
-              <button
-                class="frame-choice active"
-                type="button"
-                data-frame="frame-1"
-                aria-label="フレーム1を選択"
-                aria-pressed="true"
-              >
-                <img
-                  loading="lazy"
-                  src="./images/frame-1.PNG?v=20261119-official"
-                  alt=""
-                />
-              </button>
-              <button
-                class="frame-choice"
-                type="button"
-                data-frame="frame-2"
-                aria-label="フレーム2を選択"
-                aria-pressed="false"
-              >
-                <img
-                  loading="lazy"
-                  src="./images/frame-2.PNG?v=20261119-official"
-                  alt=""
-                />
-              </button>
-              <button
-                class="frame-choice"
-                type="button"
-                data-frame="frame-3"
-                aria-label="フレーム3を選択"
-                aria-pressed="false"
-              >
-                <img
-                  loading="lazy"
-                  src="./images/frame-3.PNG?v=20261119-official"
-                  alt=""
-                />
-              </button>
-              <button
-                class="frame-choice"
-                type="button"
-                data-frame="frame-4"
-                aria-label="フレーム4を選択"
-                aria-pressed="false"
-              >
-                <img
-                  loading="lazy"
-                  src="./images/frame-4.PNG?v=20261119-official"
-                  alt=""
-                />
-              </button>
-            </div>
-            <div class="camera-stage is-square-cornered" id="camera-stage">
+              id="camera-countdown"
+              class="camera-countdown is-three"
+              role="timer"
+              aria-label="撮影タイマー"
+              aria-live="polite"
+              aria-atomic="true"
+            >3</div>
+            <div class="camera-stage" id="camera-stage">
               <video
                 id="camera-video"
                 autoplay
                 muted
                 playsinline
                 aria-label="カメラのプレビュー"
+                hidden
               ></video>
               <img
                 loading="lazy"
@@ -1452,81 +1498,112 @@
                 alt="撮影した写真"
                 hidden
               />
+            </div>
+            <div class="camera-options">
               <div
-                id="camera-countdown"
-                class="camera-countdown"
-                role="timer"
-                aria-label="撮影までの残り秒数"
-                aria-live="polite"
-                aria-atomic="true"
-                hidden
-              ></div>
+                class="camera-frame-picker"
+                role="group"
+                aria-label="フレームを選択"
+              >
+                <button
+                  class="frame-choice active"
+                  type="button"
+                  data-frame="frame-1"
+                  aria-label="フレーム1を選択"
+                  aria-pressed="true"
+                >
+                  <img
+                    loading="lazy"
+                    src="./images/frame-1.PNG?v=20261119-official"
+                    alt=""
+                  />
+                </button>
+                <button
+                  class="frame-choice"
+                  type="button"
+                  data-frame="frame-2"
+                  aria-label="フレーム2を選択"
+                  aria-pressed="false"
+                >
+                  <img
+                    loading="lazy"
+                    src="./images/frame-2.PNG?v=20261119-official"
+                    alt=""
+                  />
+                </button>
+                <button
+                  class="frame-choice"
+                  type="button"
+                  data-frame="frame-3"
+                  aria-label="フレーム3を選択"
+                  aria-pressed="false"
+                >
+                  <img
+                    loading="lazy"
+                    src="./images/frame-3.PNG?v=20261119-official"
+                    alt=""
+                  />
+                </button>
+                <button
+                  class="frame-choice"
+                  type="button"
+                  data-frame="frame-4"
+                  aria-label="フレーム4を選択"
+                  aria-pressed="false"
+                >
+                  <img
+                    loading="lazy"
+                    src="./images/frame-4.PNG?v=20261119-official"
+                    alt=""
+                  />
+                </button>
+              </div>
+              <div class="camera-corner-control">
+                <span class="camera-corner-label">角丸</span>
+                <button
+                  id="toggle-photo-corners"
+                  class="corner-switch"
+                  type="button"
+                  role="switch"
+                  aria-label="角丸"
+                  aria-checked="false"
+                >
+                  <span class="corner-switch-thumb" aria-hidden="true"></span>
+                </button>
+              </div>
             </div>
             <div class="camera-actions">
-              <div class="camera-settings">
-                <div class="camera-corner-control">
-                  <span class="camera-corner-label">角丸</span>
-                  <button
-                    id="toggle-photo-corners"
-                    class="corner-switch"
-                    type="button"
-                    role="switch"
-                    aria-label="角丸"
-                    aria-checked="false"
-                  >
-                    <span class="corner-switch-track" aria-hidden="true">
-                      <span class="corner-switch-thumb"></span>
-                    </span>
-                  </button>
-                </div>
-                <fieldset id="photo-timer" class="camera-timer-control">
-                  <legend>タイマー</legend>
-                  <div class="camera-timer-options">
-                    <label>
-                      <input type="radio" name="photo-timer" value="0" checked />
-                      <span>オフ</span>
-                    </label>
-                    <label>
-                      <input type="radio" name="photo-timer" value="3" />
-                      <span>3秒</span>
-                    </label>
-                    <label>
-                      <input type="radio" name="photo-timer" value="5" />
-                      <span>5秒</span>
-                    </label>
-                    <label>
-                      <input type="radio" name="photo-timer" value="10" />
-                      <span>10秒</span>
-                    </label>
-                  </div>
-                </fieldset>
-              </div>
               <button
-                id="start-camera"
-                class="camera-button camera-button-secondary"
+                id="pause-photo"
+                class="camera-button"
                 type="button"
+                aria-label="STOP 撮影タイマーを一時停止"
+                disabled
               >
-                カメラを起動
+                STOP
               </button>
               <button
                 id="take-photo"
-                class="camera-button"
+                class="camera-button camera-shutter"
                 type="button"
-                disabled
+                aria-label="START 撮影タイマーを開始・再開"
               >
-                写真を撮る
+                <img src="./images/camera.svg" width="68" height="56" alt="" />
+                START
               </button>
               <button
-                id="retake-photo"
-                class="camera-button camera-button-secondary"
+                id="reset-photo"
+                class="camera-button"
                 type="button"
-                hidden
+                aria-label="RESET 撮影をリセット"
               >
-                もう一度撮る
+                RESET
               </button>
+            </div>
+            <div class="camera-feedback">
               <a
                 id="download-photo"
-                class="camera-button camera-button-secondary camera-download"
+                class="camera-button camera-download"
                 download="deepys-photo.png"
                 hidden
                 >ダウンロード</a
@@ -1552,73 +1629,49 @@
               ></p>
             </div>
           </div>
-          <div id="photo-reward-dialog" class="reward-backdrop" hidden>
-            <section
-              class="reward-dialog"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="reward-title"
-              aria-describedby="reward-description"
-            >
-              <div class="reward-medal" aria-hidden="true">
-                <svg viewBox="0 0 100 116" fill="none">
-                  <path
-                    d="m30 61-8 42 23-13 13 21 8-42"
-                    fill="#B97848"
-                    stroke="#754629"
-                    stroke-width="3"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="m68 61 8 42-23-13-13 21-8-42"
-                    fill="#D99B5D"
-                    stroke="#754629"
-                    stroke-width="3"
-                    stroke-linejoin="round"
-                  />
-                  <circle
-                    cx="50"
-                    cy="43"
-                    r="31"
-                    fill="#F4D68E"
-                    stroke="#754629"
-                    stroke-width="4"
-                  />
-                  <circle
-                    cx="50"
-                    cy="43"
-                    r="23"
-                    fill="#FFF3CE"
-                    stroke="#D19A4B"
-                    stroke-width="2"
-                  />
-                  <path
-                    d="m50 25 5.2 10.5 11.6 1.7-8.4 8.2 2 11.6L50 46.5l-10.4 5.5 2-11.6-8.4-8.2 11.6-1.7L50 25Z"
-                    fill="#D99B32"
-                    stroke="#9A671F"
-                    stroke-width="1.5"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="m18 20 2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5ZM82 8l1.5 4.5L88 14l-4.5 1.5L82 20l-1.5-4.5L76 14l4.5-1.5L82 8Z"
-                    fill="#D99B32"
-                  />
-                </svg>
+          <div class="camera-guide">
+            <p class="camera-guide-speech">
+              <span>３秒後に撮影スタート！<br />イイ顔しちゃって☆</span>
+            </p>
+            <img
+              class="camera-guide-character"
+              src="./images/stappy-camera.png"
+              width="316"
+              height="306"
+              alt=""
+            />
+          </div>
+          <dialog
+            id="photo-reward-dialog"
+            class="reward-backdrop"
+            aria-labelledby="reward-title"
+            aria-describedby="reward-description"
+          >
+            <div class="reward-dialog">
+              <img
+                class="reward-image"
+                src="./images/chippy-crystal.png"
+                width="500"
+                height="500"
+                alt=""
+              />
+              <div class="reward-caption">
+                <h2 id="reward-title">地底の星シールをゲット！</h2>
+                <p id="reward-description">
+                  今日の一枚を撮った記念に、<br />星のしるしをプレゼント。
+                </p>
               </div>
-              <p class="reward-kicker">撮影ごほうび</p>
-              <h2 id="reward-title">地底の星シールをゲット！</h2>
-              <p id="reward-description">
-                今日の一枚を撮った記念に、星のしるしをプレゼント。
-              </p>
               <button
                 id="close-photo-reward"
                 class="reward-close-button"
                 type="button"
+                aria-label="閉じる"
+                autofocus
               >
-                閉じる
+                <img src="./images/close.svg" width="80" height="80" alt="" />
               </button>
-            </section>
-          </div>
+            </div>
+          </dialog>
         </section>
       </main>
     </section>
@@ -1736,7 +1789,7 @@
       </div>
     </section>
 
-    <script type="module" src="./js/main.js?v=20261126-zukan-items"></script>
+    <script type="module" src="./js/main.js"></script>
     <script type="module" src="./js/sindan/sindan.js?v=20261124-sindan-view"></script>
   </body>
 </html>

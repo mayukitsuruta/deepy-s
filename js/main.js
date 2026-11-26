@@ -1,10 +1,11 @@
 import { db, auth } from "./firebase.js?v=20261110-persistent-google";
 import {
   createSpaceHousing,
+  getHouseInterior,
   normalizeSpaceHouses,
   houseLocation,
   HOUSE_MESSAGE_LIFETIME_MS,
-} from "./space-houses.js?v=20261125-house-location-action";
+} from "./space-houses.js?v=20261126-flower-house-interior";
 import {
   createUserWithEmailAndPassword,
   EmailAuthProvider,
@@ -448,7 +449,7 @@ async function loadAccountProfile(user) {
     "ゲスト";
 
   if (nickname !== "ゲスト" && user.displayName !== nickname) {
-    updateProfile(user, { displayName: nickname }).catch(() => {});
+    updateProfile(user, { displayName: nickname }).catch(() => { });
   }
 
   return {
@@ -622,7 +623,7 @@ guestForm.addEventListener("submit", async (event) => {
 logoutButton.addEventListener("click", () => {
   const confirmed = confirm(
     "ログアウトしますか？\n" +
-      "ゲストのまま終了すると、進み具合は保存されません。",
+    "ゲストのまま終了すると、進み具合は保存されません。",
   );
 
   if (!confirmed) return;
@@ -649,14 +650,14 @@ logoutButton.addEventListener("click", () => {
     : user.isAnonymous
       ? user.delete()
       : presence
-          .catch((error) => {
-            console.warn("オンライン状態の更新に失敗:", error);
-          })
-          .then(() => signOut(auth));
+        .catch((error) => {
+          console.warn("オンライン状態の更新に失敗:", error);
+        })
+        .then(() => signOut(auth));
 
   ending.catch((error) => {
     console.error("ログアウトエラー:", error);
-    return signOut(auth).catch(() => {});
+    return signOut(auth).catch(() => { });
   });
 });
 
@@ -828,15 +829,15 @@ registerForm.addEventListener("submit", async (event) => {
       registerMode === "guest"
         ? { ...currentUserData, isOnline: true, lastActiveMs: Date.now() }
         : {
-            nickname,
-            avatar: "pink",
-            friendshipPoints: 0,
-            bio: "地底でのんびり暮らしてます。よろしくお願いします！",
-            tags: ["デザイン", "カフェ巡り", "音楽"],
-            houseLocation: "第3層・右下エリア",
-            isOnline: true,
-            lastActiveMs: Date.now(),
-          };
+          nickname,
+          avatar: "pink",
+          friendshipPoints: 0,
+          bio: "地底でのんびり暮らしてます。よろしくお願いします！",
+          tags: ["デザイン", "カフェ巡り", "音楽"],
+          houseLocation: "第3層・右下エリア",
+          isOnline: true,
+          lastActiveMs: Date.now(),
+        };
 
     await setDoc(
       doc(db, "users", user.uid),
@@ -848,7 +849,7 @@ registerForm.addEventListener("submit", async (event) => {
     );
     if (userData.nickname) {
       await updateProfile(user, { displayName: userData.nickname }).catch(
-        () => {},
+        () => { },
       );
     }
 
@@ -990,6 +991,11 @@ const residentProfileBody = document.getElementById("resident-profile-body");
 const residentProfileIntro = document.getElementById("resident-profile-intro");
 const residentProfileBio = document.getElementById("resident-profile-bio");
 const residentProfileTags = document.getElementById("resident-profile-tags");
+const residentProfileVisit = document.getElementById("resident-profile-visit");
+const houseInterior = document.getElementById("house-interior");
+const houseInteriorArt = document.getElementById("house-interior-art");
+const houseInteriorTitle = document.getElementById("house-interior-title");
+const houseInteriorLight = document.getElementById("house-interior-light");
 
 // ③ 掲示板
 const boardPostForm = document.getElementById("board-post-form");
@@ -1087,6 +1093,7 @@ function resetPlayMemory() {
   profilePrefetchUid = null;
   currentUserData = createBlankUserData();
   closeProfileEditForm();
+  houseInterior.close();
   residentProfileDialog.close();
   spaceHousing.reset();
   stopMelodyPlayback();
@@ -1109,6 +1116,7 @@ const ONLINE_TIMEOUT_MS = 90 * 1000;
 // ホーム画面内のサブビュー切り替え（ホーム / 交流スペース）
 function switchUndergroundView(viewName) {
   if (viewName !== "space") {
+    houseInterior.close();
     residentProfileDialog.close();
     spaceHousing.cancel();
     setMinimapExpanded(false);
@@ -1122,11 +1130,15 @@ function switchUndergroundView(viewName) {
   homeScreen.classList.toggle("story-mode", viewName === "story");
   homeScreen.classList.toggle("zukan-mode", viewName === "zukan");
   navItems.forEach((btn) => {
-    btn.classList.toggle(
-      "active",
+    const isCurrent =
       btn.dataset.view === viewName ||
-        (viewName === "story" && btn.dataset.view === "home"),
-    );
+      (viewName === "story" && btn.dataset.view === "home");
+    btn.classList.toggle("active", isCurrent);
+    if (isCurrent) {
+      btn.setAttribute("aria-current", "page");
+    } else {
+      btn.removeAttribute("aria-current");
+    }
   });
 
   homeViewContent.hidden = viewName !== "home";
@@ -1388,7 +1400,7 @@ const zukanEntries = [
     name: "ZARPY",
     kana: "ザーピー",
     image: "./images/zarppy.png",
-    signatureImage: "./images/zarpy-sign%201.png",
+    signatureImage: "./images/zarpy-sign.png",
     occupation: "ザーファー",
     likes: "化石、ザーフボード",
     personality:
@@ -1516,14 +1528,14 @@ function renderZukanFile(entryId) {
           <p class="field-stamp">開封済み</p>
           <h3>秘密ファイル</h3>
           ${secretBlocks
-            .map(
-              ([label, value]) => `
+          .map(
+            ([label, value]) => `
           <div class="field-secret-block">
             <p class="field-secret-label">${label}</p>
             <p>${value}</p>
           </div>`,
-            )
-            .join("")}
+          )
+          .join("")}
         </section>
       `
         : `
@@ -1556,17 +1568,17 @@ function renderZukanFile(entryId) {
         </div>
         ${secret}
       </div>
-      <figure class="field-study" data-character="${entry.id}">
-        <div class="field-study-stage">
+      <div class="field-study" data-character="${entry.id}">
+        <figure class="field-study-figure">
           <div class="field-full-art">
             <img src="${entry.fullImage ?? entry.image}" alt="${entry.name}の全身" />
           </div>
-        </div>
-        ${entry.signatureImage ? `
-        <figcaption>
-          <img class="field-signature" src="${entry.signatureImage}" alt="${entry.name}のサイン" />
-        </figcaption>` : ""}
-      </figure>
+          ${entry.signatureImage ? `
+          <figcaption>
+            <img class="field-signature" src="${entry.signatureImage}" alt="${entry.name}のサイン" />
+          </figcaption>` : ""}
+        </figure>
+      </div>
     `;
   }
 
@@ -1831,6 +1843,7 @@ chippyGameStart?.addEventListener("click", (event) => {
 document.addEventListener("keydown", (event) => {
   if (!storyViewContent || storyViewContent.hidden) return;
   if (event.key !== "Enter" && event.key !== " ") return;
+  if (event.target.closest?.(".responsive-menu, .modal")) return;
   if (
     event.target.closest?.(
       "#chippy-story-back, #chippy-story-prev, #chippy-game-start, #chippy-replay, #chippy-finish-home, .chippy-mound",
@@ -2116,16 +2129,16 @@ function awardSimpyFriendship() {
 
   const nextPoints = already
     ? Math.max(
-        resolvedFriendshipPoints(currentUserData.friendshipPoints),
-        storyFriendshipFloor(),
-      )
+      resolvedFriendshipPoints(currentUserData.friendshipPoints),
+      storyFriendshipFloor(),
+    )
     : Math.min(
-        100,
-        Math.max(
-          resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
-          storyFriendshipFloor(),
-        ),
-      );
+      100,
+      Math.max(
+        resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
+        storyFriendshipFloor(),
+      ),
+    );
 
   renderUserData({ friendshipPoints: nextPoints, simpyCleared: true });
   syncFriendshipPill();
@@ -2484,7 +2497,7 @@ async function playTargetSequence({ replay }) {
     );
     melodyWaiters.push({
       timer,
-      resolve: () => {},
+      resolve: () => { },
       token,
     });
   });
@@ -2844,6 +2857,7 @@ simpyReplay?.addEventListener("click", (event) => {
 document.addEventListener("keydown", (event) => {
   if (!simpyStoryView || simpyStoryView.hidden) return;
   if (event.key !== "Enter" && event.key !== " ") return;
+  if (event.target.closest?.(".responsive-menu, .modal")) return;
   if (
     event.target.closest?.(
       "#simpy-story-back, #simpy-story-prev, #simpy-game-start, #simpy-replay, #melody-play, #simpy-finish",
@@ -3239,16 +3253,16 @@ function awardHitopyFriendship() {
 
   const nextPoints = already
     ? Math.max(
-        resolvedFriendshipPoints(currentUserData.friendshipPoints),
-        storyFriendshipFloor(),
-      )
+      resolvedFriendshipPoints(currentUserData.friendshipPoints),
+      storyFriendshipFloor(),
+    )
     : Math.min(
-        100,
-        Math.max(
-          resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
-          storyFriendshipFloor(),
-        ),
-      );
+      100,
+      Math.max(
+        resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
+        storyFriendshipFloor(),
+      ),
+    );
 
   renderUserData({ friendshipPoints: nextPoints, hitopyCleared: true });
   syncFriendshipPill();
@@ -3442,6 +3456,7 @@ hitopyFinishHome?.addEventListener("click", (event) => {
 document.addEventListener("keydown", (event) => {
   if (!hitopyStoryView || hitopyStoryView.hidden) return;
   if (event.key !== "Enter" && event.key !== " ") return;
+  if (event.target.closest?.(".responsive-menu, .modal")) return;
   if (
     event.target.closest?.(
       "#hitopy-story-back, #hitopy-story-prev, #hitopy-game-start, #hitopy-game, #hitopy-finish-home, #hitopy-replay",
@@ -3527,16 +3542,16 @@ function awardNasupyFriendship() {
 
   const nextPoints = already
     ? Math.max(
-        resolvedFriendshipPoints(currentUserData.friendshipPoints),
-        storyFriendshipFloor(),
-      )
+      resolvedFriendshipPoints(currentUserData.friendshipPoints),
+      storyFriendshipFloor(),
+    )
     : Math.min(
-        100,
-        Math.max(
-          resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
-          storyFriendshipFloor(),
-        ),
-      );
+      100,
+      Math.max(
+        resolvedFriendshipPoints(currentUserData.friendshipPoints) + 25,
+        storyFriendshipFloor(),
+      ),
+    );
 
   renderUserData({ friendshipPoints: nextPoints, nasupyCleared: true });
   syncFriendshipPill();
@@ -3970,6 +3985,7 @@ nasupyFinishHome?.addEventListener("click", (event) => {
 document.addEventListener("keydown", (event) => {
   if (!nasupyStoryView || nasupyStoryView.hidden) return;
   if (event.key !== "Enter" && event.key !== " ") return;
+  if (event.target.closest?.(".responsive-menu, .modal")) return;
   if (
     event.target.closest?.(
       "#nasupy-story-back, #nasupy-story-prev, #nasupy-game-start, #nasupy-game, #nasupy-finish-home, #nasupy-replay",
@@ -3996,20 +4012,21 @@ const cameraResult = document.getElementById("camera-result");
 const cameraStage = document.getElementById("camera-stage");
 const cameraMessage = document.getElementById("camera-message");
 const cameraCountdown = document.getElementById("camera-countdown");
-const photoTimerControl = document.getElementById("photo-timer");
-const startCameraButton = document.getElementById("start-camera");
 const takePhotoButton = document.getElementById("take-photo");
-const retakePhotoButton = document.getElementById("retake-photo");
+const pausePhotoButton = document.getElementById("pause-photo");
+const resetPhotoButton = document.getElementById("reset-photo");
 const downloadPhotoLink = document.getElementById("download-photo");
-const togglePhotoCornersButton = document.getElementById(
-  "toggle-photo-corners",
-);
+const togglePhotoCornersButton = document.getElementById("toggle-photo-corners");
 const photoRewardDialog = document.getElementById("photo-reward-dialog");
 const closePhotoRewardButton = document.getElementById("close-photo-reward");
 const frameChoices = document.querySelectorAll(".frame-choice");
 const frameImages = document.querySelectorAll("[data-frame-image]");
+const PHOTO_COUNTDOWN_MS = 3000;
 let cameraStream = null;
+let cameraRequest = null;
 let photoCountdownTimeout = null;
+let photoCountdownDeadline = 0;
+let photoCountdownRemaining = PHOTO_COUNTDOWN_MS;
 let selectedFrame = "frame-1";
 let roundedPhotoCorners = false;
 const photoSharing = setupPhotoSharing();
@@ -4026,11 +4043,7 @@ function updateCameraFrameOrientation() {
           `.frame-choice[data-frame="${selectedFrame}"] img`,
         );
   if (!image?.naturalWidth || !image.naturalHeight) return;
-  cameraStage?.classList.toggle(
-    "is-landscape",
-    image.naturalWidth > image.naturalHeight,
-  );
-  cameraStage?.style.setProperty(
+  cameraViewContent.style.setProperty(
     "--camera-frame-ratio",
     String(image.naturalWidth / image.naturalHeight),
   );
@@ -4043,31 +4056,39 @@ document
   });
 updateCameraFrameOrientation();
 
-togglePhotoCornersButton?.addEventListener("click", () => {
+togglePhotoCornersButton.addEventListener("click", () => {
   roundedPhotoCorners = !roundedPhotoCorners;
-  cameraStage?.classList.toggle("is-rounded", roundedPhotoCorners);
-  cameraStage?.classList.toggle("is-square-cornered", !roundedPhotoCorners);
+  cameraStage.classList.toggle("is-rounded", roundedPhotoCorners);
   togglePhotoCornersButton.setAttribute(
     "aria-checked",
     String(roundedPhotoCorners),
   );
 });
 
-function stopCamera() {
-  clearPhotoCountdown();
+function resetPhotoResult() {
   photoSharing.reset();
+  cameraResult.hidden = true;
+  cameraResult.removeAttribute("src");
+  downloadPhotoLink.hidden = true;
+  downloadPhotoLink.removeAttribute("href");
+  photoRewardDialog.close();
+  setCameraMessage("", false);
+}
+
+function releaseCameraStream() {
   cameraStream?.getTracks().forEach((track) => track.stop());
   cameraStream = null;
-  if (cameraVideo) {
-    cameraVideo.srcObject = null;
-    cameraVideo.classList.remove("is-mirrored");
-  }
-  if (cameraResult) cameraResult.hidden = true;
-  if (takePhotoButton) takePhotoButton.disabled = true;
-  if (retakePhotoButton) retakePhotoButton.hidden = true;
-  if (downloadPhotoLink) downloadPhotoLink.hidden = true;
-  if (photoRewardDialog) photoRewardDialog.hidden = true;
-  if (cameraMessage) cameraMessage.hidden = true;
+  cameraVideo.hidden = true;
+  cameraVideo.srcObject = null;
+  cameraVideo.classList.remove("is-mirrored");
+}
+
+function stopCamera() {
+  cameraRequest?.abort();
+  cameraRequest = null;
+  releaseCameraStream();
+  clearPhotoCountdown();
+  resetPhotoResult();
 }
 
 function setCameraMessage(message, visible = true) {
@@ -4075,58 +4096,58 @@ function setCameraMessage(message, visible = true) {
   cameraMessage.hidden = !visible;
 }
 
-function closePhotoReward() {
-  photoRewardDialog.hidden = true;
-  downloadPhotoLink.focus();
-}
-
-closePhotoRewardButton?.addEventListener("click", closePhotoReward);
-photoRewardDialog?.addEventListener("click", (event) => {
-  if (event.target === photoRewardDialog) closePhotoReward();
+closePhotoRewardButton.addEventListener("click", () => photoRewardDialog.close());
+photoRewardDialog.addEventListener("click", (event) => {
+  if (event.target === photoRewardDialog) photoRewardDialog.close();
 });
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !photoRewardDialog.hidden) closePhotoReward();
+photoRewardDialog.addEventListener("close", () => {
+  if (!downloadPhotoLink.hidden && !photoRewardDialog.open) {
+    downloadPhotoLink.focus();
+  }
 });
 
-startCameraButton?.addEventListener("click", async () => {
-  if (window.location.protocol === "file:" || !window.isSecureContext) {
+async function startCamera() {
+  if (!window.isSecureContext || window.location.protocol === "file:") {
     setCameraMessage(
       "カメラを使うにはlocalhostまたはHTTPSでページを開いてね。index.htmlを直接開いた場合は利用できません。",
     );
-    return;
+    return false;
   }
 
   if (!navigator.mediaDevices?.getUserMedia) {
     setCameraMessage(
       "このブラウザーではカメラを利用できません。対応ブラウザーでページを開いてね。",
     );
-    return;
+    return false;
   }
 
-  startCameraButton.disabled = true;
+  releaseCameraStream();
+  const request = new AbortController();
+  cameraRequest = request;
+  takePhotoButton.disabled = true;
   setCameraMessage("カメラを起動しています…");
   try {
-    stopCamera();
-    cameraStream = await navigator.mediaDevices.getUserMedia({
+    const stream = await navigator.mediaDevices.getUserMedia({
       audio: false,
       video: { facingMode: "user" },
     });
-    const facingMode = cameraStream
-      .getVideoTracks()[0]
-      ?.getSettings().facingMode;
+    if (request.signal.aborted) {
+      stream.getTracks().forEach((track) => track.stop());
+      return false;
+    }
+    cameraStream = stream;
+    const facingMode = stream.getVideoTracks()[0]?.getSettings().facingMode;
     cameraVideo.classList.toggle(
       "is-mirrored",
       !facingMode || facingMode === "user",
     );
-    cameraVideo.srcObject = cameraStream;
+    cameraVideo.srcObject = stream;
+    cameraVideo.hidden = false;
     await cameraVideo.play();
-    cameraResult.hidden = true;
-    takePhotoButton.disabled = false;
-    retakePhotoButton.hidden = true;
-    downloadPhotoLink.hidden = true;
-    photoRewardDialog.hidden = true;
-    setCameraMessage("", false);
+    return !request.signal.aborted;
   } catch (error) {
+    if (request.signal.aborted) return false;
+    releaseCameraStream();
     console.error("カメラを起動できませんでした:", error);
     if (error.name === "NotAllowedError" || error.name === "SecurityError") {
       setCameraMessage(
@@ -4151,10 +4172,14 @@ startCameraButton?.addEventListener("click", async () => {
         "カメラを起動できませんでした。ブラウザーとOSのカメラ許可を確認してね。",
       );
     }
+    return false;
   } finally {
-    startCameraButton.disabled = false;
+    if (cameraRequest === request) {
+      cameraRequest = null;
+      takePhotoButton.disabled = false;
+    }
   }
-});
+}
 
 frameChoices.forEach((choice) => {
   choice.addEventListener("click", () => {
@@ -4168,39 +4193,38 @@ frameChoices.forEach((choice) => {
       image.hidden = image.dataset.frameImage !== selectedFrame;
     });
     updateCameraFrameOrientation();
-    // 切り替えたフレームが撮影結果にも反映されるよう、再撮影を案内する。
+
     if (!cameraResult.hidden) {
-      photoSharing.reset();
-      cameraResult.hidden = true;
-      cameraVideo.hidden = false;
-      takePhotoButton.disabled = false;
-      retakePhotoButton.hidden = true;
-      downloadPhotoLink.hidden = true;
-      photoRewardDialog.hidden = true;
+      resetPhotoResult();
       setCameraMessage("フレームを切り替えました。もう一度撮ってね！");
     }
   });
 });
 
-function clearPhotoCountdown() {
-  if (photoCountdownTimeout === null) return;
-  window.clearTimeout(photoCountdownTimeout);
-  photoCountdownTimeout = null;
-  cameraCountdown.hidden = true;
-  cameraCountdown.textContent = "";
-  photoTimerControl.disabled = false;
-  takePhotoButton.textContent = "写真を撮る";
+function showPhotoCountdown(seconds) {
+  const value = String(seconds);
+  if (cameraCountdown.textContent === value) return;
+  cameraCountdown.classList.toggle("is-three", seconds === 3);
+  cameraCountdown.textContent = value;
 }
 
-function startPhotoCountdown(seconds) {
-  const deadline = performance.now() + seconds * 1000;
+function clearPhotoCountdown() {
+  window.clearTimeout(photoCountdownTimeout);
+  photoCountdownTimeout = null;
+  photoCountdownRemaining = PHOTO_COUNTDOWN_MS;
+  showPhotoCountdown(PHOTO_COUNTDOWN_MS / 1000);
+  takePhotoButton.disabled = Boolean(cameraRequest);
+  pausePhotoButton.disabled = true;
+}
+
+function startPhotoCountdown() {
   setCameraMessage("", false);
-  cameraCountdown.hidden = false;
-  photoTimerControl.disabled = true;
-  takePhotoButton.textContent = "キャンセル";
+  photoCountdownDeadline = performance.now() + photoCountdownRemaining;
+  takePhotoButton.disabled = true;
+  pausePhotoButton.disabled = false;
 
   function updateCountdown() {
-    const remaining = deadline - performance.now();
+    const remaining = photoCountdownDeadline - performance.now();
     if (remaining <= 0) {
       clearPhotoCountdown();
       capturePhoto();
@@ -4208,7 +4232,7 @@ function startPhotoCountdown(seconds) {
     }
 
     const secondsLeft = Math.ceil(remaining / 1000);
-    cameraCountdown.textContent = String(secondsLeft);
+    showPhotoCountdown(secondsLeft);
     const nextSecond = remaining - (secondsLeft - 1) * 1000;
     photoCountdownTimeout = window.setTimeout(
       updateCountdown,
@@ -4219,16 +4243,27 @@ function startPhotoCountdown(seconds) {
   updateCountdown();
 }
 
-takePhotoButton?.addEventListener("click", () => {
-  if (photoCountdownTimeout !== null) {
-    clearPhotoCountdown();
+takePhotoButton.addEventListener("click", async () => {
+  resetPhotoResult();
+  if (!cameraStream?.active && !(await startCamera())) return;
+  startPhotoCountdown();
+});
+
+pausePhotoButton.addEventListener("click", () => {
+  window.clearTimeout(photoCountdownTimeout);
+  photoCountdownTimeout = null;
+  photoCountdownRemaining = Math.max(1, photoCountdownDeadline - performance.now());
+  takePhotoButton.disabled = false;
+  pausePhotoButton.disabled = true;
+});
+
+resetPhotoButton.addEventListener("click", () => {
+  if (cameraRequest) {
+    stopCamera();
     return;
   }
-
-  const selectedTimer = photoTimerControl.querySelector("input:checked");
-  const seconds = Number(selectedTimer?.value ?? 0);
-  if (seconds > 0) startPhotoCountdown(seconds);
-  else capturePhoto();
+  clearPhotoCountdown();
+  resetPhotoResult();
 });
 
 function capturePhoto() {
@@ -4303,24 +4338,11 @@ function capturePhoto() {
   cameraResult.src = canvas.toDataURL("image/png");
   downloadPhotoLink.href = cameraResult.src;
   cameraResult.hidden = false;
-  takePhotoButton.disabled = true;
-  retakePhotoButton.hidden = false;
   downloadPhotoLink.hidden = false;
-  photoRewardDialog.hidden = false;
-  closePhotoRewardButton.focus();
   setCameraMessage("", false);
+  photoRewardDialog.showModal();
   photoSharing.show(cameraResult.src);
 }
-
-retakePhotoButton?.addEventListener("click", () => {
-  photoSharing.reset();
-  cameraResult.hidden = true;
-  takePhotoButton.disabled = !cameraStream;
-  retakePhotoButton.hidden = true;
-  downloadPhotoLink.hidden = true;
-  photoRewardDialog.hidden = true;
-  setCameraMessage("", false);
-});
 
 // ユーザー情報を右上バー・私の家・プロフィールに反映
 function renderUserData(data) {
@@ -4378,8 +4400,7 @@ function openResidentProfile(uid, house) {
   residentProfileOwnerId = uid;
   renderAvatar(residentProfileAvatar, resident, 36);
   residentProfileName.textContent = resident.nickname || "地底の住人";
-  residentProfileHouse.src = `./images/${house.type}.png`;
-  residentProfileHouse.classList.toggle("is-flipped", house.flipped);
+  renderResidentHouse(house);
   renderResidentStatus(isUserOnline(resident, Date.now()));
   const bio = typeof resident.bio === "string" ? resident.bio.trim() : "";
   residentProfileBio.textContent = bio;
@@ -4393,6 +4414,75 @@ function openResidentProfile(uid, house) {
   residentProfileBody.hidden = !bio && !residentProfileTags.childElementCount;
   residentProfileDialog.showModal();
 }
+
+function renderResidentHouse(house) {
+  residentProfileHouse.hidden = !house;
+  if (house) {
+    residentProfileDialog.dataset.layer = house.layer;
+    residentProfileHouse.src = `./images/${house.type}.png`;
+    residentProfileHouse.classList.toggle("is-flipped", house.flipped);
+  } else {
+    delete residentProfileDialog.dataset.layer;
+  }
+  const visitWasFocused = residentProfileVisit.contains(document.activeElement);
+  residentProfileVisit.hidden = !getHouseInterior(house);
+  if (residentProfileVisit.hidden && visitWasFocused) {
+    residentProfileDialog.querySelector(".resident-profile-close").focus();
+  }
+}
+
+residentProfileVisit.querySelector("button").addEventListener("click", () => {
+  const resident = latestUsersDocs.find((user) => user.id === residentProfileOwnerId);
+  const [house] = normalizeSpaceHouses(resident?.spaceHouses);
+  openHouseInterior(house, `${residentProfileName.textContent}の家`);
+});
+
+function setHouseLightLit(lit) {
+  houseInterior.classList.toggle("is-dark", !lit);
+  houseInteriorLight.setAttribute("aria-pressed", String(lit));
+  const label = houseInteriorLight.getAttribute("aria-label");
+  houseInteriorLight.title = `${label}を${lit ? "消す" : "つける"}`;
+}
+
+function openHouseInterior(house, title) {
+  const interior = getHouseInterior(house);
+  if (!interior || houseInterior.open) return;
+  if (houseInterior.dataset.interiorType !== house.type) {
+    const litImage = new Image();
+    litImage.alt = interior.description;
+    litImage.src = interior.lit;
+    const darkImage = new Image();
+    darkImage.alt = "";
+    darkImage.className = "house-interior-dark";
+    darkImage.src = interior.dark;
+    houseInteriorArt.replaceChildren(litImage, darkImage);
+    houseInterior.dataset.interiorType = house.type;
+  }
+  houseInteriorTitle.textContent = title;
+  houseInteriorLight.setAttribute("aria-label", interior.lightLabel);
+  setHouseLightLit(true);
+  houseInterior.showModal();
+}
+
+houseInteriorLight.addEventListener("click", () => {
+  setHouseLightLit(houseInteriorLight.getAttribute("aria-pressed") !== "true");
+});
+
+houseInterior.addEventListener("close", () => {
+  if (houseInterior.open || spaceViewContent.hidden || homeScreen.hidden) return;
+  if (residentProfileDialog.open) {
+    if (!residentProfileDialog.contains(document.activeElement)) {
+      residentProfileDialog.querySelector(".resident-profile-close").focus();
+    }
+  } else if (
+    document.activeElement === document.body ||
+    houseInterior.contains(document.activeElement)
+  ) {
+    // Presence updates can replace the house button while its interior is open.
+    const trigger = spaceMapViewport.querySelector(".own-house");
+    (trigger || spaceMapViewport).focus({ preventScroll: true });
+  }
+});
 
 residentProfileDialog.addEventListener("click", (event) => {
   if (event.target !== residentProfileDialog) return;
@@ -4494,8 +4584,11 @@ function startOnlinePresence() {
         const resident = latestUsersDocs.find(
           (user) => user.id === residentProfileOwnerId,
         );
-        if (residentProfileDialog.open && resident)
-          renderAvatar(residentProfileAvatar, resident, 36);
+        if (residentProfileDialog.open) {
+          if (resident) renderAvatar(residentProfileAvatar, resident, 36);
+          const [house] = normalizeSpaceHouses(resident?.spaceHouses);
+          renderResidentHouse(house);
+        }
         renderBoardAvatars();
         recalculateOnlineCount();
         spaceHousing.renderResidents(latestUsersDocs, currentUserId);
@@ -4520,7 +4613,7 @@ function endBrowserSession() {
       doc(db, "users", uid),
       { isOnline: false, lastActiveMs: Date.now() },
       { merge: true },
-    ).catch(() => {});
+    ).catch(() => { });
   }
   if (heartbeatTimer) {
     clearInterval(heartbeatTimer);
@@ -4962,7 +5055,7 @@ profileEditForm.addEventListener("submit", async (event) => {
   closeProfileEditForm();
   toggleProfileEditBtn.focus();
   if (!nicknameChanged) return;
-  updateProfile(user, { displayName: newNickname }).catch(() => {});
+  updateProfile(user, { displayName: newNickname }).catch(() => { });
   touchMelodyProfile();
 });
 
@@ -5094,11 +5187,11 @@ spaceMinimapSurface.addEventListener("click", (event) => {
   spaceMapViewport.scrollTo({
     left:
       ((event.clientX - rect.left) / rect.width) *
-        spaceMapViewport.scrollWidth -
+      spaceMapViewport.scrollWidth -
       spaceMapViewport.clientWidth / 2,
     top:
       ((event.clientY - rect.top) / rect.height) *
-        spaceMapViewport.scrollHeight -
+      spaceMapViewport.scrollHeight -
       spaceMapViewport.clientHeight / 2,
     behavior: "auto",
   });
@@ -5203,6 +5296,7 @@ const spaceHousing = createSpaceHousing({
   ownerName: () => currentUserData.nickname || "私",
   ownerId: () => currentUserId,
   onPlacementStart: () => setSpacePanelCollapsed(true),
+  onOwnHouseSelect: (house) => openHouseInterior(house, "私の家"),
   onResidentSelect: openResidentProfile,
   onChange(houses, previousWrite) {
     const uid = currentUserId;
@@ -5425,7 +5519,7 @@ async function signInWithGoogle() {
     };
     googleAuthMessage(
       messages[error.code] ||
-        "ログインを完了できませんでした。もう一度試してね。",
+      "ログインを完了できませんでした。もう一度試してね。",
     );
   } finally {
     buttons.forEach((button) => {

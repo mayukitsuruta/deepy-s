@@ -9,12 +9,23 @@
   <link rel="icon" href="./images/deepy.png" />
   <link rel="stylesheet" href="./css/fonts.css" />
   <link rel="stylesheet" href="./css/lp.css?v=20261124-keifont" />
+  <link rel="stylesheet" href="./css/responsive-menu.css" />
   <script src="./js/lp.js" defer></script>
+  <script src="./js/responsive-menu.js" defer></script>
 </head>
 
 <body>
-  <header class="masthead page-width">
+  <header class="masthead page-width responsive-menu">
     <p class="wordmark">DEEPY’s</p>
+    <img class="menu-mobile-logo responsive-menu-logo" src="./images/Deepy's-logo.png" alt="DEEPY’s" loading="lazy" />
+    <button class="responsive-menu-toggle" type="button" aria-label="メニュー" aria-expanded="false" aria-controls="landing-menu">
+      <span class="responsive-menu-icon" aria-hidden="true"></span>
+    </button>
+    <nav id="landing-menu" class="responsive-menu-panel public-menu-links" aria-label="サイトナビゲーション">
+      <a href="#story">物語を読む</a>
+      <a href="./index.html">ゲームをはじめる</a>
+      <a href="./index.html?view=diagnosis">地底人診断</a>
+    </nav>
   </header>
 
   <main>

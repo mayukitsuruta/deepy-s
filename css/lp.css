@@ -48,6 +48,17 @@ p {
   padding-block: 20px;
 }
 
+@media (max-width: 650px) {
+  .masthead {
+    width: auto;
+    padding-inline: var(--menu-inset);
+  }
+
+  .masthead .wordmark {
+    display: none;
+  }
+}
+
 .wordmark {
   font-size: 20px;
   font-weight: 800;

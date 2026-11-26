@@ -1,9 +1,39 @@
 const HOUSE_TYPES = [
-  { id: "home-1", name: "赤い葉っぱの家", description: "大きな葉っぱと、まあるい窓。" },
+  {
+    id: "home-1",
+    name: "赤い葉っぱの家",
+    description: "大きな葉っぱと、まあるい窓。",
+    interior: {
+      lit: "./images/home-1-interior-lit.webp?v=2",
+      dark: "./images/home-1-interior-dark.webp",
+      description: "丸い窓と階段のある木の部屋",
+      lightLabel: "暖炉の火",
+    },
+  },
   { id: "home-2", name: "どんぐりの家", description: "小さな灯りが迎えてくれる家。" },
-  { id: "home-3", name: "丸太の家", description: "木のぬくもりに包まれて。" },
+  {
+    id: "home-3",
+    name: "丸太の家",
+    description: "木のぬくもりに包まれて。",
+    interior: {
+      lit: "./images/home-3-interior-lit.webp",
+      dark: "./images/home-3-interior-dark.webp?v=2",
+      description: "壁に絵が描かれた、吊りランプのある丸太の部屋",
+      lightLabel: "吊りランプ",
+    },
+  },
   { id: "home-4", name: "きのこの家", description: "きのこの屋根で、ひと休み。" },
-  { id: "home-5", name: "花のつぼみの家", description: "やわらかな花びらのおうち。" },
+  {
+    id: "home-5",
+    name: "花のつぼみの家",
+    description: "やわらかな花びらのおうち。",
+    interior: {
+      lit: "./images/home-5-interior-lit.webp",
+      dark: "./images/home-5-interior-dark.webp",
+      description: "葉っぱの扉とランプのある花びらの部屋",
+      lightLabel: "ランプ",
+    },
+  },
   { id: "home-6", name: "松ぼっくり屋根の家", description: "木の階段をのぼって、まあるい扉へ。" },
 ];
 const clamp = (value) => Math.min(1, Math.max(0, value));
@@ -55,12 +85,17 @@ export function houseLocation(house) {
   return `第${position.layer}層・${position.x < 0.34 ? "左" : position.x > 0.66 ? "右" : "中央"}${position.y < 0.5 ? "上" : "下"}エリア`;
 }
 
-export function createSpaceHousing({ onChange, canSave, ownerName = () => "私", ownerId = () => null, onPlacementStart = () => {}, onResidentSelect }) {
+export function getHouseInterior(house) {
+  return HOUSE_TYPES.find((type) => type.id === house?.type)?.interior;
+}
+
+export function createSpaceHousing({ onChange, canSave, ownerName = () => "私", ownerId = () => null, onPlacementStart = () => {}, onOwnHouseSelect, onResidentSelect }) {
   const byId = (id) => document.getElementById(id);
   const viewport = byId("space-map-viewport");
   const wrapper = byId("space-map-wrapper");
   const picker = byId("house-picker");
   const status = byId("house-map-status");
+  const previewEnter = byId("house-preview-enter");
   const grounds = [];
   const movePreview = document.createElement("div");
   movePreview.className = "placed-house house-move-preview";
@@ -176,16 +211,21 @@ export function createSpaceHousing({ onChange, canSave, ownerName = () => "私",
     const trigger = own ? element : document.createElement("button");
     trigger.type = "button";
     if (own) {
+      const hasInterior = Boolean(type.interior);
       trigger.disabled = mode === "move";
-      trigger.setAttribute("aria-label", `私の家、${type.name}、${houseLocation(house)}`);
+      trigger.setAttribute("aria-label", `私の家、${type.name}、${houseLocation(house)}${hasInterior ? "、家に入る" : ""}`);
+      if (hasInterior) trigger.setAttribute("aria-haspopup", "dialog");
       trigger.addEventListener("click", (event) => {
         event.stopPropagation();
-        if (mode) return;
-        message("家をダブルクリックすると移動できます。「家を着せ替える」でデザインも変えられます。");
+        if (mode || event.target.closest(".house-speech")) return;
+        if (hasInterior) onOwnHouseSelect(house);
+        else message("この家の中はまだ準備中です。ダブルクリックか「移動」で場所を変えられます。");
       });
-      trigger.addEventListener("dblclick", (event) => {
-        if (!event.target.closest(".house-speech")) startMove(event);
-      });
+      if (!hasInterior) {
+        trigger.addEventListener("dblclick", (event) => {
+          if (!event.target.closest(".house-speech")) startMove(event);
+        });
+      }
     } else {
       trigger.className = "resident-house-trigger";
       trigger.disabled = Boolean(mode);
@@ -260,7 +300,8 @@ export function createSpaceHousing({ onChange, canSave, ownerName = () => "私",
     byId("house-cancel").hidden = !mode;
     byId("house-retry").hidden = !hasSaveError;
     const preview = byId("house-preview-image");
-    preview.hidden = !house;
+    previewEnter.hidden = !house;
+    previewEnter.disabled = Boolean(mode) || !getHouseInterior(house);
     byId("house-preview-empty").hidden = Boolean(house);
     if (house) {
       preview.src = `./images/${house.type}.png`;
@@ -369,6 +410,7 @@ export function createSpaceHousing({ onChange, canSave, ownerName = () => "私",
   }
 
   ["house-add", "change-interior-btn"].forEach((id) => byId(id).addEventListener("click", openPicker));
+  previewEnter.addEventListener("click", () => onOwnHouseSelect(houses[0]));
   byId("house-picker-close").addEventListener("click", () => picker.close());
   picker.addEventListener("click", (event) => { if (event.target === picker) picker.close(); });
   byId("house-move").addEventListener("click", (event) => {
