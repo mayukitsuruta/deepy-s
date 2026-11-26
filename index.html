@@ -52,13 +52,12 @@
       rel="modulepreload"
       href="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js"
     />
+    <link rel="stylesheet" href="./css/fonts.css" />
     <link
       rel="stylesheet"
-      href="./css/style.css?v=20261124-hitopy-bg"
+      href="./css/style.css?v=20261125-map-paper-art"
     />
-    <link rel="stylesheet" href="./css/sindan.css?v=20261124-sindan-view" />
-    <link rel="stylesheet" href="./css/font-preview.css?v=20261123-hover" />
-    <script src="./js/font-preview.js?v=20261123-custom-only"></script>
+    <link rel="stylesheet" href="./css/sindan.css?v=20261124-keifont-diagnosis" />
   </head>
 
   <body>
@@ -786,7 +785,20 @@
             aria-label="右パネルを閉じる"
             title="右パネルを閉じる"
           >
-            <span class="space-panel-toggle-icon" aria-hidden="true">›</span>
+            <svg
+              class="space-panel-toggle-icon"
+              aria-hidden="true"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="3.25"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="m9 5 7 7-7 7" />
+            </svg>
             <span class="space-panel-toggle-label">閉じる</span>
           </button>
           <!-- 中央エリア：地層マップエリア -->
@@ -802,27 +814,21 @@
                 <button type="button" data-house-layer="3">3層</button>
               </nav>
               <button id="space-go-home" class="space-go-home" type="button">
-                ⌂ 私の家へ
+                <svg
+                  aria-hidden="true"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3.25"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M4 10.5 12 4l8 6.5V20H4zM9 20v-6h6v6" />
+                </svg>
+                私の家へ
               </button>
-              <span class="map-drag-hint"
-                >マップをドラッグして、地底を自由に歩いてみよう。</span
-              >
-            </div>
-
-            <div class="space-minimap" aria-label="全体マップ">
-              <span class="space-minimap-label">全体マップ</span>
-              <div
-                id="space-minimap-surface"
-                class="space-minimap-surface"
-                role="button"
-                tabindex="0"
-                aria-label="全体マップ。クリックした場所に移動します。矢印キーでも移動できます。"
-              >
-                <span
-                  id="space-minimap-window"
-                  class="space-minimap-window"
-                ></span>
-              </div>
             </div>
 
             <div
@@ -867,20 +873,67 @@
                 「家を選ぶ」で、お気に入りの家をひとつ選んでね。
               </p>
               <div class="house-toolbar" role="group" aria-label="家の操作">
-                <button id="house-move" type="button" disabled>✥ 移動</button>
-                <button id="house-flip" type="button" disabled>
-                  ↔ 向きを変える
+                <button id="house-move" class="house-tool" type="button" disabled>
+                  <img src="./images/house-tool-move.png" alt="" draggable="false" />
+                  <span class="house-tool-label">移動</span>
                 </button>
-                <button id="house-remove" type="button" disabled>
-                  家をしまう
+                <button id="house-flip" class="house-tool" type="button" disabled>
+                  <img src="./images/house-tool-mirror.png?v=20261125" alt="" draggable="false" />
+                  <span class="house-tool-label">向きを変える</span>
                 </button>
-                <button id="house-add" type="button">家を選ぶ</button>
-                <button id="house-cancel" type="button" hidden>
-                  キャンセル
+                <button id="house-remove" class="house-tool" type="button" disabled>
+                  <img src="./images/house-tool-store.png" alt="" draggable="false" />
+                  <span class="house-tool-label">家をしまう</span>
                 </button>
-                <button id="house-retry" type="button" hidden>
-                  保存を再試行
+                <button id="house-add" class="house-tool" type="button">
+                  <img src="./images/house-tool-choose.png" alt="" draggable="false" />
+                  <span id="house-add-label" class="house-tool-label">家を選ぶ</span>
                 </button>
+                <div class="house-toolbar-extra">
+                  <button id="house-cancel" type="button" hidden>
+                    キャンセル
+                  </button>
+                  <button id="house-retry" type="button" hidden>
+                    保存を再試行
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-minimap">
+            <button
+              id="space-minimap-toggle"
+              class="space-minimap-toggle"
+              type="button"
+              aria-controls="space-minimap-panel"
+              aria-expanded="false"
+            >
+              <span class="space-minimap-rolled">
+                <img src="./images/space-map-scroll.webp?v=2" alt="" draggable="false" />
+                <span>全体マップ</span>
+              </span>
+              <span class="space-minimap-close-label">地図を巻く</span>
+            </button>
+            <div
+              id="space-minimap-panel"
+              class="space-minimap-panel"
+              inert
+            >
+              <div class="space-minimap-paper">
+                <span class="space-minimap-label">全体マップ</span>
+                <div
+                  id="space-minimap-surface"
+                  class="space-minimap-surface"
+                  role="button"
+                  tabindex="0"
+                  aria-label="全体マップ。クリックした場所に移動します。矢印キーでも移動できます。"
+                >
+                  <span
+                    id="space-minimap-window"
+                    class="space-minimap-window"
+                  ></span>
+                </div>
               </div>
             </div>
           </div>
@@ -891,17 +944,25 @@
             aria-labelledby="house-picker-title"
           >
             <div class="house-picker-heading">
-              <div>
-                <p class="house-picker-eyebrow">ちいさな地底暮らし</p>
-                <h2 id="house-picker-title">どの家にしよう？</h2>
-              </div>
+              <h2 id="house-picker-title">どの家にしよう？</h2>
               <button
                 id="house-picker-close"
                 class="icon-btn"
                 type="button"
                 aria-label="家の選択を閉じる"
               >
-                ✕
+                <svg
+                  aria-hidden="true"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                >
+                  <path d="m4 4 12 12M16 4 4 16" />
+                </svg>
               </button>
             </div>
             <p id="house-picker-description">
@@ -923,7 +984,18 @@
                   aria-label="プロフィールを閉じる"
                   autofocus
                 >
-                  ✕
+                  <svg
+                    aria-hidden="true"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                    stroke-linecap="round"
+                  >
+                    <path d="m4 4 12 12M16 4 4 16" />
+                  </svg>
                 </button>
               </form>
               <img
@@ -983,24 +1055,6 @@
                   </span>
                   <h3>私の家</h3>
                 </div>
-                <button
-                  id="edit-house-btn"
-                  class="icon-btn"
-                  type="button"
-                  title="家を選ぶ"
-                  aria-label="家を選ぶ"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="16"
-                    height="16"
-                    fill="currentColor"
-                  >
-                    <path
-                      d="M16.8 3.5a2.1 2.1 0 0 1 3 3L8.3 18l-4.3 1 1-4.3L16.8 3.5Z"
-                    />
-                  </svg>
-                </button>
               </div>
 
               <div class="house-preview" id="house-preview-box">
@@ -1010,13 +1064,6 @@
                     ここから、あなたの地底暮らし。<br />お気に入りの家を置いてみよう。
                   </p>
                 </div>
-                <button
-                  id="change-interior-btn"
-                  class="interior-badge-btn"
-                  type="button"
-                >
-                  家を選ぶ
-                </button>
               </div>
 
               <div class="house-location-row">
@@ -1040,26 +1087,11 @@
                   </p>
                 </div>
                 <button
-                  id="move-house-btn"
-                  class="pill-outline-btn"
+                  id="change-interior-btn"
+                  class="interior-badge-btn"
                   type="button"
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="13"
-                    height="13"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="inline-svg"
-                  >
-                    <path
-                      d="M12 3v18M3 12h18M12 3 9 6m3-3 3 3M12 21l-3-3m3 3 3-3M3 12l3-3m-3 3 3 3M21 12l-3-3m3 3-3 3"
-                    />
-                  </svg>
-                  移動する
+                  家を選ぶ
                 </button>
               </div>
               <p id="house-save-note" class="house-save-note" hidden>
@@ -1253,8 +1285,24 @@
                   id="toggle-board-more"
                   class="text-link-btn"
                   type="button"
+                  aria-controls="board-list"
+                  aria-expanded="false"
                 >
-                  もっと見る &gt;
+                  <span class="board-more-label">もっと見る</span>
+                  <svg
+                    class="board-more-icon"
+                    aria-hidden="true"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3.25"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="m9 5 7 7-7 7" />
+                  </svg>
                 </button>
               </div>
 
@@ -1413,22 +1461,54 @@
                 alt="撮影した写真"
                 hidden
               />
+              <div
+                id="camera-countdown"
+                class="camera-countdown"
+                role="timer"
+                aria-label="撮影までの残り秒数"
+                aria-live="polite"
+                aria-atomic="true"
+                hidden
+              ></div>
             </div>
             <div class="camera-actions">
-              <div class="camera-corner-control">
-                <span class="camera-corner-label">角丸</span>
-                <button
-                  id="toggle-photo-corners"
-                  class="corner-switch"
-                  type="button"
-                  role="switch"
-                  aria-label="角丸"
-                  aria-checked="false"
-                >
-                  <span class="corner-switch-track" aria-hidden="true">
-                    <span class="corner-switch-thumb"></span>
-                  </span>
-                </button>
+              <div class="camera-settings">
+                <div class="camera-corner-control">
+                  <span class="camera-corner-label">角丸</span>
+                  <button
+                    id="toggle-photo-corners"
+                    class="corner-switch"
+                    type="button"
+                    role="switch"
+                    aria-label="角丸"
+                    aria-checked="false"
+                  >
+                    <span class="corner-switch-track" aria-hidden="true">
+                      <span class="corner-switch-thumb"></span>
+                    </span>
+                  </button>
+                </div>
+                <fieldset id="photo-timer" class="camera-timer-control">
+                  <legend>タイマー</legend>
+                  <div class="camera-timer-options">
+                    <label>
+                      <input type="radio" name="photo-timer" value="0" checked />
+                      <span>オフ</span>
+                    </label>
+                    <label>
+                      <input type="radio" name="photo-timer" value="3" />
+                      <span>3秒</span>
+                    </label>
+                    <label>
+                      <input type="radio" name="photo-timer" value="5" />
+                      <span>5秒</span>
+                    </label>
+                    <label>
+                      <input type="radio" name="photo-timer" value="10" />
+                      <span>10秒</span>
+                    </label>
+                  </div>
+                </fieldset>
               </div>
               <button
                 id="start-camera"
@@ -1665,7 +1745,7 @@
       </div>
     </section>
 
-    <script type="module" src="./js/main.js?v=20261124-hitopy-bg"></script>
+    <script type="module" src="./js/main.js?v=20261125-parchment-map"></script>
     <script type="module" src="./js/sindan/sindan.js?v=20261124-sindan-view"></script>
   </body>
 </html>
