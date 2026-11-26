@@ -4,7 +4,7 @@ import {
   normalizeSpaceHouses,
   houseLocation,
   HOUSE_MESSAGE_LIFETIME_MS,
-} from "./space-houses.js?v=20261124-house-pointer-preview";
+} from "./space-houses.js?v=20261125-house-location-action";
 import {
   createUserWithEmailAndPassword,
   EmailAuthProvider,
@@ -1111,6 +1111,7 @@ function switchUndergroundView(viewName) {
   if (viewName !== "space") {
     residentProfileDialog.close();
     spaceHousing.cancel();
+    setMinimapExpanded(false);
   }
   homeScreen.classList.toggle(
     "is-home",
@@ -3958,6 +3959,8 @@ const cameraVideo = document.getElementById("camera-video");
 const cameraResult = document.getElementById("camera-result");
 const cameraStage = document.getElementById("camera-stage");
 const cameraMessage = document.getElementById("camera-message");
+const cameraCountdown = document.getElementById("camera-countdown");
+const photoTimerControl = document.getElementById("photo-timer");
 const startCameraButton = document.getElementById("start-camera");
 const takePhotoButton = document.getElementById("take-photo");
 const retakePhotoButton = document.getElementById("retake-photo");
@@ -3970,6 +3973,7 @@ const closePhotoRewardButton = document.getElementById("close-photo-reward");
 const frameChoices = document.querySelectorAll(".frame-choice");
 const frameImages = document.querySelectorAll("[data-frame-image]");
 let cameraStream = null;
+let photoCountdownTimeout = null;
 let selectedFrame = "frame-1";
 let roundedPhotoCorners = false;
 const photoSharing = setupPhotoSharing();
@@ -4014,6 +4018,7 @@ togglePhotoCornersButton?.addEventListener("click", () => {
 });
 
 function stopCamera() {
+  clearPhotoCountdown();
   photoSharing.reset();
   cameraStream?.getTracks().forEach((track) => track.stop());
   cameraStream = null;
@@ -4141,8 +4146,64 @@ frameChoices.forEach((choice) => {
   });
 });
 
+function clearPhotoCountdown() {
+  if (photoCountdownTimeout === null) return;
+  window.clearTimeout(photoCountdownTimeout);
+  photoCountdownTimeout = null;
+  cameraCountdown.hidden = true;
+  cameraCountdown.textContent = "";
+  photoTimerControl.disabled = false;
+  takePhotoButton.textContent = "写真を撮る";
+}
+
+function startPhotoCountdown(seconds) {
+  const deadline = performance.now() + seconds * 1000;
+  setCameraMessage("", false);
+  cameraCountdown.hidden = false;
+  photoTimerControl.disabled = true;
+  takePhotoButton.textContent = "キャンセル";
+
+  function updateCountdown() {
+    const remaining = deadline - performance.now();
+    if (remaining <= 0) {
+      clearPhotoCountdown();
+      capturePhoto();
+      return;
+    }
+
+    const secondsLeft = Math.ceil(remaining / 1000);
+    cameraCountdown.textContent = String(secondsLeft);
+    const nextSecond = remaining - (secondsLeft - 1) * 1000;
+    photoCountdownTimeout = window.setTimeout(
+      updateCountdown,
+      Math.ceil(nextSecond),
+    );
+  }
+
+  updateCountdown();
+}
+
 takePhotoButton?.addEventListener("click", () => {
-  if (!cameraVideo.videoWidth || !cameraVideo.videoHeight) return;
+  if (photoCountdownTimeout !== null) {
+    clearPhotoCountdown();
+    return;
+  }
+
+  const selectedTimer = photoTimerControl.querySelector("input:checked");
+  const seconds = Number(selectedTimer?.value ?? 0);
+  if (seconds > 0) startPhotoCountdown(seconds);
+  else capturePhoto();
+});
+
+function capturePhoto() {
+  if (
+    cameraViewContent.hidden ||
+    !cameraStream?.active ||
+    !cameraVideo.videoWidth ||
+    !cameraVideo.videoHeight
+  ) {
+    return;
+  }
   const selectedImage = document.querySelector(
     `[data-frame-image="${selectedFrame}"]`,
   );
@@ -4213,7 +4274,7 @@ takePhotoButton?.addEventListener("click", () => {
   closePhotoRewardButton.focus();
   setCameraMessage("", false);
   photoSharing.show(cameraResult.src);
-});
+}
 
 retakePhotoButton?.addEventListener("click", () => {
   photoSharing.reset();
@@ -4432,6 +4493,7 @@ function endBrowserSession() {
 }
 
 window.addEventListener("pagehide", () => {
+  clearPhotoCountdown();
   endBrowserSession();
 });
 
@@ -4896,7 +4958,9 @@ boardPostForm.addEventListener("submit", async (event) => {
 
 toggleBoardMoreBtn.addEventListener("click", () => {
   const isExpanded = boardList.classList.toggle("expanded");
-  toggleBoardMoreBtn.textContent = isExpanded ? "閉じる ^" : "もっと見る >";
+  toggleBoardMoreBtn.setAttribute("aria-expanded", String(isExpanded));
+  toggleBoardMoreBtn.querySelector(".board-more-label").textContent =
+    isExpanded ? "閉じる" : "もっと見る";
 });
 
 // =========================================
@@ -4906,8 +4970,28 @@ const spaceMapViewport = document.getElementById("space-map-viewport");
 const currentLayerIndicator = document.getElementById(
   "current-layer-indicator",
 );
+const spaceMinimapToggle = document.getElementById("space-minimap-toggle");
+const spaceMinimapPanel = document.getElementById("space-minimap-panel");
 const spaceMinimapSurface = document.getElementById("space-minimap-surface");
 const spaceMinimapWindow = document.getElementById("space-minimap-window");
+
+function setMinimapExpanded(expanded) {
+  if (!expanded && spaceMinimapPanel.contains(document.activeElement)) {
+    spaceMinimapToggle.focus({ preventScroll: true });
+  }
+  spaceMinimapToggle.setAttribute("aria-expanded", String(expanded));
+  spaceMinimapPanel.inert = !expanded;
+}
+
+spaceMinimapToggle.addEventListener("click", () => {
+  setMinimapExpanded(spaceMinimapPanel.inert);
+});
+spaceMinimapToggle.parentElement.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" || spaceMinimapPanel.inert) return;
+  event.preventDefault();
+  event.stopPropagation();
+  setMinimapExpanded(false);
+});
 
 function focusMapOnHome() {
   const house = spaceMapViewport.querySelector(".own-house");
@@ -5117,8 +5201,6 @@ function setSpacePanelCollapsed(collapsed) {
   const label = collapsed ? "右パネルを開く" : "右パネルを閉じる";
   toggleSpacePanel.setAttribute("aria-label", label);
   toggleSpacePanel.title = label;
-  toggleSpacePanel.querySelector(".space-panel-toggle-icon").textContent =
-    collapsed ? "‹" : "›";
   toggleSpacePanel.querySelector(".space-panel-toggle-label").textContent =
     collapsed ? "開く" : "閉じる";
   requestAnimationFrame(updateMapScrollbar);

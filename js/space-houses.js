@@ -252,11 +252,11 @@ export function createSpaceHousing({ onChange, canSave, ownerName = () => "私",
       if (house?.layer === index + 1) ground.appendChild(houseElement(house, ownerName(), true, ownerId()));
     });
     arrangeSpeechBubbles();
-    ["house-move", "house-flip", "house-remove", "move-house-btn"].forEach((id) => {
+    ["house-move", "house-flip", "house-remove"].forEach((id) => {
       byId(id).disabled = !house || Boolean(mode);
     });
     byId("house-add").disabled = Boolean(mode);
-    byId("house-add").textContent = house ? "家を着せ替える" : "家を選ぶ";
+    byId("house-add-label").textContent = house ? "家を着せ替える" : "家を選ぶ";
     byId("house-cancel").hidden = !mode;
     byId("house-retry").hidden = !hasSaveError;
     const preview = byId("house-preview-image");
@@ -368,13 +368,13 @@ export function createSpaceHousing({ onChange, canSave, ownerName = () => "私",
     viewport.focus({ preventScroll: true });
   }
 
-  ["house-add", "edit-house-btn", "change-interior-btn"].forEach((id) => byId(id).addEventListener("click", openPicker));
+  ["house-add", "change-interior-btn"].forEach((id) => byId(id).addEventListener("click", openPicker));
   byId("house-picker-close").addEventListener("click", () => picker.close());
   picker.addEventListener("click", (event) => { if (event.target === picker) picker.close(); });
-  ["house-move", "move-house-btn"].forEach((id) => byId(id).addEventListener("click", (event) => {
+  byId("house-move").addEventListener("click", (event) => {
     startMove(event);
     viewport.querySelector(".own-house")?.scrollIntoView({ block: "center", inline: "center", behavior: "auto" });
-  }));
+  });
   byId("house-flip").addEventListener("click", () => {
     if (!houses[0]) return;
     houses[0].flipped = !houses[0].flipped;
