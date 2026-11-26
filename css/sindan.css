@@ -1,7 +1,7 @@
 /* =========================================
    地底人診断（ホーム画面の中で表示する）
    クラス名はすべて diagnosis- で始め、style.css と競合しないようにする。
-   色はホーム画面と揃え、フォントはサイト共通の設定を継承する。
+   色・フォントは style.css（ホーム画面・図鑑・キャラカード）と同じ値を使う。
    ========================================= */
 
 .diagnosis-page {
@@ -14,6 +14,7 @@
   background-repeat: no-repeat;
   background-attachment: fixed;
   color: #f9efe3;
+  font-family: "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
 }
 
 .diagnosis-screen[hidden] {

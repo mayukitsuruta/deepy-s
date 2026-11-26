@@ -9,6 +9,7 @@
   --text: clamp(16px, 1.35vw, 19px);
   --heading: clamp(30px, 3.25vw, 47px);
   --display: clamp(40px, 5vw, 72px);
+  font-family: "Hiragino Maru Gothic ProN", "Yu Gothic", "Hiragino Sans", sans-serif;
   background: var(--cave);
   color: var(--paper);
 }
