@@ -1120,6 +1120,7 @@ function switchUndergroundView(viewName) {
   homeScreen.classList.toggle("camera-mode", viewName === "camera");
   homeScreen.classList.toggle("space-mode", viewName === "space");
   homeScreen.classList.toggle("story-mode", viewName === "story");
+  homeScreen.classList.toggle("zukan-mode", viewName === "zukan");
   navItems.forEach((btn) => {
     btn.classList.toggle(
       "active",
@@ -1301,6 +1302,8 @@ const zukanEntries = [
     name: "DEEPY",
     kana: "ディーピー",
     image: "./images/deepy.png",
+    fullImage: "./images/deepy-2.png",
+    signatureImage: "./images/deepy-sign.png",
     occupation: "地底の案内人",
     likes: "地上に関する本、文化",
     found: "地底に着いた日",
@@ -1314,6 +1317,7 @@ const zukanEntries = [
     name: "CHIPPY",
     kana: "チッピー",
     image: "./images/green.png",
+    signatureImage: "./images/chippy-sign.png",
     occupation: "土吸収員",
     likes: "きれいな鉱物。とくにクリスタル",
     found: "上層の道ぞい",
@@ -1327,6 +1331,7 @@ const zukanEntries = [
     name: "SIMPY",
     kana: "シンピー",
     image: "./images/pink.png",
+    signatureImage: "./images/simpy-sign.png",
     occupation: "音の採集家",
     likes: "不思議な音、鈴、音楽、静かな場所、古い楽器",
     found: "音の多い中層",
@@ -1340,6 +1345,7 @@ const zukanEntries = [
     name: "NASUPY",
     kana: "ナスピー",
     image: "./images/purple.png",
+    signatureImage: "./images/nasupy-sign.png",
     occupation: "植物の医者",
     likes: "植物、激辛調理",
     found: "深層の植え込み",
@@ -1353,6 +1359,7 @@ const zukanEntries = [
     name: "HITOPY",
     kana: "ヒトピー",
     image: "./images/white.png",
+    signatureImage: "./images/hitopy-sign.png",
     occupation: "建築家",
     likes: "海、海洋生物",
     found: "まだうっていない",
@@ -1366,6 +1373,7 @@ const zukanEntries = [
     name: "STAPPY",
     kana: "スタッピー",
     image: "./images/stappy.png",
+    signatureImage: "./images/stappy-sign.png",
     occupation: "カリスマ",
     likes: "光るもの、かわいいもの",
     personality:
@@ -1380,6 +1388,7 @@ const zukanEntries = [
     name: "ZARPY",
     kana: "ザーピー",
     image: "./images/zarppy.png",
+    signatureImage: "./images/zarpy-sign%201.png",
     occupation: "ザーファー",
     likes: "化石、ザーフボード",
     personality:
@@ -1410,51 +1419,57 @@ function renderZukan() {
 }
 
 function renderZukanIndex() {
+  zukanNote.classList.add("field-note--album");
   zukanNote.replaceChildren();
   const header = document.createElement("header");
+  header.className = "field-album-header";
   header.innerHTML = `
-    <p class="field-note-kicker">調査員の記録</p>
     <h2>地底調査ノート</h2>
-    <p class="field-note-lead">名前を選ぶと、その子の調査ページが開くよ。</p>
+    <p>シールを選ぶと、その子の調査ページが開くよ。</p>
   `;
-  zukanNote.append(header);
 
-  zukanEntries.forEach((entry, index) => {
+  const albumBody = document.createElement("div");
+  albumBody.className = "field-album-body";
+  const sheet = document.createElement("div");
+  sheet.className = "field-sticker-sheet";
+  sheet.innerHTML = `
+    <img class="field-album-item" data-item="crystal" src="${chippyItemArt.crystal}" alt="" />
+    <img class="field-album-item" data-item="mushroom" src="${nasupyArt("nasupy-item01.png")}" alt="" />
+    <img class="field-album-item" data-item="flower" src="${chippyItemArt.flower}" alt="" />
+    <img class="field-album-item" data-item="fruit" src="${chippyItemArt.fruit}" alt="" />
+    <img class="field-album-item" data-item="leaf" src="${nasupyArt("nasupy-item03.png")}" alt="" />
+    <img class="field-album-item" data-item="lamp" src="${nasupyArt("nasupy-item06.png")}" alt="" />
+  `;
+  zukanEntries.forEach((entry) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "field-entry";
+    button.className = "field-sticker";
+    button.dataset.character = entry.id;
+    const image = entry.fullImage ?? entry.image;
     button.innerHTML = `
-      <span class="field-entry-no">${String(index + 1).padStart(2, "0")}</span>
-      <span class="field-thumb">${
-        entry.image
-          ? `<img src="${entry.image}" alt="" />`
-          : `<span class="field-thumb-empty">？</span>`
-      }</span>
-      <span class="field-entry-copy">
-        <span class="field-entry-name">${entry.name}${
-          entry.kana
-            ? `<span class="field-entry-kana">${entry.kana}</span>`
-            : ""
-        }</span>
-        <span class="field-entry-meta">${
-          entry.unknown ? "まだ見つけていない" : entry.occupation
-        }</span>
+      ${image ? `<span class="field-full-art"><img src="${image}" alt="" /></span>` : ""}
+      <span class="field-sticker-label">
+        <span class="field-sticker-name">${entry.name}</span>
+        ${entry.kana ? `<span class="field-sticker-kana">${entry.kana}</span>` : ""}
       </span>
-      <span class="field-entry-open">開く</span>
     `;
     button.addEventListener("click", () => {
       openZukanId = entry.id;
       renderZukanFile(entry.id);
       zukanNote.scrollTop = 0;
+      zukanNote.querySelector(".field-back").focus();
     });
-    zukanNote.append(button);
+    sheet.append(button);
   });
+  albumBody.append(sheet);
+  zukanNote.append(header, albumBody);
 }
 
 function renderZukanFile(entryId) {
   const entry = zukanEntries.find((item) => item.id === entryId);
   if (!entry || !zukanNote) return;
   const open = zukanSecretsOpen();
+  zukanNote.classList.remove("field-note--album");
   zukanNote.replaceChildren();
 
   const back = document.createElement("button");
@@ -1464,17 +1479,21 @@ function renderZukanFile(entryId) {
   back.addEventListener("click", () => {
     openZukanId = null;
     renderZukanIndex();
+    zukanNote.querySelector(`[data-character="${entry.id}"]`).focus();
   });
 
   const page = document.createElement("article");
   page.className = "field-file";
+  page.dataset.character = entry.id;
   if (entry.unknown) {
     page.innerHTML = `
       <div class="field-photo field-photo-empty" aria-hidden="true">？</div>
-      <div>
-        <p class="field-file-kicker">未発見</p>
-        <h2>${entry.name}</h2>
-        <p>${entry.note}</p>
+      <div class="field-file-copy" role="region" aria-labelledby="field-file-title" tabindex="0">
+        <header>
+          <p class="field-file-kicker">未発見</p>
+          <h2 id="field-file-title">${entry.name}</h2>
+        </header>
+        <p class="field-file-notes">${entry.note}</p>
       </div>
     `;
   } else {
@@ -1519,18 +1538,35 @@ function renderZukanFile(entryId) {
       : "";
     page.innerHTML = `
       <div class="field-photo">
-        <img src="${entry.image}" alt="${entry.name}" />
+        <div class="field-portrait">
+          <img src="${entry.image}" alt="${entry.name}の上半身" />
+        </div>
       </div>
-      <div>
-        <p class="field-file-kicker">調査ページ</p>
-        <h2>${entry.name}</h2>
-        ${entry.kana ? `<p class="field-reading">${entry.kana}</p>` : ""}
-        <dl class="field-facts">
-          ${facts.map(([label, value]) => `<dt>${label}</dt><dd>${value}</dd>`).join("")}
-        </dl>
-        <p>${entry.note}</p>
+      <div class="field-file-copy" role="region" aria-labelledby="field-file-title" tabindex="0">
+        <header>
+          <p class="field-file-kicker">調査ページ</p>
+          <h2 id="field-file-title">${entry.name}</h2>
+          ${entry.kana ? `<p class="field-reading">${entry.kana}</p>` : ""}
+        </header>
+        <div class="field-file-notes">
+          <dl class="field-facts">
+            ${facts.map(([label, value]) => `<dt>${label}</dt><dd>${value}</dd>`).join("")}
+          </dl>
+          <p>${entry.note}</p>
+        </div>
         ${secret}
       </div>
+      <figure class="field-study" data-character="${entry.id}">
+        <div class="field-study-stage">
+          <div class="field-full-art">
+            <img src="${entry.fullImage ?? entry.image}" alt="${entry.name}の全身" />
+          </div>
+        </div>
+        ${entry.signatureImage ? `
+        <figcaption>
+          <img class="field-signature" src="${entry.signatureImage}" alt="${entry.name}のサイン" />
+        </figcaption>` : ""}
+      </figure>
     `;
   }
 
